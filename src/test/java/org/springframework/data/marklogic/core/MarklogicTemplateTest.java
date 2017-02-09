@@ -1,9 +1,7 @@
 package org.springframework.data.marklogic.core;
 
-import com.marklogic.xcc.Content;
-import com.marklogic.xcc.ContentSource;
-import com.marklogic.xcc.DocumentFormat;
-import com.marklogic.xcc.Session;
+import com.marklogic.xcc.*;
+import com.marklogic.xcc.impl.AdhocImpl;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +24,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 import static org.junit.Assert.assertThat;
@@ -54,6 +54,9 @@ public class MarklogicTemplateTest {
 
     @Captor
     ArgumentCaptor<Content> contentArgumentCaptor;
+
+    @Captor
+    ArgumentCaptor<String> queryArgumentCaptor;
 
     @Before
     public void setup() {
@@ -97,6 +100,19 @@ public class MarklogicTemplateTest {
     public void rejectsInsertionOfNonAnnotatedEntity() throws Exception {
         MarklogicTemplate template = new MarklogicTemplate(contentSource);
         template.insert(new NonAnnotatedEntity("1", "entity"), buildCreateOperationOptions("/test/entity/1.xml"));
+    }
+
+    @Test
+    public void findByExample() throws Exception {
+        when(session.newAdhocQuery(anyString())).thenReturn(new AdhocImpl(null, null, new RequestOptions()));
+        MarklogicTemplate template = new MarklogicTemplate(contentSource);
+        Map<String, Object> map = new HashMap<String, Object>() {{
+            put("name", "test");
+        }};
+
+        template.find(map, SimpleEntity.class);
+        verify(session).newAdhocQuery(queryArgumentCaptor.capture());
+        assertThat(queryArgumentCaptor.getValue(), CoreMatchers.containsString("cts:element-value-query(fn:QName(\"\", \"name\"), \"test\")"));
     }
 
     public void insertionStringContent() throws Exception {

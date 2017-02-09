@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.domain.Example;
 import org.springframework.data.marklogic.core.MarklogicFactoryBean;
 import org.springframework.data.marklogic.core.MarklogicTemplate;
 import org.springframework.data.marklogic.core.convert.MappingMarklogicConverter;
@@ -106,6 +107,14 @@ public class SimpleMarklogicRepositoryTest {
     public void existsPerson() {
         assertThat(repository.exists(steph.getId()), is(true));
         assertThat(repository.exists("unknown"), is(false));
+    }
+
+    @Test
+    public void findPersonByExample() {
+        Person person = new Person();
+        person.setLastname("Toussaint");
+        Iterable<Person> result = repository.findAll(Example.of(person));
+        assertThat(result, notNullValue());
     }
 
     private static class CustomizedPersonInformation implements MarklogicEntityInformation<Person, String> {

@@ -46,12 +46,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -257,7 +256,20 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
         LOGGER.debug("Retrieve objects matching query '{}' for collection '{}'", "empty", targetCollection);
 
-        return invokeAdhocQueryAsList("cts:search(" + targetCollection + ", cts:and-query(()));", entityClass, new MarklogicInvokeOperationOptions() {
+        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
+
+        List<String> ctsConstraint = new ArrayList<>();
+        if (query instanceof Map) {
+            Map<?, ?> constraints = (Map) query;
+
+            for (Map.Entry<?, ?> entry : constraints.entrySet()) {
+                MarklogicPersistentProperty persistentProperty = persistentEntity.getPersistentProperty(entry.getKey().toString());
+                QName qName = persistentProperty.getQName();
+                ctsConstraint.add("cts:element-value-query(fn:QName(\""+ qName.getNamespaceURI() + "\", \"" + qName.getLocalPart() + "\"), \"" + entry.getValue().toString() + "\")");
+            }
+        }
+
+        return invokeAdhocQueryAsList("cts:search(" + targetCollection + ", cts:and-query(("+ StringUtils.collectionToDelimitedString(ctsConstraint, ",") +")));", entityClass, new MarklogicInvokeOperationOptions() {
             @Override
             public boolean useCacheResult() {
                 return false;
@@ -731,6 +743,20 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
             return (T)resultItem.asString();
         }
 
+        T result = null;
+        if (returnType.isPrimitive()) {
+            try {
+                Method m = primitiveMap.get(returnType).getMethod("valueOf", String.class);
+                result = (T) m.invoke(null, resultItem.asString());
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                LOGGER.debug("Unable to generate primitive value for type " + returnType.getName());
+            }
+        }
+
+        if (result != null) {
+            return result;
+        }
+
         ConversionService conversionService = this.marklogicConverter.getConversionService();
 
         if (conversionService.canConvert(resultItem.getClass(), returnType)) {
@@ -807,5 +833,16 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
         Object getId();
     }
+
+    private static Map<Class,Class> primitiveMap = new HashMap<Class, Class>() {{
+        put(boolean.class, Boolean.class);
+        put(byte.class, Byte.class);
+        put(char.class, Character.class);
+        put(short.class, Short.class);
+        put(int.class, Integer.class);
+        put(long.class, Long.class);
+        put(float.class, Float.class);
+        put(double.class, Double.class);
+    }};
 
 }

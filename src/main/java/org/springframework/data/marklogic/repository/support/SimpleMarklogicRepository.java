@@ -1,5 +1,8 @@
 package org.springframework.data.marklogic.repository.support;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,8 +16,12 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.beans.PropertyDescriptor;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -26,6 +33,8 @@ import java.util.stream.StreamSupport;
 @Repository
 @Transactional(readOnly = true)
 public class SimpleMarklogicRepository<T, ID extends Serializable> implements MarklogicRepository<T, ID> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleMarklogicRepository.class);
 
     private final MarklogicOperations marklogicOperations;
     private final MarklogicEntityInformation<T, ID> entityInformation;
@@ -133,7 +142,24 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
 
     @Override
     public <S extends T> Iterable<S> findAll(Example<S> example) {
-        throw new RuntimeException("Not implemented yet !");
+        Map<String, Object> constraints = new HashMap<>();
+        S probe = example.getProbe();
+        PropertyDescriptor[] propertyDescriptors = BeanUtils.getPropertyDescriptors(probe.getClass());
+        for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
+            if (!propertyDescriptor.getName().equals("class") && propertyDescriptor.getReadMethod() != null) {
+                try {
+                    Object constraint = propertyDescriptor.getReadMethod().invoke(probe);
+                    if (constraint != null) {
+                        constraints.put(propertyDescriptor.getName(), constraint);
+                    }
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    LOGGER.warn("Unable to read property " + propertyDescriptor);
+                }
+            }
+        }
+
+        List<?> result = marklogicOperations.find(constraints, probe.getClass());
+        return (Iterable<S>) result;
     }
 
     @Override
