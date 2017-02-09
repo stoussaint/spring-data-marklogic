@@ -102,7 +102,7 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
     }
 
     @Override
-    public Iterable<T> findAll(Iterable<ID> ids) {
+    public List<T> findAll(Iterable<ID> ids) {
         return StreamSupport.stream(ids.spliterator(), false).map(this::findOne).collect(Collectors.toList());
     }
 
@@ -141,12 +141,12 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
     }
 
     @Override
-    public <S extends T> Iterable<S> findAll(Example<S> example) {
+    public <S extends T> List<S> findAll(Example<S> example) {
         Map<String, Object> constraints = new HashMap<>();
         S probe = example.getProbe();
         PropertyDescriptor[] propertyDescriptors = BeanUtils.getPropertyDescriptors(probe.getClass());
         for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
-            if (!propertyDescriptor.getName().equals("class") && propertyDescriptor.getReadMethod() != null) {
+            if (isEligibleProperty(propertyDescriptor)) {
                 try {
                     Object constraint = propertyDescriptor.getReadMethod().invoke(probe);
                     if (constraint != null) {
@@ -158,12 +158,11 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
             }
         }
 
-        List<?> result = marklogicOperations.find(constraints, probe.getClass());
-        return (Iterable<S>) result;
+        return marklogicOperations.find(constraints, example.getProbeType());
     }
 
     @Override
-    public <S extends T> Iterable<S> findAll(Example<S> example, Sort sort) {
+    public <S extends T> List<S> findAll(Example<S> example, Sort sort) {
         throw new RuntimeException("Not implemented yet !");
     }
 
@@ -180,6 +179,12 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
     @Override
     public <S extends T> boolean exists(Example<S> example) {
         throw new RuntimeException("Not implemented yet !");
+    }
+
+    private boolean isEligibleProperty(PropertyDescriptor propertyDescriptor) {
+        return !propertyDescriptor.getName().equals("class")
+                && propertyDescriptor.getReadMethod() != null
+                && ! Iterable.class.isAssignableFrom(propertyDescriptor.getPropertyType());
     }
 
 }

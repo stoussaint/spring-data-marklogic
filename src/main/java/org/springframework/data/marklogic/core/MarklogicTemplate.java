@@ -269,7 +269,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
             }
         }
 
-        return invokeAdhocQueryAsList("cts:search(" + targetCollection + ", cts:and-query(("+ StringUtils.collectionToDelimitedString(ctsConstraint, ",") +")));", entityClass, new MarklogicInvokeOperationOptions() {
+        return invokeAdhocQueryAsList("cts:search(" + targetCollection + ", cts:and-query(("+ StringUtils.collectionToDelimitedString(ctsConstraint, ",") +")))", entityClass, new MarklogicInvokeOperationOptions() {
             @Override
             public boolean useCacheResult() {
                 return false;
