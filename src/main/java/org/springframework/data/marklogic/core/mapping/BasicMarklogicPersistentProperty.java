@@ -63,7 +63,7 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
             }
 
             if (namespaceUri == null) {
-                XmlSchema xmlSchema = owner.getType().getPackage().getAnnotation(XmlSchema.class);
+                XmlSchema xmlSchema = this.getField().getDeclaringClass().getPackage().getAnnotation(XmlSchema.class);
                 if (xmlSchema != null) {
                     if (xmlSchema.elementFormDefault().equals(XmlNsForm.QUALIFIED)) {
                         namespaceUri = xmlSchema.namespace();
