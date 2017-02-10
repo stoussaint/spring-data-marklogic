@@ -34,12 +34,19 @@ public abstract class AbstractMarklogicConfiguration {
      */
     protected abstract String getDatabaseName();
 
+    protected void beforeMarklogicTemplateCreation(ContentSource contentSource) {};
+
+    protected void afterMarklogicTemplateCreation(MarklogicTemplate marklogicTemplate) {}
+
     @Bean
     public abstract MarklogicFactoryBean marklogicContentSource();
 
     @Bean
     public MarklogicTemplate marklogicTemplate(ContentSource contentSource) throws Exception {
-        return new MarklogicTemplate(contentSource, mappingMarklogicConverter());
+        beforeMarklogicTemplateCreation(contentSource);
+        MarklogicTemplate marklogicTemplate = new MarklogicTemplate(contentSource, mappingMarklogicConverter());
+        afterMarklogicTemplateCreation(marklogicTemplate);
+        return marklogicTemplate;
     }
 
     /**
