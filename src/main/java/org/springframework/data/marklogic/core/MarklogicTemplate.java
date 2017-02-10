@@ -451,10 +451,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         final MarklogicIdentifier identifier = resolveMarklogicIdentifier(objectToSave);
         String collection = marklogicConverter.computeDefaultCollection(objectToSave);
 
-        String collectionConstraints = null;
-        if (collection != null) {
-            collectionConstraints = "cts:collection-query(\"" + collection + "\")";
-        }
+        String collectionConstraints = retrieveConstraintCollection(collection);
 
         final boolean isIdInPropertyFragment = false; // TODO : Somethig wrong here, I need to retrieve the information
 
@@ -700,29 +697,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
             return ValueFactory.newXSString("");
         }
 
-        if (value instanceof String) {
-            return ValueFactory.newXSString((String) value);
-        }
-
-        if (value instanceof Boolean) {
-            return ValueFactory.newXSBoolean((Boolean) value);
-        }
-
-        if (value instanceof Integer) {
-            return ValueFactory.newXSInteger((Integer) value);
-        }
-
-        if (value instanceof Long) {
-            return ValueFactory.newXSInteger((Long) value);
-        }
-
-        ConversionService conversionService = this.marklogicConverter.getConversionService();
-
-        if (conversionService.canConvert(value.getClass(), XdmValue.class)) {
-            return conversionService.convert(value, XdmValue.class);
-        } else {
-            return ValueFactory.newXSString(value.toString());
-        }
+        return marklogicConverter.getConversionService().convert(value, XdmValue.class);
     }
 
     private <T> List<T> prepareResultList(ResultSequence resultSequence, Class<T> returnType) {
