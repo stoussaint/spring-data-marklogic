@@ -252,11 +252,13 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Override
     public <T> List<T> find(Object query, Class<T> entityClass, MarklogicOperationOptions options) {
-        final String targetCollection = retrieveTargetCollection(options.defaultCollection());
-
-        LOGGER.debug("Retrieve objects matching query '{}' for collection '{}'", "empty", targetCollection);
-
         MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
+
+        String defaultCollection = options.defaultCollection() != null ? options.defaultCollection() : persistentEntity.getDefaultCollection();
+        final String targetCollection = retrieveTargetCollection(defaultCollection);
+
+        LOGGER.debug("Retrieve objects matching query '{}' for collection '{}'", "empty", defaultCollection);
+
 
         List<String> ctsConstraint = new ArrayList<>();
         if (query instanceof Map) {
