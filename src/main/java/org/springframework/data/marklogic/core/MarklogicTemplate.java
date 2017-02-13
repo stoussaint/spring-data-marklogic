@@ -42,10 +42,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import javax.xml.namespace.QName;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -132,7 +129,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
         generateIdIfNecessary(objectToSave);
 
-        doInsert(computeUri(options.uri(), objectToSave, retrieveIdentifier(objectToSave)), objectToSave, options, this.marklogicConverter);
+        doInsert(objectToSave, options, this.marklogicConverter);
     }
 
     @Override
@@ -142,7 +139,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
             insert(objectToSave);
         } else {
             final String uri = retrieveUri(objectToSave);
-            final String defaultCollection = marklogicConverter.computeDefaultCollection(objectToSave);
+            final String defaultCollection = mappingContext.getPersistentEntity(objectToSave.getClass()).getDefaultCollection();
 
             save(objectToSave, new MarklogicCreateOperationOptions() {
                 @Override
@@ -165,7 +162,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Override
     public void save(Object objectToSave, MarklogicCreateOperationOptions options) {
-        doInsert(computeUri(options.uri(), objectToSave, retrieveIdentifier(objectToSave)), objectToSave, options, marklogicConverter);
+        doInsert(objectToSave, options, marklogicConverter);
     }
 
     @Override
@@ -225,7 +222,18 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     @Override
     public <T> T findById(Object id, Class<T> entityClass, MarklogicOperationOptions options) {
         MarklogicIdentifier identifier = resolveMarklogicIdentifier(id, entityClass);
-        final String targetCollection = retrieveTargetCollection(computeDefaultCollection(options.defaultCollection(), null, id));
+        final String targetCollection = retrieveTargetCollection(expandDefaultCollection(options.defaultCollection(), new DocumentExpressionContext() {
+            @Override
+            public Object getEntity() {
+                return null;
+            }
+
+            @Override
+            public Object getId() {
+                return id;
+            }
+        }));
+
         final boolean isIdInPropertyFragment = options.idInPropertyFragment();
 
         LOGGER.debug("Retrieve object stored in '{}' default collection with '{}' as identifier", targetCollection, id);
@@ -394,18 +402,36 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         });
     }
 
-    private <T> void doInsert(String uri, T objectToSave, MarklogicCreateOperationOptions options, MarklogicWriter<T> writer) {
-        LOGGER.debug("Insert entity '{}' at '{}' within '{}' default collection", objectToSave, options.uri(), options.defaultCollection());
+    private <T> void doInsert(T objectToSave, MarklogicCreateOperationOptions options, MarklogicWriter<T> writer) {
+        DocumentExpressionContext documentExpressionContext = buildDocumentExpressionContext(objectToSave);
+        String uri =  expandUri(options.uri(), documentExpressionContext);
+        String collection = expandDefaultCollection(options.defaultCollection(), documentExpressionContext);
+
+        LOGGER.debug("Insert entity '{}' at '{}' within '{}' default collection", objectToSave, uri, collection);
 
         maybeEmitEvent(new BeforeConvertEvent<>(objectToSave, uri));
 
-        Content content = toContentObject(uri, objectToSave, options, writer);
+        Content content = toContentObject(uri, objectToSave, collection, writer);
 
         maybeEmitEvent(new BeforeSaveEvent<>(objectToSave, content, uri));
 
         doInsertContent(content);
 
         maybeEmitEvent(new AfterSaveEvent<>(objectToSave, content, uri));
+    }
+
+    private <T> DocumentExpressionContext buildDocumentExpressionContext(final T objectToSave) {
+        return new DocumentExpressionContext() {
+            @Override
+            public Object getEntity() {
+                return objectToSave;
+            }
+
+            @Override
+            public Object getId() {
+                return retrieveIdentifier(objectToSave);
+            }
+        };
     }
 
     private <T> void maybeEmitEvent(MarklogicMappingEvent<T> event) {
@@ -450,12 +476,24 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     private String retrieveUri(Object objectToSave) {
+        MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(objectToSave.getClass());
+
         final MarklogicIdentifier identifier = resolveMarklogicIdentifier(objectToSave);
-        String collection = marklogicConverter.computeDefaultCollection(objectToSave);
+        final String collection = expandDefaultCollection(persistentEntity.getDefaultCollection(), new DocumentExpressionContext() {
+            @Override
+            public Object getEntity() {
+                return null;
+            }
+
+            @Override
+            public Object getId() {
+                return retrieveIdentifier(objectToSave);
+            }
+        });
 
         String collectionConstraints = retrieveConstraintCollection(collection);
 
-        final boolean isIdInPropertyFragment = false; // TODO : Somethig wrong here, I need to retrieve the information
+        final boolean isIdInPropertyFragment = persistentEntity.idInPropertyFragment();
 
         LOGGER.debug("Looking to uri for object stored in '{}' default collection with '{}' as identifier", collection, identifier.qname());
 
@@ -480,38 +518,18 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         if (! CollectionUtils.isEmpty(uris)) {
             return uris.get(0);
         } else {
-            return marklogicConverter.computeUri(objectToSave);
+            return persistentEntity.getUri();
         }
     }
 
-    private String computeUri(String uri, Object entity, Object id) {
+    private String expandUri(String uri, DocumentExpressionContext identifierContext) {
         Expression expression = detectExpression(uri);
-        return expression == null ? uri : expression.getValue(new DocumentExpressionContext() {
-            @Override
-            public Object getEntity() {
-                return entity;
-            }
-
-            @Override
-            public Object getId() {
-                return id;
-            }
-        }, String.class);
+        return expression == null ? uri : expression.getValue(identifierContext, String.class);
     }
 
-    private String computeDefaultCollection(String collection, Object entity, Object id) {
+    private String expandDefaultCollection(String collection, DocumentExpressionContext identifierContext) {
         Expression expression = detectExpression(collection);
-        return expression == null ? collection : expression.getValue(new DocumentExpressionContext() {
-            @Override
-            public Object getEntity() {
-                return entity;
-            }
-
-            @Override
-            public Object getId() {
-                return id;
-            }
-        }, String.class);
+        return expression == null ? collection : expression.getValue(identifierContext, String.class);
     }
 
     private <T> T returnInSession(Function<Session, T> sessionTask) {
@@ -532,7 +550,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         }
     }
 
-    private <T> Content toContentObject(String uri, T objectToSave, MarklogicOperationOptions options, MarklogicWriter<T> writer) {
+    private <T> Content toContentObject(String uri, T objectToSave, String collection, MarklogicWriter<T> writer) {
         Content content;
         boolean supportedClass = Stream.of(SUPPORTED_CONTENT_CLASS).anyMatch(c -> c.isAssignableFrom(objectToSave.getClass()));
 
@@ -545,8 +563,8 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
             content = createSupportedContentObject(uri, objectToSave);
         }
 
-        if (options != null) {
-            content.getCreateOptions().setCollections(Stream.of(options.defaultCollection()).filter(StringUtils::hasText).toArray(String[]::new));
+        if (collection != null) {
+            content.getCreateOptions().setCollections(new String[] {collection});
         }
 
         return content;
