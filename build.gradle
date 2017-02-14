@@ -35,6 +35,7 @@ dependencies {
 
     compile("org.aspectj:aspectjweaver")
     compile ("org.springframework:spring-context")
+    compile ("org.springframework:spring-oxm")
     compile ("org.springframework:spring-tx")
     compile ("org.springframework.data:spring-data-commons")
 

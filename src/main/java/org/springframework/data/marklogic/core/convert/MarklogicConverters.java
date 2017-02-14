@@ -5,7 +5,6 @@ import com.marklogic.xcc.ValueFactory;
 import com.marklogic.xcc.types.XdmValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.ConditionalGenericConverter;
@@ -13,14 +12,13 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.convert.WritingConverter;
+import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.util.CollectionUtils;
 
 import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.io.IOException;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.io.StringWriter;
@@ -36,7 +34,8 @@ abstract class MarklogicConverters {
 
     private static Logger LOGGER = LoggerFactory.getLogger(MarklogicConverters.class);
 
-    private MarklogicConverters() {}
+    private MarklogicConverters() {
+    }
 
     private static GenericConversionService conversionService;
 
@@ -52,7 +51,8 @@ abstract class MarklogicConverters {
     }
 
     /**
-     * Convert entity to serializable if annotated with {@link XmlRootElement}
+     * Convert entity to serializable if annotated with {@link XmlRootElement}.
+     * Based on {@link Jaxb2Marshaller} this converter will use any annotated class within the same package than source object to build {@link JAXBContext}.
      */
     @WritingConverter
     enum EntityToStringJAXBConverter implements ConditionalGenericConverter {
@@ -70,19 +70,17 @@ abstract class MarklogicConverters {
 
         @Override
         public String convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
-            try {
-                Marshaller marshaller = JAXBContext.newInstance(sourceType.getType()).createMarshaller();
-                StringWriter writer = new StringWriter();
-                 marshaller.marshal(source, writer);
-                return writer.toString();
-            } catch (JAXBException jaxbe) {
-                throw new RuntimeException(jaxbe);
-            }
+            Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
+            marshaller.setPackagesToScan(sourceType.getType().getPackage().getName());
+            StringWriter writer = new StringWriter();
+            marshaller.marshal(source, new StreamResult(writer));
+            return writer.toString();
         }
     }
 
     /**
      * Convert a {@link ResultItem} content (using it's {@link InputStream}) to the target entity object if annotated with {@link XmlRootElement}
+     * Based on {@link Jaxb2Marshaller} this converter will use any annotated class within the same package than target class to build {@link JAXBContext}.
      */
     @ReadingConverter
     enum ResultItemToEntityJAXBConverter implements ConditionalGenericConverter {
@@ -102,12 +100,10 @@ abstract class MarklogicConverters {
         public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
             ResultItem resultItem = (ResultItem) source;
 
-            try (InputStream inputStream = resultItem.asInputStream()) {
-                Unmarshaller unmarshaller = JAXBContext.newInstance(targetType.getType()).createUnmarshaller();
-                return unmarshaller.unmarshal(inputStream);
-            } catch (JAXBException | IOException me) {
-                throw new ConversionFailedException(sourceType, targetType, source, me);
-            }
+            InputStream inputStream = resultItem.asInputStream();
+            Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
+            marshaller.setPackagesToScan(targetType.getType().getPackage().getName());
+            return marshaller.unmarshal(new StreamSource(inputStream));
         }
     }
 
@@ -116,7 +112,7 @@ abstract class MarklogicConverters {
      * Return collection of primitive as string separated by comma : test1,test2,test3
      * Return collection of object as serialized xml fragment within a wrapper element : <wrapper><article id="1"></article><article id="2"></article></wrapper>
      */
-    enum CollectionToXdmValueConverter implements Converter<Collection<?> , XdmValue> {
+    enum CollectionToXdmValueConverter implements Converter<Collection<?>, XdmValue> {
         INSTANCE;
 
         @Override
