@@ -294,7 +294,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Override
     public <T> T findOne(Object query, Class<T> entityClass, MarklogicOperationOptions options) {
-        List<T> resultList = find(query, entityClass, new MarklogicOperationOptions() {});
+        List<T> resultList = find(query, entityClass, options);
 
         if (CollectionUtils.isEmpty(resultList)) {
             return null;
