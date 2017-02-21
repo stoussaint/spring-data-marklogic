@@ -221,7 +221,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Override
     public <T> T findById(Object id, Class<T> entityClass, MarklogicOperationOptions options) {
-        MarklogicIdentifier identifier = resolveMarklogicIdentifier(id, entityClass);
+        MarklogicIdentifier identifier = resolveMarklogicIdentifier(id, options.entityClass() == null ? entityClass : options.entityClass());
         final String targetCollection = retrieveTargetCollection(expandDefaultCollection(options.defaultCollection(), new DocumentExpressionContext() {
             @Override
             public Object getEntity() {

@@ -43,4 +43,9 @@ public class EntityInformationOperationOptions<T, ID extends Serializable> imple
     public boolean idInPropertyFragment() {
         return entityInformation.idInPropertyFragment();
     }
+
+    @Override
+    public Class entityClass() {
+        return entityInformation.getJavaType();
+    }
 }
