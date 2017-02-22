@@ -17,6 +17,8 @@ public @interface Document {
 
     String uri() default "";
 
+    String defaultCollectionPrefix() default "";
+
     String defaultCollection() default "";
 
     boolean idInPropertyFragment() default false;

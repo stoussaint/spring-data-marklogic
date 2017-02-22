@@ -56,7 +56,8 @@ public class MappingMarklogicConverterTest {
 
     @Document(
             uri = "/person/#{id}.xml",
-            defaultCollection = "collection:#{getClass().getSimpleName()}"
+            defaultCollectionPrefix = "collection",
+            defaultCollection = "#{getClass().getSimpleName()}"
     )
     class Person {
         public String id;
