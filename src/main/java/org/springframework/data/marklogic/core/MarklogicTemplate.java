@@ -221,8 +221,14 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Override
     public <T> T findById(Object id, Class<T> entityClass, MarklogicOperationOptions options) {
-        MarklogicIdentifier identifier = resolveMarklogicIdentifier(id, options.entityClass() == null ? entityClass : options.entityClass());
+        final Class<T> targetEntityClass = options.entityClass() == null ? entityClass : options.entityClass();
+        MarklogicIdentifier identifier = resolveMarklogicIdentifier(id, targetEntityClass);
         final String targetCollection = retrieveTargetCollection(expandDefaultCollection(options.defaultCollection(), new DocumentExpressionContext() {
+            @Override
+            public Class<?> getEntityClass() {
+                return targetEntityClass;
+            }
+
             @Override
             public Object getEntity() {
                 return null;
@@ -423,6 +429,11 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     private <T> DocumentExpressionContext buildDocumentExpressionContext(final T objectToSave) {
         return new DocumentExpressionContext() {
             @Override
+            public Class<?> getEntityClass() {
+                return objectToSave.getClass();
+            }
+
+            @Override
             public Object getEntity() {
                 return objectToSave;
             }
@@ -480,6 +491,11 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
         final MarklogicIdentifier identifier = resolveMarklogicIdentifier(objectToSave);
         final String collection = expandDefaultCollection(persistentEntity.getDefaultCollection(), new DocumentExpressionContext() {
+            @Override
+            public Class<?> getEntityClass() {
+                return objectToSave.getClass();
+            }
+
             @Override
             public Object getEntity() {
                 return null;
@@ -824,6 +840,8 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     interface DocumentExpressionContext {
+        Class<?> getEntityClass();
+
         Object getEntity();
 
         Object getId();
