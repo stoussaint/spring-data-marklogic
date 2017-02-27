@@ -2,7 +2,7 @@ package org.springframework.data.marklogic.core.convert;
 
 import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.core.convert.TypeDescriptor;
-import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import org.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
@@ -20,8 +20,11 @@ public class MappingMarklogicConverter extends AbstractMarklogicConverter  {
     protected final MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext;
 
     public MappingMarklogicConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
-        super(new DefaultConversionService());
+        this(mappingContext, null);
+    }
 
+    public MappingMarklogicConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext, GenericConversionService conversionService) {
+        super(conversionService);
         this.mappingContext = mappingContext;
     }
 
