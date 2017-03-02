@@ -36,8 +36,8 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleMarklogicRepository.class);
 
-    private final MarklogicOperations marklogicOperations;
-    private final MarklogicEntityInformation<T, ID> entityInformation;
+    protected final MarklogicOperations marklogicOperations;
+    protected final MarklogicEntityInformation<T, ID> entityInformation;
 
     /**
      * Creates a new {@link SimpleMarklogicRepository} for the given {@link MarklogicEntityInformation} and {@link MarklogicTemplate}.

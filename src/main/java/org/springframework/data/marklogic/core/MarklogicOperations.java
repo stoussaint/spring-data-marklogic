@@ -170,6 +170,10 @@ public interface MarklogicOperations {
 
     void invokeAdhocQuery(String query, MarklogicInvokeOperationOptions options);
 
+    <T> String resolveDefaultCollection(T entity, MarklogicOperationOptions options);
+
+    <T> Object resolveContentIdentifier(T entity);
+
     /**
      * Returns the underlying {@link MarklogicConverter}.
      *

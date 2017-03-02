@@ -384,6 +384,33 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     @Override
+    public <T> String resolveDefaultCollection(T entity, MarklogicOperationOptions options) {
+        MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(entity.getClass());
+        String defaultCollection = options.defaultCollection() == null ? persistentEntity.getDefaultCollection() : options.defaultCollection();
+        return expandDefaultCollection(defaultCollection, new DocumentExpressionContext() {
+            @Override
+            public Class<?> getEntityClass() {
+                return entity.getClass();
+            }
+
+            @Override
+            public Object getEntity() {
+                return entity;
+            }
+
+            @Override
+            public Object getId() {
+                return resolveMarklogicIdentifier(entity);
+            }
+        });
+    }
+
+    @Override
+    public <T> Object resolveContentIdentifier(T entity) {
+        return retrieveIdentifier(entity);
+    }
+
+    @Override
     public MarklogicConverter getConverter() {
         return this.marklogicConverter;
     }
@@ -422,6 +449,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         maybeEmitEvent(new BeforeSaveEvent<>(objectToSave, content, uri));
 
         doInsertContent(content);
+        doPostInsert(uri, objectToSave);
 
         maybeEmitEvent(new AfterSaveEvent<>(objectToSave, content, uri));
     }
@@ -838,6 +866,22 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
         throw new MappingException("Unexpected identifier type " + idProperty.getClass());
     }
+
+    private <T> void doPostInsert(String uri, T objectToSave) {
+        MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(objectToSave.getClass());
+        MarklogicIdentifier identifier = resolveMarklogicIdentifier(objectToSave);
+        if (persistentEntity.idInPropertyFragment()) {
+            invokeAdhocQuery(String.format(
+                    "declare namespace _id=\"%s\";\n" +
+                    "xdmp:document-set-property(\"%s\", element _id:%s {\"%s\"})",
+                    identifier.qname().getNamespaceURI(),
+                    uri,
+                    identifier.qname().getLocalPart(),
+                    identifier.value()
+            ), new MarklogicInvokeOperationOptions() {});
+        }
+    }
+
 
     interface DocumentExpressionContext {
         Class<?> getEntityClass();
