@@ -869,8 +869,8 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     private <T> void doPostInsert(String uri, T objectToSave) {
         MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(objectToSave.getClass());
-        MarklogicIdentifier identifier = resolveMarklogicIdentifier(objectToSave);
         if (persistentEntity.idInPropertyFragment()) {
+            MarklogicIdentifier identifier = resolveMarklogicIdentifier(objectToSave);
             invokeAdhocQuery(String.format(
                     "declare namespace _id=\"%s\";\n" +
                     "xdmp:document-set-property(\"%s\", element _id:%s {\"%s\"})",
