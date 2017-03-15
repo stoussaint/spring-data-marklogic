@@ -65,6 +65,7 @@ public class MarklogicTemplateTest {
     ArgumentCaptor<String> queryArgumentCaptor;
 
     @Before
+    @SuppressWarnings("unchecked")
     public void setup() throws Exception {
         when(contentSource.newSession()).thenReturn(session);
         MappingContext<BasicMarklogicPersistentEntity<?>, MarklogicPersistentProperty> marklogicMappingContext = new MarklogicMappingContext();
@@ -215,8 +216,8 @@ public class MarklogicTemplateTest {
 
     static class SimpleEntity {
 
-        public String id;
-        public String name;
+        String id;
+        String name;
 
         SimpleEntity() {}
 
@@ -241,8 +242,8 @@ public class MarklogicTemplateTest {
     }
 
     static class NonAnnotatedEntity {
-        public String id;
-        public String name;
+        String id;
+        String name;
 
         NonAnnotatedEntity(String id, String name) {
             this.id = id;

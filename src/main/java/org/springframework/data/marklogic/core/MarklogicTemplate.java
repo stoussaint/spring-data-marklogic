@@ -58,7 +58,7 @@ import java.util.stream.Stream;
  * @author Stéphane Toussaint
  */
 public class MarklogicTemplate implements MarklogicOperations, ApplicationEventPublisherAware {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(MarklogicTemplate.class);
 
     private static final SpelExpressionParser PARSER = new SpelExpressionParser();
@@ -220,8 +220,9 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T findById(Object id, Class<T> entityClass, MarklogicOperationOptions options) {
-        final Class<T> targetEntityClass = options.entityClass() == null ? entityClass : options.entityClass();
+        final Class<T> targetEntityClass = options.entityClass() == null ? entityClass : (Class<T>) options.entityClass();
         MarklogicIdentifier identifier = resolveMarklogicIdentifier(id, targetEntityClass);
         final String targetCollection = retrieveTargetCollection(expandDefaultCollection(options.defaultCollection(), new DocumentExpressionContext() {
             @Override
@@ -248,7 +249,14 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         if (isIdInPropertyFragment) {
             sb.append("cts:properties-fragment-query(");
         }
-        sb.append("cts:element-value-query(fn:QName(\"" + identifier.qname().getNamespaceURI() + "\", \"" + identifier.qname().getLocalPart() + "\"), \"" + identifier.value() + "\")");
+        sb
+            .append("cts:element-value-query(fn:QName(\"")
+            .append(identifier.qname().getNamespaceURI())
+            .append("\", \"")
+            .append(identifier.qname().getLocalPart())
+            .append("\"), \"")
+            .append(identifier.value())
+            .append("\")");
         if (isIdInPropertyFragment) {
             sb.append(")");
         }
@@ -482,7 +490,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     /**
      * Populates the id property of the saved object, if it's not set already.
      *
-     * @param objectToSave
+     * @param objectToSave The object currently saved
      */
     private void generateIdIfNecessary(Object objectToSave) {
 
@@ -549,7 +557,13 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         if (isIdInPropertyFragment) {
             sb.append("cts:properties-fragment-query(");
         }
-        sb.append("cts:element-value-query(fn:QName(\"" + identifier.qname().getNamespaceURI() + "\", \"" + identifier.qname().getLocalPart() + "\"), \"" + identifier.value() + "\")");
+        sb.append("cts:element-value-query(fn:QName(\"")
+                .append(identifier.qname().getNamespaceURI())
+                .append("\", \"")
+                .append(identifier.qname().getLocalPart())
+                .append("\"), \"")
+                .append(identifier.value())
+                .append("\")");
         if (isIdInPropertyFragment) {
             sb.append(")");
         }
@@ -702,7 +716,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
      * to a {@link LiteralExpression} (indicating that no subsequent evaluation is necessary).
      *
      * @param urlPattern can be {@literal null}
-     * @return
+     * @return the dynamic Expression if any or {@literal null}
      */
     private static Expression detectExpression(String urlPattern) {
         if (!StringUtils.hasText(urlPattern)) {
@@ -821,7 +835,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         return "cts:collection-query('" + defaultCollection + "')";
     }
 
-    private <T> MarklogicIdentifier resolveMarklogicIdentifier(Object object) {
+    private MarklogicIdentifier resolveMarklogicIdentifier(Object object) {
         return resolveMarklogicIdentifier(retrieveIdentifier(object), getIdPropertyFor(object.getClass()));
     }
 
