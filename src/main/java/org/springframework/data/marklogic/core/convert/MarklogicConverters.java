@@ -58,6 +58,8 @@ abstract class MarklogicConverters {
     enum EntityToStringJAXBConverter implements ConditionalGenericConverter {
         INSTANCE;
 
+        private Map<Class<?>, Jaxb2Marshaller> cachedJaxb2Marshaller = new HashMap<>();
+
         @Override
         public Set<ConvertiblePair> getConvertibleTypes() {
             return Collections.singleton(new ConvertiblePair(Object.class, Serializable.class));
@@ -70,8 +72,8 @@ abstract class MarklogicConverters {
 
         @Override
         public String convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
-            Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-            marshaller.setPackagesToScan(sourceType.getType().getPackage().getName());
+            Jaxb2Marshaller marshaller = buildJaxb2Marshaller(cachedJaxb2Marshaller, sourceType);
+
             StringWriter writer = new StringWriter();
             marshaller.marshal(source, new StreamResult(writer));
             return writer.toString();
@@ -86,6 +88,8 @@ abstract class MarklogicConverters {
     enum ResultItemToEntityJAXBConverter implements ConditionalGenericConverter {
         INSTANCE;
 
+        private Map<Class<?>, Jaxb2Marshaller> cachedJaxb2Marshaller = new HashMap<>();
+
         @Override
         public Set<ConvertiblePair> getConvertibleTypes() {
             return Collections.singleton(new ConvertiblePair(ResultItem.class, Object.class));
@@ -99,10 +103,9 @@ abstract class MarklogicConverters {
         @Override
         public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
             ResultItem resultItem = (ResultItem) source;
-
             InputStream inputStream = resultItem.asInputStream();
-            Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-            marshaller.setPackagesToScan(targetType.getType().getPackage().getName());
+
+            Jaxb2Marshaller marshaller = buildJaxb2Marshaller(cachedJaxb2Marshaller, targetType);
             return marshaller.unmarshal(new StreamSource(inputStream));
         }
     }
@@ -190,4 +193,15 @@ abstract class MarklogicConverters {
         }
     }
 
+    private static Jaxb2Marshaller buildJaxb2Marshaller(Map<Class<?>, Jaxb2Marshaller> cachedJaxb2Marshaller, TypeDescriptor type) {
+        final Class<?> typeClass = type.getType();
+        if (cachedJaxb2Marshaller.containsKey(typeClass)) {
+            return cachedJaxb2Marshaller.get(typeClass);
+        } else {
+            Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
+            marshaller.setPackagesToScan(typeClass.getPackage().getName());
+            cachedJaxb2Marshaller.put(typeClass, marshaller);
+            return marshaller;
+        }
+    }
 }
