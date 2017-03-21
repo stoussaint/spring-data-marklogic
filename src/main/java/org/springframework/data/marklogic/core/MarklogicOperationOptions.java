@@ -15,4 +15,8 @@ public interface MarklogicOperationOptions {
         return false;
     }
 
+    default Class entityClass() {
+        return null;
+    }
+
 }

@@ -50,27 +50,14 @@ public class MappingMarklogicConverterTest {
         assertThat(contentHolder.getContent(), CoreMatchers.is("<person><id>1</id></person>"));
     }
 
-    @Test
-    public void computeUriForAnnotatedObject() throws Exception {
-        MappingMarklogicConverter mappingMarklogicConverter = createConverterWithDelegates();
-        String uri = mappingMarklogicConverter.computeUri(new Person("me"));
-        assertThat(uri, CoreMatchers.is("/person/me.xml"));
-    }
-
-    @Test
-    public void computeDefaultCollectionsForAnnotatedObject() throws Exception {
-        MappingMarklogicConverter mappingMarklogicConverter = createConverterWithDelegates();
-        String defaultCollection = mappingMarklogicConverter.computeDefaultCollection(new Person("me"));
-        assertThat(defaultCollection, CoreMatchers.equalTo("collection:Person"));
-    }
-
     class UnConvertibleObject {}
 
     class ConvertibleObject {}
 
     @Document(
             uri = "/person/#{id}.xml",
-            defaultCollection = "collection:#{getClass().getSimpleName()}"
+            defaultCollectionPrefix = "collection",
+            defaultCollection = "#{getClass().getSimpleName()}"
     )
     class Person {
         public String id;

@@ -33,13 +33,25 @@ public class BasicMarklogicPersistentEntity<T> extends BasicPersistentEntity<T, 
 
         if (document != null) {
             this.uri = StringUtils.hasText(document.uri()) ? document.uri() : fallback;
-            this.defaultCollection = StringUtils.hasText(document.defaultCollection()) ? document.defaultCollection() : null;
+            this.defaultCollection = buildDefaultCollection(document);
             this.idInPropertyFragment = document.idInPropertyFragment();
         } else {
             this.uri = fallback;
             this.defaultCollection = null;
             this.idInPropertyFragment = false;
         }
+    }
+
+    private String buildDefaultCollection(Document document) {
+        StringBuilder sb = new StringBuilder();
+        if (StringUtils.hasText(document.defaultCollectionPrefix())) {
+            sb.append(document.defaultCollectionPrefix());
+            sb.append(":");
+        }
+        if (StringUtils.hasText(document.defaultCollection())) {
+            sb.append(document.defaultCollection());
+        }
+        return sb.length() > 0 ? sb.toString() : null;
     }
 
     /**

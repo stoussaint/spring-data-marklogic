@@ -1,5 +1,6 @@
 package org.springframework.data.marklogic.repository;
 
+import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.PagingAndSortingRepository;
@@ -34,5 +35,21 @@ public interface MarklogicRepository<T, ID extends Serializable>
      * @see org.springframework.data.repository.PagingAndSortingRepository#findAll(org.springframework.data.domain.Sort)
      */
     List<T> findAll(Sort sort);
+
+    /*
+     * (non-Javadoc)
+     * @see org.springframework.data.repository.CrudRepository#findAll(java.lang.Iterable)
+     */
+    List<T> findAll(Iterable<ID> ids);
+
+    /* (non-Javadoc)
+         * @see org.springframework.data.repository.query.QueryByExampleExecutor#findAll(org.springframework.data.domain.Example)
+         */
+    <S extends T> List<S> findAll(Example<S> example);
+
+    /* (non-Javadoc)
+	 * @see org.springframework.data.repository.query.QueryByExampleExecutor#findAll(org.springframework.data.domain.Example, org.springframework.data.domain.Sort)
+	 */
+    <S extends T> List<S> findAll(Example<S> example, Sort sort);
 
 }

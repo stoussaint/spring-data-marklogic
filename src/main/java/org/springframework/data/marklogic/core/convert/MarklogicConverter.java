@@ -15,18 +15,4 @@ public interface MarklogicConverter extends
         MarklogicWriter<Object>,
         EntityReader<Object, MarklogicContentHolder> {
 
-    /**
-     * {@link MarklogicConverter} has the ability to compute content uri
-     * @param source the stored object
-     * @return the computed uri
-     */
-    String computeUri(Object source);
-
-    /**
-     * {@link MarklogicConverter} has the ability to compute default collection
-     * @param source the stored object
-     * @return the computed default collection
-     */
-    String computeDefaultCollection(Object source);
-
 }

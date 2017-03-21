@@ -48,7 +48,7 @@ public abstract class AbstractMarklogicConverter implements MarklogicConverter, 
     private void initializeConverters() {
         List<Object> toRegister = new ArrayList<>();
         toRegister.addAll(converters);
-        toRegister.addAll(MarklogicConverters.getConvertersToRegister());
+        toRegister.addAll(MarklogicConverters.getConvertersToRegister(conversionService));
 
         for (Object converter : toRegister) {
             boolean added = false;

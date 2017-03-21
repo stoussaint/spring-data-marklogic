@@ -1,10 +1,12 @@
 package org.springframework.data.marklogic.config;
 
 import com.marklogic.xcc.ContentSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.data.mapping.context.MappingContextIsNewStrategyFactory;
 import org.springframework.data.mapping.context.PersistentEntities;
@@ -28,18 +30,28 @@ import java.util.*;
 @Configuration
 public abstract class AbstractMarklogicConfiguration {
 
+    @Autowired(required = false)
+    private GenericConversionService conversionService;
+
     /**
      * Return the name of the database to connect to.
      * @return must not be {@literal null}.
      */
     protected abstract String getDatabaseName();
 
+    protected void beforeMarklogicTemplateCreation(ContentSource contentSource) {};
+
+    protected void afterMarklogicTemplateCreation(MarklogicTemplate marklogicTemplate) {}
+
     @Bean
     public abstract MarklogicFactoryBean marklogicContentSource();
 
     @Bean
     public MarklogicTemplate marklogicTemplate(ContentSource contentSource) throws Exception {
-        return new MarklogicTemplate(contentSource, mappingMarklogicConverter());
+        beforeMarklogicTemplateCreation(contentSource);
+        MarklogicTemplate marklogicTemplate = new MarklogicTemplate(contentSource, mappingMarklogicConverter());
+        afterMarklogicTemplateCreation(marklogicTemplate);
+        return marklogicTemplate;
     }
 
     /**
@@ -88,7 +100,7 @@ public abstract class AbstractMarklogicConfiguration {
      */
     @Bean
     public MappingMarklogicConverter mappingMarklogicConverter() throws Exception {
-        MappingMarklogicConverter converter = new MappingMarklogicConverter(marklogicMappingContext());
+        MappingMarklogicConverter converter = new MappingMarklogicConverter(marklogicMappingContext(), conversionService);
         converter.setConverters(getConverters());
         return converter;
     }

@@ -2,24 +2,22 @@ package org.springframework.data.marklogic.core;
 
 import org.springframework.data.marklogic.repository.query.MarklogicEntityInformation;
 
-import java.io.Serializable;
-
 /**
  * --Description--
  *
  * @author Stéphane Toussaint
  */
-public class EntityInformationOperationOptions<T, ID extends Serializable> implements MarklogicCreateOperationOptions {
+public class EntityInformationOperationOptions implements MarklogicCreateOperationOptions {
 
-    private MarklogicEntityInformation<T, ID> entityInformation;
+    private MarklogicEntityInformation entityInformation;
 
     private String[] extraCollections;
 
-    public EntityInformationOperationOptions(MarklogicEntityInformation<T, ID> entityInformation) {
+    public EntityInformationOperationOptions(MarklogicEntityInformation entityInformation) {
         this(entityInformation, null);
     }
 
-    public EntityInformationOperationOptions(MarklogicEntityInformation<T, ID> entityInformation, String[] extraCollections) {
+    public EntityInformationOperationOptions(MarklogicEntityInformation entityInformation, String[] extraCollections) {
         this.entityInformation = entityInformation;
         this.extraCollections = extraCollections;
     }
@@ -42,5 +40,10 @@ public class EntityInformationOperationOptions<T, ID extends Serializable> imple
     @Override
     public boolean idInPropertyFragment() {
         return entityInformation.idInPropertyFragment();
+    }
+
+    @Override
+    public Class entityClass() {
+        return entityInformation.getJavaType();
     }
 }

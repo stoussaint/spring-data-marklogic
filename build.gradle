@@ -8,8 +8,14 @@ version '1.0-SNAPSHOT'
 apply plugin: 'java'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'maven-publish'
+apply plugin: 'jacoco'
 
 sourceCompatibility = 1.8
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:deprecation"
+    options.compilerArgs << "-Xlint:unchecked"
+}
 
 repositories {
     mavenLocal()
@@ -34,6 +40,7 @@ dependencies {
 
     compile("org.aspectj:aspectjweaver")
     compile ("org.springframework:spring-context")
+    compile ("org.springframework:spring-oxm")
     compile ("org.springframework:spring-tx")
     compile ("org.springframework.data:spring-data-commons")
 
