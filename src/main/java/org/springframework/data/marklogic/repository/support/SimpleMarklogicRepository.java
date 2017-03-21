@@ -70,9 +70,9 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
         Assert.notNull(entity, "entity must not be null");
 
         if (entityInformation.isNew(entity)) {
-            marklogicOperations.insert(entity, new EntityInformationOperationOptions<>(entityInformation));
+            marklogicOperations.insert(entity, new EntityInformationOperationOptions(entityInformation));
         } else {
-            marklogicOperations.save(entity, new EntityInformationOperationOptions<>(entityInformation));
+            marklogicOperations.save(entity, new EntityInformationOperationOptions(entityInformation));
         }
 
         return entity;
@@ -88,7 +88,7 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
     @Override
     public T findOne(ID id) {
         Assert.notNull(id, "The given id must not be null");
-        return marklogicOperations.findById(id, entityInformation.getJavaType(), new EntityInformationOperationOptions<>(entityInformation));
+        return marklogicOperations.findById(id, entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation));
     }
 
     @Override
@@ -98,7 +98,7 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
 
     @Override
     public List<T> findAll() {
-        return marklogicOperations.find(new Object(), entityInformation.getJavaType(), new EntityInformationOperationOptions<>(entityInformation));
+        return marklogicOperations.find(new Object(), entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation));
     }
 
     @Override
@@ -114,7 +114,7 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
     @Override
     @Transactional
     public void delete(ID id) {
-        marklogicOperations.remove(id, entityInformation.getJavaType());
+        marklogicOperations.remove(id, entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation));
     }
 
     @Override
@@ -132,7 +132,7 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
     @Override
     @Transactional
     public void deleteAll() {
-        marklogicOperations.removeAll(entityInformation.getJavaType(), new EntityInformationOperationOptions<>(entityInformation));
+        marklogicOperations.removeAll(entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation));
     }
 
     @Override

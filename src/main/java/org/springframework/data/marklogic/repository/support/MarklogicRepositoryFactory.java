@@ -69,7 +69,6 @@ public class MarklogicRepositoryFactory extends RepositoryFactorySupport {
     @SuppressWarnings("unchecked")
     public <T, ID extends Serializable> MarklogicEntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
         MarklogicPersistentEntity<?> entity = mappingContext.getPersistentEntity(domainClass);
-
         return new MappingMarklogicEntityInformation<>((MarklogicPersistentEntity<T>) entity);
     }
 
