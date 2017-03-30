@@ -16,7 +16,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.data.mapping.context.MappingContext;
-import org.springframework.data.marklogic.core.convert.MappingMarklogicConverter;
+import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import org.springframework.data.marklogic.core.convert.MarklogicContentHolder;
 import org.springframework.data.marklogic.core.convert.MarklogicConverter;
 import org.springframework.data.marklogic.core.mapping.BasicMarklogicPersistentEntity;
@@ -83,7 +83,7 @@ public class MarklogicTemplateTest {
     @Test
     public void defaultsConverterToMappingMarklogicConverter() throws Exception {
         MarklogicTemplate template = new MarklogicTemplate(contentSource);
-        assertTrue(ReflectionTestUtils.getField(template, "marklogicConverter") instanceof MappingMarklogicConverter);
+        assertTrue(ReflectionTestUtils.getField(template, "marklogicConverter") instanceof MarklogicMappingConverter);
     }
 
     @Test

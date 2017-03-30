@@ -13,7 +13,7 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.domain.Example;
 import org.springframework.data.marklogic.core.MarklogicFactoryBean;
 import org.springframework.data.marklogic.core.MarklogicTemplate;
-import org.springframework.data.marklogic.core.convert.MappingMarklogicConverter;
+import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import org.springframework.data.marklogic.core.convert.MarklogicConverter;
 import org.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import org.springframework.data.marklogic.datasource.ContentSourceTransactionManager;
@@ -189,7 +189,7 @@ public class SimpleMarklogicRepositoryTest {
 
         @Bean
         public MarklogicConverter marklogicConverter() {
-            MappingMarklogicConverter marklogicConverter = new MappingMarklogicConverter(new MarklogicMappingContext());
+            MarklogicMappingConverter marklogicConverter = new MarklogicMappingConverter(new MarklogicMappingContext());
             marklogicConverter.setConverters(Arrays.asList(personConverter()));
             return marklogicConverter;
         }

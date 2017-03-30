@@ -1,0 +1,8 @@
+[[new-features]]
+= New & Noteworthy
+
+[[new-features.1-0-0]]
+== What's new in Spring Data Marklogic 1.0
+
+* It's only the beginning you know !
+

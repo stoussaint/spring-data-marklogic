@@ -158,6 +158,10 @@ public interface MarklogicOperations {
      */
     <T> T findOne(Object query, Class<T> entityClass, MarklogicOperationOptions options);
 
+    <T> List<T> findAll(Class<T> entityClass);
+
+    <T> List<T> findAll(Class<T> entityClass, MarklogicOperationOptions options);
+
     <T> List<T> invokeModuleAsList(String moduleName, Class<T> resultClass, MarklogicInvokeOperationOptions options);
 
     <T> T invokeModule(String moduleName, Class<T> resultClass, MarklogicInvokeOperationOptions options);

@@ -1,0 +1,107 @@
+[[mapping-chapter]]
+= Mapping
+
+When dealing with content from/to Marklogic a `MarklogicConverter` come into play to perform actually perform conversion operation from the Marklogic Content API to the domain Entity class to use.
+A default `MarklogicMappingConverter` is provided to implement this read/write operations. Those operations will mostly be delegated to the ConversionService (expect for reading native content).
+
+[[mapping-conversion]]
+== Data mapping and type conversion
+
+A default `MarklogicConverters` is called to register some XML and Marklogic oriented conversion.
+
+When retrieve content from Marklogic :
+
+- Native type are returned as it
+- Object annotated @XmlRootElement are mapped from the given xml following Jaxb rules
+
+When dealing with invocation parameters. Variable are converted to XdmValue following the given rules for native values
+
+[cols="3,1,6", options="header"]
+.Type
+|===
+| Type
+| Type conversion
+| Saple
+
+| `null`
+| `XSString`
+| `''`
+
+| `String`
+| `XSString`
+| `'param'`
+
+| `Boolean`
+| `XSBoolean`
+| `fn:true()`
+
+| `Integer`
+| `XSInteger`
+| `42`
+
+| `Long`
+| `XSLong`
+| `4242`
+|===
+
+For other objects, the default converter wil be able to convert @XmlRootElement annotated object to XSString using JaxbMarshalling.
+
+For instance the following person
+
+[source,java]
+----
+new Person("stephane", 37);
+----
+
+Will be transform as a String in its xml format
+
+[source,xml]
+----
+<person>
+    <id>42</id>
+    <name>stephane</name>
+    <age>37</age>
+</person>
+----
+
+Finally, collection of entities are wrap in there xml representation
+
+[source,java]
+----
+    Arrays.asList(new Person("stephane", 37), new Person("sahbi", 27))
+----
+
+[source,xml]
+----
+<wrapper>
+    <person>
+        <id>42</id>
+        <name>stephane</name>
+        <age>37</age>
+    </person>
+    <person>
+        <id>12</id>
+        <name>sahbi</name>
+        <age>27</age>
+    </person>
+</wrapper>
+----
+
+NOTE: The variable are really String représentation of the XML. To use XPath on such variables you primarily need to unquote them. See https://docs.marklogic.com/xdmp:unquote[xdmp:unquote^].
+This is because XCC client don't natively support XML Node variables nor sequences.
+
+[[mapping-usage-events]]
+=== Mapping Framework Events
+
+Events are fired throughout the lifecycle of the mapping process. This is described in the <<marklogic.mapping-usage.events,Lifecycle Events>> section.
+
+Simply declaring these beans in your Spring ApplicationContext will cause them to be invoked whenever the event is dispatched.
+
+[[mapping-explicit-converters]]
+=== Overriding Mapping with explicit Converters
+
+When storing and querying your objects it is convenient to have a `MarklogicConverter` instance handle the mapping of all contents. However, sometimes you may want the `MarklogicConverter`s do most of the work but allow you to selectively handle the conversion for a particular type or to optimize performance.
+
+To selectively handle the conversion yourself, register one or more one or more `org.springframework.core.convert.converter.Converter` instances with the MarklogicConverter.
+
+NOTE: Spring 3.0 introduced a core.convert package that provides a general type conversion system. This is described in detail in the Spring reference documentation section entitled http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/html/validation.html#core-convert[Spring Type Conversion].

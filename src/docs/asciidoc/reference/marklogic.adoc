@@ -1,0 +1,462 @@
+[[marklogic.core]]
+= Marklogic support
+
+The Marklogic support contains a wide range of features which are summarized below.
+
+* Spring configuration support using Java based @Configuration classes for a Marklogic XCC (XML Contentbase Connector).
+* MarklogicTemplate helper class that increases productivity performing common Marklogic operations. Includes integrated object mapping between documents and POJOs.
+* Exception translation into Spring's portable Data Access Exception hierarchy
+* Feature Rich Object Mapping integrated with Spring's Conversion Service
+* Annotation based mapping metadata but extensible to support other metadata formats
+* Persistence and mapping lifecycle events
+* Automatic implementation of Repository interfaces including support for custom finder methods.
+* QueryDSL integration to support type-safe queries.
+
+For most tasks you will find yourself using `MarklogicTemplate` or the Repository support that both leverage the rich mapping functionality. `MarklogicTemplate` is the place to look for accessing low level functionality. The goal with naming conventions on various API artifacts is to abstract comprehensive native XQuery operations as much as possible.
+
+[[marklogic-getting-started]]
+== Getting Started
+
+Spring Marklogic support requires Marklogic 8.x or higher and Java SE 6 or higher.
+
+First you need to set up a running Marklogic server with an XCC support. Refer to the http://docs.marklogic.com/guide/getting-started/[Marklogic Quick Start guide^] and http://docs.marklogic.com/guide/xcc[XCC Developer's Guide^].
+
+Then you will need to add the spring-data-marklogic dependency in your project.
+
+[source,xml,subs="verbatim,attributes"]
+----
+<dependencies>
+
+  <!-- other dependency elements omitted -->
+
+  <dependency>
+    <groupId>org.springframework.data</groupId>
+    <artifactId>spring-data-marklogic</artifactId>
+    <version>{project-version}</version>
+  </dependency>
+
+</dependencies>
+----
+
+Create a simple Person class to persist:
+
+[source,java]
+----
+package org.spring.marklogic.example;
+
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement <1>
+public class Person {
+    private String id;
+    private String name;
+    private int age;
+
+    public Person() {} <2>
+
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    // Getter/Setter omitted for clarity
+
+    @Override
+    public String toString() {
+        return "Person [id=" + id + ", name=" + name + ", age=" + age + "]";
+    }
+}
+----
+<1> A simple way to transform Pojo to XML is by using Jaxb which required this annotation
+<2> Jaxb required also a default empty constructor
+
+And a main application to run
+
+[source,java]
+----
+package org.spring.marklogic.example;
+
+import com.marklogic.xcc.ContentSourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.marklogic.core.MarklogicOperations;
+import org.springframework.data.marklogic.core.MarklogicTemplate;
+import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
+import org.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
+
+public class MarklogicApp {
+
+    private static Logger LOGGER = LoggerFactory.getLogger(MarklogicApp.class);
+
+    public static void main(String[] args) throws Exception {
+        MappingMarklogicConverter marklogicMappingConverter = new MappingMarklogicConverter(new MarklogicMappingContext());
+        marklogicMappingConverter.afterPropertiesSet();
+        MarklogicOperations marklogicOps = new MarklogicTemplate(ContentSourceFactory.newContentSource("localhost", 8888, "admin", "admin"), marklogicMappingConverter);
+
+        Person person = new Person("Joe", 34);
+
+        marklogicOps.insert(person);
+        LOGGER.info(marklogicOps.findOne(person.getId(), Person.class).toString());
+        marklogicOps.remove(person);
+    }
+}
+----
+
+This will produce the following output
+
+[source]
+----
+11:44:22.519 [main] DEBUG org.springframework.data.marklogic.core.MarklogicTemplate - Insert entity 'Person [id=369777aa-8daa-4b5e-8809-24a64b609e1c, name=Joe, age=34]' at '/content/person/369777aa-8daa-4b5e-8809-24a64b609e1c.xml' within 'null' default collection
+11:44:22.791 [main] INFO org.springframework.data.marklogic.sample.MarklogicApp - Person [id=369777aa-8daa-4b5e-8809-24a64b609e1c, name=Joe, age=34]
+11:44:22.804 [main] DEBUG org.springframework.data.marklogic.core.MarklogicTemplate - Remove 'Person [id=369777aa-8daa-4b5e-8809-24a64b609e1c, name=Joe, age=34]' from '/content/person/369777aa-8daa-4b5e-8809-24a64b609e1c.xml'
+----
+
+Even in this simple example, there are few things to take notice of
+
+* You can instantiate the central helper class of Spring Marklogic, <<marklogic-template,`MarklogicTemplate`>>, creating the standard `com.marklogic.xcc.ContentSource` through it's factory with connexion informations.
+* Note the usage of MappingMarklogicConverter and the afterPropertiesSet() which will register a default converter used to transform @XmlRootElement annotated POJO to xml content. This step is not required by relying on Ioc.
+* The mapper works against standard POJO objects without the need for any additional metadata (though you can optionally provide that information. See <<marklogic.mapping,here>>.).
+* Conventions are used for handling the id field.
+
+//[[marklogic.examples-repo]]
+//== Examples Repository
+//
+//There is an https://github.com/spring-projects/spring-data-examples[github repository with several examples] that you can download and play around with to get a feel for how the library works.
+
+[[marklogic-connectors]]
+== Connecting to Marklogic with Spring
+
+One of the first tasks when using Marklogic and Spring is to create a `com.marklogic.xcc.ContentSource` object using the IoC container. You can do this using Java based bean metadata.
+
+[[marklogic.marklogic-java-config]]
+=== Registering an XCC ContentSource instance using Java based metadata
+
+An example of using Java based bean metadata to register an instance of a `com.marklogic.xcc.ContentSource` is shown below
+
+.Registering a com.marklogic.xcc.ContentSource object using Java based bean metadata
+====
+[source,java]
+----
+import com.marklogic.xcc.ContentSourceFactory;
+import com.marklogic.xcc.ContentSource;
+import com.marklogic.xcc.exceptions.XccConfigException;
+
+@Configuration
+public class AppConfig {
+
+  /*
+   * Use the standard Marklogic driver API to create a com.marklogic.xcc.ContentSource instance.
+   */
+   public @Bean ContentSource contentSource() throws XccConfigException {
+       return ContentSourceFactory.newContentSource("localhost", 8888, "login", "password");
+   }
+}
+----
+====
+
+This approach allows you to use the standard XCC `com.marklogic.xcc.ContentSource` API that you may already be used to using but also pollutes the code with the XccConfigException checked exception. The use of the checked exception is not desirable as Java based bean metadata uses methods as a means to set object dependencies, making the calling code cluttered.
+
+An alternative is to register an instance of `com.marklogic.xcc.ContentSource` instance with the container using Spring's `MarklogicFactoryBean`. As compared to instantiating a `com.marklogic.xcc.ContentSource` instance directly, the FactoryBean approach does not throw a checked exception and has the added advantage of also providing the container with an ExceptionTranslator implementation that translates Marklogic exceptions to exceptions in Spring's portable `DataAccessException` hierarchy for data access classes annotated with the `@Repository` annotation. This hierarchy and use of `@Repository` is described in http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/html/dao.html[Spring's DAO support features].
+
+An example of a Java based bean metadata that supports exception translation on `@Repository` annotated classes is shown below:
+
+.Registering a com.marklogic.xcc.ContentSource object using Spring's MarklogicFactoryBean and enabling Spring's exception translation support
+====
+[source,java]
+----
+@Configuration
+public class AppConfig {
+
+    /*
+     * Factory bean that creates the XCC com.marklogic.xcc.ContentSource instance
+     */
+     public @Bean MarklogicFactoryBean marklogic() {
+          MarklogicFactoryBean marklogic = new MarklogicFactoryBean();
+          marklogic.setUri("xdbc://login:password@localhost:8888");
+          return marklogic;
+     }
+}
+----
+====
+
+To access the `com.marklogic.xcc.ContentSource` object created by the `MarklogicFactoryBean` in other `@Configuration` or your own classes, use a "`private @Autowired ContentSource contentSource;`" field.
+
+[[marklogic-template]]
+== Introduction to MarklogicTemplate
+
+The class `MarklogicTemplate`, located in the package `org.springframework.data.marklogic.core`, is the central class of the Spring's Marklogic support providing a rich feature set to interact with the database. The template offers convenience operations to create, update, delete and query for Marklogic documents and provides a mapping between your domain objects and Marklogic (XML) documents.
+
+NOTE: Once configured, `MarklogicTemplate` is thread-safe and can be reused across multiple instances.
+
+The mapping between MarklogicTemplate documents and domain classes is done by delegating to an implementation of the interface `MarklogicConverter`. Spring provides a `MarklogicMappingConverter`, but you can also write your own converter. Please refer to the section on <<marklogic.converters,MarklogicConverters>> for more detailed information.
+
+The `MarklogicTemplate` class implements the interface `MarklogicOperations`.
+
+NOTE: The preferred way to reference the operations on `MarklogicTemplate` instance is via its interface `MarklogicOperations`.
+
+The default converter implementation used by `MarklogicTemplate` is MarklogicMappingConverter. While the `MarklogicMappingConverter` can make use of additional metadata to specify the mapping of objects to documents it is also capable of converting objects that contain no additional metadata.
+
+Another central feature of MarklogicTemplate is exception translation of exceptions thrown in the Marklogic ContentSource Java driver into Spring's portable Data Access Exception hierarchy. Refer to the section on <<marklogic.exception,exception translation>> for more information.
+
+Now let's look at an example of how to work with the `MarklogicTemplate` in the context of the Spring container.
+
+[[marklogic-template.instantiating]]
+=== Instantiating MarklogicTemplate
+
+You can use Java to create and register an instance of `MarklogicTemplate` as shown below.
+
+.Registering a com.marklogic.xcc.ContentSource object and enabling Spring's exception translation support
+====
+[source,java]
+----
+@Configuration
+public class AppConfig {
+
+  public @Bean ContentSource contentSource() throws Exception {
+      return new ContentSourceFactory.newContentSource("localhost", 8888, "login", "password");
+  }
+
+  public @Bean MarklogicTemplate marklogicTemplate() throws Exception {
+      return new MarklogicTemplate(contentSource());
+  }
+}
+----
+====
+
+There are two overloaded constructors of MarklogicTemplate. These are
+
+* `MarklogicTemplate(ContentSource contentSource)` - takes the `com.marklogic.xcc.ContentSource` object to operate against.
+* `MarklogicTemplate(ContentSource contentSource, MarklogicConverter marklogicConverter)` - adds a MarklogicConverter to use for mapping.
+
+NOTE: The preferred way to reference the operations on `MarklogicTemplate` instance is via its interface `MarklogicOperations`.
+
+[[marklogic-template.save-update-remove]]
+== Saving, Updating, and Removing Documents
+
+`MarklogicTemplate` provides a simple way for you to save, update, and delete your domain objects and map those objects to documents stored in Marklogic.
+
+Given a simple class such as Person (as defined earlier)
+
+You can save, update and delete the object as shown below.
+
+NOTE: `MarklogicOperations` is the interface that `MarklogicTemplate` implements.
+
+[source,java]
+----
+package org.springframework.data.marklogic.sample;
+
+import java.util.List;
+
+import com.marklogic.xcc.ContentSourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Example;
+import org.springframework.data.marklogic.core.MarklogicOperations;
+import org.springframework.data.marklogic.core.MarklogicTemplate;
+import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
+import org.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
+
+public class MarklogicApp {
+
+    private static final Logger log = LoggerFactory.getLogger(MarklogicApp.class);
+
+    public static void main(String[] args) throws Exception {
+        MarklogicMappingConverter marklogicMappingConverter = new MarklogicMappingConverter(new MarklogicMappingContext());
+        marklogicMappingConverter.afterPropertiesSet();
+
+        MarklogicOperations marklogicOps = new MarklogicTemplate(
+                ContentSourceFactory.newContentSource("localhost", 8888, "login", "password"),
+                marklogicMappingConverter
+        );
+
+        Person p = new Person("Joe", 34);
+
+        // Insert is used to initially store the object into the database.
+        marklogicOps.insert(p);
+        log.info("Insert: " + p);
+
+        // Find
+        p = marklogicOps.findById(p.getId(), Person.class);
+        log.info("Found: " + p);
+
+        // Update
+        p.setAge(35);
+        marklogicOps.save(p);
+        p = marklogicOps.findOne(Example.of(new Person("Joe")), Person.class);
+        log.info("Updated: " + p);
+
+        // Delete
+        marklogicOps.remove(p);
+
+        // Check that deletion worked
+        List<Person> people =  marklogicOps.findAll(Person.class);
+        log.info("Number of people = : " + people.size());
+
+    }
+}
+----
+
+This would produce the following log output (including debug messages from `MarklogicTemplate` itself)
+
+[source]
+----
+11:34:27.112 [main] DEBUG org.springframework.data.marklogic.core.MarklogicTemplate - Insert entity 'Person [id=666a7760-c875-4435-bc3b-5aae666d2faa, name=Joe, age=34]' at '/content/person/666a7760-c875-4435-bc3b-5aae666d2faa.xml' within 'null' default collection
+11:34:27.481 [main] INFO org.springframework.data.marklogic.sample.MarklogicApp - Insert: Person [id=666a7760-c875-4435-bc3b-5aae666d2faa, name=Joe, age=34]
+11:34:27.651 [main] INFO org.springframework.data.marklogic.sample.MarklogicApp - Found: Person [id=666a7760-c875-4435-bc3b-5aae666d2faa, name=Joe, age=34]
+11:34:27.679 [main] DEBUG org.springframework.data.marklogic.core.MarklogicTemplate - Insert entity 'Person [id=666a7760-c875-4435-bc3b-5aae666d2faa, name=Joe, age=35]' at '/content/person/666a7760-c875-4435-bc3b-5aae666d2faa.xml' within 'null' default collection
+11:34:27.696 [main] INFO org.springframework.data.marklogic.sample.MarklogicApp - Updated: Person [id=666a7760-c875-4435-bc3b-5aae666d2faa, name=Joe, age=35]
+11:34:27.699 [main] DEBUG org.springframework.data.marklogic.core.MarklogicTemplate - Remove 'Person [id=666a7760-c875-4435-bc3b-5aae666d2faa, name=Joe, age=35]' from '/content/person/666a7760-c875-4435-bc3b-5aae666d2faa.xml'
+11:34:27.708 [main] INFO org.springframework.data.marklogic.sample.MarklogicApp - Number of people = : 0
+----
+
+NOTE: This example is meant to show the use of save, update and remove operations on MarklogicTemplate and not to show complex mapping functionality
+
+[[marklogic-template.id-handling]]
+=== How the `id` field is handled in the mapping layer
+
+Marklogic use a URI to register a content. But as URI is to much repository oriented, Spring Data Marklogic relies on an simpler id. This id may be of String or UUID type.
+The following outlines what property will be mapped to the `id` document field:
+
+* A property or field annotated with `@Id` (`org.springframework.data.annotation.Id`) will be mapped to the `id` field.
+* A property or field without an annotation but named `id` will be mapped to the `id` field.
+
+The way the id field will be serialized as xml is delegated to the used converter. The default Jaxb provider will used defined name and namespace at field or package level.
+If nothing specified, the document will end up with a simple id element. So for the previous Person exemple :
+
+[source,xml]
+----
+<id>Joe</id>
+----
+
+[[marklogic-template.save-insert]]
+=== Methods for saving and inserting documents
+
+When inserting content the following apply.
+
+- If the entity as no id sets, a new identifier is generated by default as a String representation of UUID.randomUUID(). And the content is inserted
+- If the entity as an id set but no existing content in database with this id, then content will be inserted
+
+When inserting an entity in the repository, MarklogicTemplate compute some values.
+
+First, any content to be stored in a Marklogic repository needs a URI. By default the uri is build against the class name of the entity => /content/person/#{id}.xml (see `MarklogicUrlUtils`).
+This uri can be specifically defined using the @Document annotation with the uri attribute
+
+[source,xml]
+----
+@Document(uri = "/sample/contact/#{id}.xml")
+public class Person {}
+----
+
+Note that the uri can be expanded using SpEL (here with #{id}). This Expression context is build for the uri computed with the following parameters :
+
+- id : The id value of the entity (Using getId() or field annotated @Id)
+- entityClass : The entity tyoe (Class object)
+- entity : The current entity object
+
+Then the MarklogicTemplate will compute an optional default Collection. By default, no specific collection is defined. But it can be specified by @Document annotation with defaultCollection attribute.
+
+[source,xml]
+----
+@Document(uri = "/sample/contact/#{id}.xml", defaultCollection = "Person")
+public class Person {}
+----
+
+NOTE: However collection are not mandatory, it is recommended information to provide especially when dealing with such Repository oriented entities.
+
+In this final example, inserted Person will be at uri /sample/contact/anyid.xml and in a collection (see https://docs.marklogic.com/fn:collection[fn:collection]) named "Person".
+
+[[marklogic-template-update]]
+=== Updating documents
+
+When saving a content, the MarklogicTemplate will expect to find an existing content for the given entity.
+If a save operation is done on unset identifier or on non existent entity, then MarklogicTemplate will fallback on insertion mode.
+
+If the update operation is actually performed, the MarklogicTemplate will first query the database to retrieve the uri base on the identifier and the optional Collection.
+
+Finally the content is updated
+
+[[marklogic-template.delete]]
+=== Methods for removing documents
+
+You can use several overloaded methods to remove an object from the repository.
+
+* *remove* Remove the given document based on one of the following: a specific object instance, a query document criteria combined with a class.
+
+[[marklogic.query]]
+== Querying Documents
+
+Spring Data provide an advance API to query documents. Currently Spring Data Marklogic only support a very limited subset of such features.
+You may query content using the 'org.springframework.data.domain.Example'. When decorating your entity as an 'Example', it will result a query that will
+use any non null field as query constraint.
+
+[source,java]
+----
+    Person person = new Person("Joe");
+    person.setAge(35);
+    List<Person> persons = marklogicOps.findAll(Example.of(person), Person.class);
+----
+
+The MarklogicTemplate will then generate a query that will retrieve any Person with name=Joe and age=35
+
+[[marklogic-script-invocation]]
+=== Invoke XQuery Script
+
+Sometimes it may be necessary to rely on full xquery capabilities to express a complex operation that can't be handled by the simple MarklogicTemplate operations provided.
+In this case, you may want to execute custom XQuery scripts.
+
+You can achieve this in to ways :
+
+==== invokeAdhocQuery
+
+The MarklogicTemplate lets you execute plain XQuery.
+
+[source,java]
+----
+    final String name = "stephane";
+    marklogicOps.invokeAdhocQuery(
+        "declare variable $name as xs:string external;\n" + <1>
+        "xdmp:log(\"Hello \" || $name, \"info\")",
+
+        new MarklogicInvokeOperationOptions() { <2>
+            @Override
+            public Map<Object, Object> params() {
+                return new HashMap<Object, Object>(){{
+                    put("name", name);
+                }};
+            }
+        }
+    );
+----
+<1> The first parameter is the query to execute
+<2> The second operator is an optional MarklogicInvokeOperationOptions that you can you use for instance to provide variable values (as in this example)
+This operation will display 'Hello stephane' in the Marklogic logs (at info level).
+
+==== invokeModule
+
+You will preferably end up not writing xquery scripts within your Java code. Thus, the best way of invoking explicit Xquery script is by invoking xquery module script directly on the server.
+Now using the invokeModule method family, you only need to provide the uri of the module you want to call.
+As a prerequisite you will ensure that you have successfully register you module within the Module database attached to you XDBC server.
+
+[source,java]
+----
+    marklogicOps.invokeModule("/sample/hello.xqy", <1>
+        new MarklogicInvokeOperationOptions() { <2>
+           @Override
+           public Map<Object, Object> params() {
+               return new HashMap<Object, Object>(){{
+                   put("name", name);
+               }};
+           }
+        }
+    );
+----
+<1> The uri of the module to invoke
+<2> An optional MarklogicInvokeOperationOptions that you can you use for instance to provide variable values (as in this example)
+
+There is invoke method variation that permit to handle returned content by specifying the expected type as a Class.
+
+[source,java]
+.MarklogicOpertions xquery invocation methods
+----
+include::../../../main/java/org/springframework/data/marklogic/core/MarklogicOperations.java[lines=170;182;193;200;212;223]
+----

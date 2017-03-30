@@ -1,0 +1,143 @@
+[[marklogic.repositories]]
+= Marklogic repositories
+
+[[marklogic-repo-intro]]
+== Introduction
+
+This chapter will point out the specialties for repository support for Marklogic. This builds on the core repository support explained in <<repositories>>. So make sure you've got a sound understanding of the basic concepts explained there.
+
+[[marklogic-repo-usage]]
+== Usage
+
+To access domain entities stored in a Marklogic you can leverage our sophisticated repository support that eases implementing those quite significantly. To do so, simply create an interface for your repository:
+
+.Sample Person entity
+====
+[source,java]
+----
+public class Person {
+
+  @Id
+  private String id;
+  private String firstname;
+  private String lastname;
+  private Address address;
+
+  // … getters and setters omitted
+}
+----
+====
+
+We have a quite simple domain object here. Note that it has a property named `id` of type `String`. The default serialization mechanism used in `MarklogicTemplate` (which is backing the repository support) regards properties named id as document id. Currently we support `String`, `UUID` as id-types.
+
+.Basic repository interface to persist Person entities
+====
+[source,java]
+----
+public interface PersonRepository extends PagingAndSortingRepository<Person, String> {
+  // additional custom methods go here
+}
+----
+====
+
+Right now this interface simply serves typing purposes but we will add additional methods to it later. In your Spring configuration simply add
+
+.JavaConfig for repositories
+====
+[source,java]
+----
+@Configuration
+@EnableMarklogicRepositories
+class ApplicationConfig extends AbstractMarklogicConfiguration {
+
+  @Override
+  protected String getDatabaseName() {
+    return null; // Use the default database associated with target XCC connector
+  }
+
+  @Override
+  public MarklogicFactoryBean marklogicContentSource() {
+      MarklogicFactoryBean marklogicFactoryBean = new MarklogicFactoryBean();
+      marklogicFactoryBean.setUri("xdbc://admin:admin@localhost:8888");
+      return marklogicFactoryBean;
+  }
+
+  @Override
+  protected String getMappingBasePackage() {
+    return "com.sample.springdata.marklogic"
+  }
+}
+----
+====
+
+As our domain repository extends `PagingAndSortingRepository` it provides you with CRUD operations as well as methods for paginated and sorted access to the entities. Working with the repository instance is just a matter of dependency injecting it into a client. So accessing the second page of `Person` s at a page size of 10 would simply look something like this:
+
+.Paging access to Person entities
+====
+[source,java]
+----
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration
+public class PersonRepositoryTests {
+
+    @Autowired PersonRepository repository;
+
+    @Test
+    public void readsFirstPageCorrectly() {
+
+      Page<Person> persons = repository.findAll(new PageRequest(0, 10));
+      assertThat(persons.isFirstPage(), is(true));
+    }
+}
+----
+====
+
+The sample creates an application context with Spring's unit test support which will perform annotation based dependency injection into test cases. Inside the test method we simply use the repository to query the datastore. We hand the repository a `PageRequest` instance that requests the first page of persons at a page size of 10.
+
+[[marklogic.repositories.queries]]
+== Query methods
+
+NOTE: Not currently supported
+//.PersonRepository with query methods
+//====
+//[source,java]
+//----
+//public interface PersonRepository extends PagingAndSortingRepository<Person, String> {
+//
+//    List<Person> findByLastname(String lastname);                      <1>
+//
+//    Page<Person> findByFirstname(String firstname, Pageable pageable); <2>
+//
+//    Person findByShippingAddresses(Address address);                   <3>
+//
+//    Stream<Person> findAllBy();                                        <4>
+//}
+//----
+//<1> The method shows a query for all people with the given lastname. The query will be derived parsing the method name for constraints which can be concatenated with `And` and `Or`.
+//<2> Applies pagination to a query. Just equip your method signature with a `Pageable` parameter and let the method return a `Page` instance and we will automatically page the query accordingly.
+//<3> Shows that you can query based on properties which are not a primitive type.
+//<4> Uses a Java 8 `Stream` which reads and converts individual elements while iterating the stream.
+//====
+
+== Module invocation
+
+Repositories handled modules invocation (as seen in <<invokeModule>>) in such a manner that the actual module uri is not explicitly given within the java code.
+First we add a specific method within the interface
+
+[source,java]
+----
+public interface PersonRepository extends PagingAndSortingRepository<Person, String> {
+    List<Person> findPeopleInAgeRange(@Param("lowerAge") int lowerAge, @Param("upperAge") int upperAge);
+}
+----
+NOTE: If variables have to be used by the module they should be explicitly named using the @Param annotation as shown in this example
+
+Now we need to bind this method to an actual xquery method. This mapping is defined in a file named `META-INF/marklogic-named-queries.properties` and will look like this
+
+[source,properties]
+----
+Person.findPeopleInAgeRange=/sample/people/findPeopleInAgeRange.xqy
+----
+
+The key of the mapping is composed by the entity type (Person) and the method name in the repository (findPeopleInAgeRange).
+The value is the absolute uri for the module query to be invoked.

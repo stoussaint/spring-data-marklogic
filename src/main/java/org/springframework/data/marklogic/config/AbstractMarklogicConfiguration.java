@@ -12,7 +12,7 @@ import org.springframework.data.mapping.context.MappingContextIsNewStrategyFacto
 import org.springframework.data.mapping.context.PersistentEntities;
 import org.springframework.data.marklogic.core.MarklogicFactoryBean;
 import org.springframework.data.marklogic.core.MarklogicTemplate;
-import org.springframework.data.marklogic.core.convert.MappingMarklogicConverter;
+import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import org.springframework.data.marklogic.core.mapping.Document;
 import org.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import org.springframework.data.support.CachingIsNewStrategyFactory;
@@ -39,7 +39,7 @@ public abstract class AbstractMarklogicConfiguration {
      */
     protected abstract String getDatabaseName();
 
-    protected void beforeMarklogicTemplateCreation(ContentSource contentSource) {};
+    protected void beforeMarklogicTemplateCreation(ContentSource contentSource) {}
 
     protected void afterMarklogicTemplateCreation(MarklogicTemplate marklogicTemplate) {}
 
@@ -94,13 +94,13 @@ public abstract class AbstractMarklogicConfiguration {
     }
 
     /**
-     * Creates a {@link MappingMarklogicConverter} using the configured {@link #marklogicMappingContext()}.
+     * Creates a {@link MarklogicMappingConverter} using the configured {@link #marklogicMappingContext()}.
      * @return
      * @throws Exception
      */
     @Bean
-    public MappingMarklogicConverter mappingMarklogicConverter() throws Exception {
-        MappingMarklogicConverter converter = new MappingMarklogicConverter(marklogicMappingContext(), conversionService);
+    public MarklogicMappingConverter mappingMarklogicConverter() throws Exception {
+        MarklogicMappingConverter converter = new MarklogicMappingConverter(marklogicMappingContext(), conversionService);
         converter.setConverters(getConverters());
         return converter;
     }

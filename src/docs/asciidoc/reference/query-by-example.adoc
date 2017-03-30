@@ -1,0 +1,27 @@
+[[query-by-example.execution]]
+== Executing an example
+
+.Query by Example using a Repository
+====
+[source, java]
+----
+public interface PersonRepository extends QueryByExampleExecutor<Person> {
+
+}
+
+public class PersonService {
+
+  @Autowired PersonRepository personRepository;
+
+  public List<Person> findPeople(Person probe) {
+    return personRepository.findAll(Example.of(probe));
+  }
+}
+----
+====
+
+An `Example` containing an untyped `ExampleSpec` uses the Repository type and its collection name. Typed `ExampleSpec` use their type as result type and the collection name from the Repository.
+
+NOTE: When including `null` values in the `ExampleSpec` Spring Data Marklogic uses embedded document matching instead of dot notation property matching. This forces exact document matching for all property values and the property order in the embedded document.
+
+Spring Data Marklogic only support exact matching for now.

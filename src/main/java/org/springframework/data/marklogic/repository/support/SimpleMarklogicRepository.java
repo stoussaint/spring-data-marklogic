@@ -98,7 +98,7 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
 
     @Override
     public List<T> findAll() {
-        return marklogicOperations.find(new Object(), entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation));
+        return marklogicOperations.findAll(entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation));
     }
 
     @Override

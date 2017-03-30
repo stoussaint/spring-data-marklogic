@@ -21,7 +21,7 @@ import org.springframework.data.mapping.PersistentPropertyAccessor;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.mapping.model.ConvertingPropertyAccessor;
 import org.springframework.data.mapping.model.MappingException;
-import org.springframework.data.marklogic.core.convert.MappingMarklogicConverter;
+import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import org.springframework.data.marklogic.core.convert.MarklogicContentHolder;
 import org.springframework.data.marklogic.core.convert.MarklogicConverter;
 import org.springframework.data.marklogic.core.convert.MarklogicWriter;
@@ -333,6 +333,16 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         } else {
             throw new DataRetrievalFailureException("Only one result expected. You should probably call find instead");
         }
+    }
+
+    @Override
+    public <T> List<T> findAll(Class<T> entityClass) {
+        return find(new Object(), entityClass, new MarklogicOperationOptions() {});
+    }
+
+    @Override
+    public <T> List<T> findAll(Class<T> entityClass, MarklogicOperationOptions options) {
+        return find(new Object(), entityClass, options);
     }
 
     @Override
@@ -723,7 +733,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     private static MarklogicConverter getDefaultMarklogicConverter() {
-        return new MappingMarklogicConverter(new MarklogicMappingContext());
+        return new MarklogicMappingConverter(new MarklogicMappingContext());
     }
 
     /**

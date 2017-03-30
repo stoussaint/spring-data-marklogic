@@ -15,15 +15,15 @@ import java.io.Serializable;
  *
  * @author Stéphane Toussaint
  */
-public class MappingMarklogicConverter extends AbstractMarklogicConverter  {
+public class MarklogicMappingConverter extends AbstractMarklogicConverter  {
 
     protected final MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext;
 
-    public MappingMarklogicConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
+    public MarklogicMappingConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
         this(mappingContext, null);
     }
 
-    public MappingMarklogicConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext, GenericConversionService conversionService) {
+    public MarklogicMappingConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext, GenericConversionService conversionService) {
         super(conversionService);
         this.mappingContext = mappingContext;
     }
