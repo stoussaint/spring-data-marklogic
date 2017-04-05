@@ -273,14 +273,30 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> List<T> find(Object query, Class<T> entityClass, MarklogicOperationOptions options) {
+        final Class<T> targetEntityClass = options.entityClass() == null ? entityClass : (Class<T>) options.entityClass();
         MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
 
         String defaultCollection = options.defaultCollection() != null ? options.defaultCollection() : persistentEntity.getDefaultCollection();
-        final String targetCollection = retrieveTargetCollection(defaultCollection);
+        final String targetCollection = retrieveTargetCollection(expandDefaultCollection(defaultCollection, new DocumentExpressionContext() {
+            @Override
+            public Class<?> getEntityClass() {
+                return targetEntityClass;
+            }
+
+            @Override
+            public Object getEntity() {
+                return null;
+            }
+
+            @Override
+            public Object getId() {
+                return null;
+            }
+        }));
 
         LOGGER.debug("Retrieve objects matching query '{}' for collection '{}'", "empty", defaultCollection);
-
 
         List<String> ctsConstraint = new ArrayList<>();
         if (query instanceof Map) {
