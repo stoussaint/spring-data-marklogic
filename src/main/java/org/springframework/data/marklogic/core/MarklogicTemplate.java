@@ -815,34 +815,11 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         return resultList;
     }
 
-    @SuppressWarnings("unchecked")
     private <T> T prepareResultItem(ResultItem resultItem, Class<T> returnType) {
+        MarklogicContentHolder holder = new MarklogicContentHolder();
+        holder.setContent(resultItem);
 
-        if (returnType.equals(String.class)) {
-            return (T)resultItem.asString();
-        }
-
-        T result = null;
-        if (returnType.isPrimitive()) {
-            try {
-                Method m = primitiveMap.get(returnType).getMethod("valueOf", String.class);
-                result = (T) m.invoke(null, resultItem.asString());
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                LOGGER.debug("Unable to generate primitive value for type " + returnType.getName());
-            }
-        }
-
-        if (result != null) {
-            return result;
-        }
-
-        ConversionService conversionService = this.marklogicConverter.getConversionService();
-
-        if (conversionService.canConvert(resultItem.getClass(), returnType)) {
-            return conversionService.convert(resultItem, returnType);
-        } else {
-            throw new ConverterNotFoundException(TypeDescriptor.forObject(resultItem), TypeDescriptor.valueOf(returnType));
-        }
+        return marklogicConverter.read(returnType, holder);
     }
 
     private String retrieveTargetCollection(String defaultCollection) {
@@ -930,16 +907,5 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
         Object getId();
     }
-
-    private static Map<Class,Class> primitiveMap = new HashMap<Class, Class>() {{
-        put(boolean.class, Boolean.class);
-        put(byte.class, Byte.class);
-        put(char.class, Character.class);
-        put(short.class, Short.class);
-        put(int.class, Integer.class);
-        put(long.class, Long.class);
-        put(float.class, Float.class);
-        put(double.class, Double.class);
-    }};
 
 }

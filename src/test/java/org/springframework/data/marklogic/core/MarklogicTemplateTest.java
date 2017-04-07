@@ -175,8 +175,7 @@ public class MarklogicTemplateTest {
         when(resultSequence.isEmpty()).thenReturn(false);
         when(resultSequence.hasNext()).thenReturn(true, false, true, false);
         when(resultSequence.next()).thenReturn(new ResultItemImpl(null, 0, null, null), new ResultItemImpl(new XsStringImpl("/test/entity/1.xml"), 0, null, null));
-        when(conversionService.canConvert(eq(ResultItemImpl.class), eq(SimpleEntity.class))).thenReturn(true);
-        when(conversionService.convert(any(ResultItemImpl.class), eq(SimpleEntity.class))).thenReturn(new SimpleEntity("1", "entity"));
+        when(marklogicConverter.read(eq(SimpleEntity.class), any(MarklogicContentHolder.class))).thenReturn(new SimpleEntity("1", "entity"));
 
         MarklogicTemplate template = new MarklogicTemplate(contentSource, marklogicConverter);
         template.remove("1", SimpleEntity.class);
@@ -200,18 +199,6 @@ public class MarklogicTemplateTest {
         template.find(map, SimpleEntity.class);
         verify(session).newAdhocQuery(queryArgumentCaptor.capture());
         assertThat(queryArgumentCaptor.getValue(), CoreMatchers.containsString("cts:element-value-query(fn:QName(\"\", \"name\"), \"test\")"));
-    }
-
-    public void insertionStringContent() throws Exception {
-        final String content = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><simpleEntity><id>1</id><name>entity</name></simpleEntity>";
-
-        MarklogicTemplate template = new MarklogicTemplate(contentSource);
-        template.insert(content, buildCreateOperationOptions("/test/entity/1.xml"));
-        verify(session).insertContent(contentArgumentCaptor.capture());
-
-        assertThat(contentArgumentCaptor.getValue().getUri(), CoreMatchers.equalTo("/test/entity/1.xml"));
-        assertThat(contentArgumentCaptor.getValue().getCreateOptions().getFormat(), CoreMatchers.equalTo(DocumentFormat.XML));
-        assertThat(toString(contentArgumentCaptor.getValue().openDataStream()), CoreMatchers.equalTo(content));
     }
 
     static class SimpleEntity {

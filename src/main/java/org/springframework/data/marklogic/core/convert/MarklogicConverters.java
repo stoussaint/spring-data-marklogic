@@ -3,8 +3,7 @@ package org.springframework.data.marklogic.core.convert;
 import com.marklogic.xcc.ResultItem;
 import com.marklogic.xcc.ValueFactory;
 import com.marklogic.xcc.types.XdmValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.ConditionalGenericConverter;
@@ -12,10 +11,10 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.convert.WritingConverter;
-import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.util.CollectionUtils;
 
 import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
@@ -32,7 +31,7 @@ import java.util.stream.Collectors;
  */
 abstract class MarklogicConverters {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(MarklogicConverters.class);
+    private static Map<Class<?>, JAXBContext> cachedJAXBContext = new HashMap<>();
 
     private MarklogicConverters() {
     }
@@ -51,14 +50,11 @@ abstract class MarklogicConverters {
     }
 
     /**
-     * Convert entity to serializable if annotated with {@link XmlRootElement}.
-     * Based on {@link Jaxb2Marshaller} this converter will use any annotated class within the same package than source object to build {@link JAXBContext}.
+     * Convert entity annotated with {@link XmlRootElement} to String.
      */
     @WritingConverter
     enum EntityToStringJAXBConverter implements ConditionalGenericConverter {
         INSTANCE;
-
-        private Map<Class<?>, Jaxb2Marshaller> cachedJaxb2Marshaller = new HashMap<>();
 
         @Override
         public Set<ConvertiblePair> getConvertibleTypes() {
@@ -72,23 +68,22 @@ abstract class MarklogicConverters {
 
         @Override
         public String convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
-            Jaxb2Marshaller marshaller = buildJaxb2Marshaller(cachedJaxb2Marshaller, sourceType);
-
-            StringWriter writer = new StringWriter();
-            marshaller.marshal(source, new StreamResult(writer));
-            return writer.toString();
+            try {
+                StringWriter writer = new StringWriter();
+                initJAXBContext(sourceType).createMarshaller().marshal(source, new StreamResult(writer));
+                return writer.toString();
+            } catch (JAXBException jaxbe) {
+                throw new ConversionFailedException(sourceType, targetType, source, jaxbe);
+            }
         }
     }
 
     /**
      * Convert a {@link ResultItem} content (using it's {@link InputStream}) to the target entity object if annotated with {@link XmlRootElement}
-     * Based on {@link Jaxb2Marshaller} this converter will use any annotated class within the same package than target class to build {@link JAXBContext}.
      */
     @ReadingConverter
     enum ResultItemToEntityJAXBConverter implements ConditionalGenericConverter {
         INSTANCE;
-
-        private Map<Class<?>, Jaxb2Marshaller> cachedJaxb2Marshaller = new HashMap<>();
 
         @Override
         public Set<ConvertiblePair> getConvertibleTypes() {
@@ -105,8 +100,11 @@ abstract class MarklogicConverters {
             ResultItem resultItem = (ResultItem) source;
             InputStream inputStream = resultItem.asInputStream();
 
-            Jaxb2Marshaller marshaller = buildJaxb2Marshaller(cachedJaxb2Marshaller, targetType);
-            return marshaller.unmarshal(new StreamSource(inputStream));
+            try {
+                return initJAXBContext(targetType).createUnmarshaller().unmarshal(new StreamSource(inputStream));
+            } catch (JAXBException jaxbe) {
+                throw new ConversionFailedException(sourceType, targetType, source, jaxbe);
+            }
         }
     }
 
@@ -187,21 +185,18 @@ abstract class MarklogicConverters {
                 return ValueFactory.newXSString(conversionService.convert(source, String.class));
             } else {
                 throw new ConverterNotFoundException(TypeDescriptor.forObject(source), TypeDescriptor.valueOf(XdmValue.class));
-//                LOGGER.debug("Can't find any specific converter for {}. Fallback with result as String", source.getClass());
-//                return ValueFactory.newXSString(source.toString());
             }
         }
     }
 
-    private static Jaxb2Marshaller buildJaxb2Marshaller(Map<Class<?>, Jaxb2Marshaller> cachedJaxb2Marshaller, TypeDescriptor type) {
+    private static JAXBContext initJAXBContext(TypeDescriptor type) throws JAXBException {
         final Class<?> typeClass = type.getType();
-        if (cachedJaxb2Marshaller.containsKey(typeClass)) {
-            return cachedJaxb2Marshaller.get(typeClass);
+        if (cachedJAXBContext.containsKey(typeClass)) {
+            return cachedJAXBContext.get(typeClass);
         } else {
-            Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-            marshaller.setPackagesToScan(typeClass.getPackage().getName());
-            cachedJaxb2Marshaller.put(typeClass, marshaller);
-            return marshaller;
+            final JAXBContext jaxbContext = JAXBContext.newInstance(typeClass);
+            cachedJAXBContext.put(typeClass, jaxbContext);
+            return jaxbContext;
         }
     }
 }

@@ -1,7 +1,5 @@
 package org.springframework.data.marklogic.core.convert;
 
-import java.io.Serializable;
-
 /**
  * --Description--
  *
@@ -9,19 +7,19 @@ import java.io.Serializable;
  */
 public class MarklogicContentHolder {
 
-    private Serializable content;
+    private Object content;
 
     /**
      * @return the content
      */
-    public Serializable getContent() {
+    public Object getContent() {
         return content;
     }
 
     /**
      * @param content the content to set
      */
-    public void setContent(Serializable content) {
+    public void setContent(Object content) {
         this.content = content;
     }
 }

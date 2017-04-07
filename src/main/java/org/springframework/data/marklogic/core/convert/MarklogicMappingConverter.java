@@ -1,5 +1,9 @@
 package org.springframework.data.marklogic.core.convert;
 
+import com.marklogic.xcc.ResultItem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.support.GenericConversionService;
@@ -8,6 +12,10 @@ import org.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity
 import org.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * {@link MarklogicConverter} that uses a {@link MappingContext} to compute extra
@@ -19,6 +27,19 @@ public class MarklogicMappingConverter extends AbstractMarklogicConverter  {
 
     protected final MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MarklogicMappingConverter.class);
+
+    private static Map<Class,Class> primitiveMap = new HashMap<Class, Class>() {{
+        put(boolean.class, Boolean.class);
+        put(byte.class, Byte.class);
+        put(char.class, Character.class);
+        put(short.class, Short.class);
+        put(int.class, Integer.class);
+        put(long.class, Long.class);
+        put(float.class, Float.class);
+        put(double.class, Double.class);
+    }};
+
     public MarklogicMappingConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
         this(mappingContext, null);
     }
@@ -29,8 +50,34 @@ public class MarklogicMappingConverter extends AbstractMarklogicConverter  {
     }
 
     @Override
-    public <R extends Object> R read(Class<R> type, MarklogicContentHolder holder) {
-        return null;
+    @SuppressWarnings("unchecked")
+    public <R extends Object> R read(Class<R> returnType, MarklogicContentHolder holder) {
+        ResultItem resultItem = (ResultItem) holder.getContent();
+        if (returnType.equals(String.class)) {
+            return (R)resultItem.asString();
+        }
+
+        R result = null;
+        if (returnType.isPrimitive()) {
+            try {
+                Method m = primitiveMap.get(returnType).getMethod("valueOf", String.class);
+                result = (R) m.invoke(null, resultItem.asString());
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                LOGGER.debug("Unable to generate primitive value for type " + returnType.getName());
+            }
+        }
+
+        if (result != null) {
+            return result;
+        }
+
+        ConversionService conversionService = getConversionService();
+
+        if (conversionService.canConvert(resultItem.getClass(), returnType)) {
+            return conversionService.convert(resultItem, returnType);
+        } else {
+            throw new ConverterNotFoundException(TypeDescriptor.forObject(resultItem), TypeDescriptor.valueOf(returnType));
+        }
     }
 
     @Override

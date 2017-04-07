@@ -162,17 +162,65 @@ public interface MarklogicOperations {
 
     <T> List<T> findAll(Class<T> entityClass, MarklogicOperationOptions options);
 
-    <T> List<T> invokeModuleAsList(String moduleName, Class<T> resultClass, MarklogicInvokeOperationOptions options);
+    /**
+     * Execute the given XQuery script. Optional external variables can be pass with options parameters
+     * @param query the query to execute
+     * @param options optional options used for the query execution
+     */
+    void invokeAdhocQuery(String query, MarklogicInvokeOperationOptions options);
 
-    <T> T invokeModule(String moduleName, Class<T> resultClass, MarklogicInvokeOperationOptions options);
-
-    void invokeModule(String moduleName, MarklogicInvokeOperationOptions options);
-
-    <T> List<T> invokeAdhocQueryAsList(String query, Class<T> resultClass, MarklogicInvokeOperationOptions options);
-
+    /**
+     * Execute the given XQuery script. Optional external variables can be pass with options parameters
+     * The returned content if any will be converted as resultClass type.
+     * More than one result will trigger a DataRetrievalFailureException. You must use invokeAdhocQueryAsList in such cases.
+     * @param query the query to execute
+     * @param resultClass the expected return content type.
+     * @param options optional options used for the query execution
+     * @param <T> type of the expected content
+     * @return one T result or null if no content returned
+     */
     <T> T invokeAdhocQuery(String query, Class<T> resultClass, MarklogicInvokeOperationOptions options);
 
-    void invokeAdhocQuery(String query, MarklogicInvokeOperationOptions options);
+    /**
+     * Execute the given XQuery script. Optional external variables can be pass with options parameters
+     * The returned content if any will be converted as resultClass type.
+     * @param query the query to execute
+     * @param resultClass the expected return content type.
+     * @param options optional options used for the query execution
+     * @param <T> type of the expected content
+     * @return a List of T result or null if no content returned
+     */
+    <T> List<T> invokeAdhocQueryAsList(String query, Class<T> resultClass, MarklogicInvokeOperationOptions options);
+
+    /**
+     * Execute the remote module script. Optional external variables can be pass with options parameters
+     * @param moduleName the uri of the module to invoke
+     * @param options optional options used for the module execution
+     */
+    void invokeModule(String moduleName, MarklogicInvokeOperationOptions options);
+
+    /**
+     * Execute the remote module script. Optional external variables can be pass with options parameters
+     * The returned content if any will be converted as resultClass type.
+     * More than one result will trigger a DataRetrievalFailureException. You must use invokeModuleAsList in such cases.
+     * @param moduleName the uri of the module to invoke
+     * @param resultClass the expected return content type.
+     * @param options optional options used for the query execution
+     * @param <T> type of the expected content
+     * @return one T result or null if no content returned
+     */
+    <T> T invokeModule(String moduleName, Class<T> resultClass, MarklogicInvokeOperationOptions options);
+
+    /**
+     * Execute the remote module script. Optional external variables can be pass with options parameters
+     * The returned content if any will be converted as resultClass type.
+     * @param moduleName the uri of the module to invoke
+     * @param resultClass the expected return content type.
+     * @param options optional options used for the query execution
+     * @param <T> type of the expected content
+     * @return a List of T result or null if no content returned
+     */
+    <T> List<T> invokeModuleAsList(String moduleName, Class<T> resultClass, MarklogicInvokeOperationOptions options);
 
     <T> String resolveDefaultCollection(T entity, MarklogicOperationOptions options);
 
