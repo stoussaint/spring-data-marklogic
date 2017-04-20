@@ -20,5 +20,6 @@ asciidoctor {
             'idprefix': '',
             'idseparator': '-',
             'docinfo1': '',
-            'spring-data-commons-docs':file('../spring-data-commons/src/main/asciidoc')
+            'spring-data-commons-docs':file('../spring-data-commons/src/main/asciidoc'),
+            'spring-data-marklogic-source':file('spring-data-marklogic/src/main/java')
 }

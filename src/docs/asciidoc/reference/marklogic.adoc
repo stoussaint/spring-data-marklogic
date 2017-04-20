@@ -458,5 +458,5 @@ There is invoke method variation that permit to handle returned content by speci
 [source,java]
 .MarklogicOpertions xquery invocation methods
 ----
-include::../../../main/java/org/springframework/data/marklogic/core/MarklogicOperations.java[lines=170;182;193;200;212;223]
+include::{spring-data-marklogic-source}/org/springframework/data/marklogic/core/MarklogicOperations.java[lines=170;182;193;200;212;223]
 ----
