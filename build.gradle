@@ -1,73 +1,10 @@
 plugins {
-    id "io.spring.dependency-management" version "0.6.1.RELEASE"
+    id 'io.spring.dependency-management' version '0.6.1.RELEASE'
     id 'org.asciidoctor.convert' version '1.5.3'
+    id 'nebula.compile-api' version '4.9.1'
 }
 
-group 'org.springframework.data'
-version '1.0.0.BUILD-SNAPSHOT'
-
-apply plugin: 'java'
-apply plugin: 'io.spring.dependency-management'
-apply plugin: 'maven-publish'
-apply plugin: 'jacoco'
 apply plugin: 'org.asciidoctor.convert'
-
-sourceCompatibility = 1.8
-
-tasks.withType(JavaCompile) {
-    options.compilerArgs << "-Xlint:deprecation"
-    options.compilerArgs << "-Xlint:unchecked"
-}
-
-repositories {
-    mavenLocal()
-    jcenter()
-    maven { url "http://developer.marklogic.com/maven2" }
-}
-
-dependencyManagement {
-    imports {
-        mavenBom("io.spring.platform:platform-bom:${springBomVersion}")
-    }
-}
-
-dependencies {
-
-    compile ("com.marklogic:marklogic-xcc:8.0.3")
-    compile ("com.fasterxml.jackson.core:jackson-databind")
-
-    compile ("javax.transaction:javax.transaction-api")
-
-    compile("org.aspectj:aspectjweaver")
-    compile ("org.springframework:spring-context")
-    compile ("org.springframework:spring-oxm")
-    compile ("org.springframework:spring-tx")
-    compile ("org.springframework.data:spring-data-commons")
-
-    compile ("ch.qos.logback:logback-classic")
-
-    testCompile ("junit:junit")
-    testCompile ('org.hamcrest:hamcrest-core')
-    testCompile ('org.hamcrest:hamcrest-library')
-    testCompile ("org.mockito:mockito-core")
-    testCompile ("org.springframework:spring-test")
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-
-            artifact sourceJar {
-                classifier "sources"
-            }
-        }
-    }
-}
-
-task sourceJar(type: Jar) {
-    from sourceSets.main.allJava
-}
 
 asciidoctor {
     attributes \

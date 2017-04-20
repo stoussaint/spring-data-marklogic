@@ -1,2 +1,3 @@
-rootProject.name = 'spring-data-marklogic'
+rootProject.name = 'spring-data-marklogic-parent'
+include 'spring-data-marklogic'
 

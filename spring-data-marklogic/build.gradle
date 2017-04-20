@@ -1,0 +1,61 @@
+apply plugin: 'java'
+apply plugin: 'nebula.compile-api'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'maven-publish'
+
+sourceCompatibility = 1.8
+
+group 'org.springframework.data'
+version '1.0.0.BUILD-SNAPSHOT'
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:deprecation"
+    options.compilerArgs << "-Xlint:unchecked"
+}
+
+repositories {
+    mavenLocal()
+    jcenter()
+    maven { url "http://developer.marklogic.com/maven2" }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("io.spring.platform:platform-bom:${springBomVersion}")
+    }
+}
+
+dependencies {
+    compileApi 'org.springframework.data:spring-data-commons'
+
+    compile 'com.fasterxml.jackson.core:jackson-databind'
+    compile 'com.marklogic:marklogic-xcc:8.0.3'
+    compile 'javax.transaction:javax.transaction-api'
+    compile 'org.aspectj:aspectjweaver'
+    compile 'org.springframework:spring-context'
+    compile 'org.springframework:spring-oxm'
+    compile 'org.springframework:spring-tx'
+
+    testCompile 'ch.qos.logback:logback-classic'
+    testCompile 'junit:junit'
+    testCompile 'org.hamcrest:hamcrest-core'
+    testCompile 'org.hamcrest:hamcrest-library'
+    testCompile 'org.mockito:mockito-core'
+    testCompile 'org.springframework:spring-test'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
+        }
+    }
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+}
