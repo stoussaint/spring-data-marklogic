@@ -3,6 +3,7 @@ package org.springframework.data.marklogic.repository.support;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +16,7 @@ import org.springframework.data.marklogic.repository.query.MarklogicEntityInform
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
@@ -137,7 +139,16 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
 
     @Override
     public <S extends T> S findOne(Example<S> example) {
-        throw new RuntimeException("Not implemented yet !");
+        final List<S> results = findAll(example);
+        if (CollectionUtils.isEmpty(results)) {
+            return null;
+        }
+
+        if (results.size() > 1) {
+            throw new IncorrectResultSizeDataAccessException(1, results.size());
+        }
+
+        return results.get(0);
     }
 
     @Override

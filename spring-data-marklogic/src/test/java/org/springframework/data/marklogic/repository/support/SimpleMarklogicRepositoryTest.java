@@ -3,13 +3,16 @@ package org.springframework.data.marklogic.repository.support;
 import com.marklogic.xcc.ContentSource;
 import com.marklogic.xcc.exceptions.XccConfigException;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.data.domain.Example;
 import org.springframework.data.marklogic.core.MarklogicFactoryBean;
 import org.springframework.data.marklogic.core.MarklogicTemplate;
@@ -52,12 +55,15 @@ public class SimpleMarklogicRepositoryTest {
 
     List<Person> all;
 
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
     @Before
     public void setUp() {
         repository.deleteAll();
 
-        steph = new Person(null,"Stéphane", "Toussaint", 38);
-        sahbi = new Person(null, "Sahbi", "Ktifa", 28);
+        steph = new Person(null,"Stéphane", "Toussaint", 38, "France");
+        sahbi = new Person(null, "Sahbi", "Ktifa", 28, "France");
 
         all = repository.save(Arrays.asList(steph, sahbi));
     }
@@ -70,7 +76,7 @@ public class SimpleMarklogicRepositoryTest {
 
     @Test
     public void insertPersonWithNoId() {
-        Person person = new Person(null,"James", "Bond", 38);
+        Person person = new Person(null,"James", "Bond", 38, "France");
         repository.save(person);
         assertThat(person.getId(), notNullValue());
     }
@@ -117,6 +123,25 @@ public class SimpleMarklogicRepositoryTest {
         person.setLastname("Toussaint");
         Iterable<Person> result = repository.findAll(Example.of(person));
         assertThat(result, notNullValue());
+    }
+
+    @Test
+    public void findOnePersonByExample() {
+        Person person = new Person();
+        person.setLastname("Toussaint");
+        final Person result = repository.findOne(Example.of(person));
+        assertThat(result, notNullValue());
+        assertThat(result.getId(), is(steph.getId()));
+        assertThat(result.getFirstname(), is("Stéphane"));
+    }
+
+    @Test
+    public void findOnePersonByCountryThrowsException() {
+        thrown.expect(IncorrectResultSizeDataAccessException.class);
+
+        Person person = new Person();
+        person.setCountry("France");
+        repository.findOne(Example.of(person));
     }
 
     private static class CustomizedPersonInformation implements MarklogicEntityInformation<Person, String> {

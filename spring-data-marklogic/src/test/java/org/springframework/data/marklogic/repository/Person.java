@@ -21,14 +21,16 @@ public class Person {
     private String firstname;
     private String lastname;
     private Integer age;
+    private String country;
 
     public Person() {}
 
-    public Person(String id, String firstname, String lastname, Integer age) {
+    public Person(String id, String firstname, String lastname, Integer age, String country) {
         this.id = id;
         this.firstname = firstname;
         this.lastname = lastname;
         this.age = age;
+        this.country = country;
     }
 
     /**
@@ -88,9 +90,23 @@ public class Person {
         this.age = age;
     }
 
-    /* (non-Javadoc)
-     * @see java.lang.Object#toString()
+    /**
+     * @return the country
      */
+    public String getCountry() {
+        return country;
+    }
+
+    /**
+     * @param country the country to set
+     */
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    /* (non-Javadoc)
+             * @see java.lang.Object#toString()
+             */
     @Override
     public String toString() {
         return String.format("%s %s", firstname, lastname);
