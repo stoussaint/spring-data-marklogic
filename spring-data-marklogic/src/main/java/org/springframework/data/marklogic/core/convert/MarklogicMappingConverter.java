@@ -3,19 +3,19 @@ package org.springframework.data.marklogic.core.convert;
 import com.marklogic.xcc.ResultItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.data.mapping.context.MappingContext;
+import org.springframework.data.marklogic.MarklogicTypeUtils;
 import org.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import org.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * {@link MarklogicConverter} that uses a {@link MappingContext} to compute extra
@@ -29,21 +29,11 @@ public class MarklogicMappingConverter extends AbstractMarklogicConverter  {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MarklogicMappingConverter.class);
 
-    private static Map<Class,Class> primitiveMap = new HashMap<Class, Class>() {{
-        put(boolean.class, Boolean.class);
-        put(byte.class, Byte.class);
-        put(char.class, Character.class);
-        put(short.class, Short.class);
-        put(int.class, Integer.class);
-        put(long.class, Long.class);
-        put(float.class, Float.class);
-        put(double.class, Double.class);
-    }};
-
     public MarklogicMappingConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
         this(mappingContext, null);
     }
 
+    @Autowired
     public MarklogicMappingConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext, GenericConversionService conversionService) {
         super(conversionService);
         this.mappingContext = mappingContext;
@@ -60,7 +50,7 @@ public class MarklogicMappingConverter extends AbstractMarklogicConverter  {
         R result = null;
         if (returnType.isPrimitive()) {
             try {
-                Method m = primitiveMap.get(returnType).getMethod("valueOf", String.class);
+                Method m = MarklogicTypeUtils.primitiveMap.get(returnType).getMethod("valueOf", String.class);
                 result = (R) m.invoke(null, resultItem.asString());
             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                 LOGGER.debug("Unable to generate primitive value for type " + returnType.getName());

@@ -9,11 +9,10 @@ import com.marklogic.xcc.types.XdmValue;
 import com.marklogic.xcc.types.XdmVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.core.convert.ConverterNotFoundException;
-import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
@@ -21,9 +20,10 @@ import org.springframework.data.mapping.PersistentPropertyAccessor;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.mapping.model.ConvertingPropertyAccessor;
 import org.springframework.data.mapping.model.MappingException;
-import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
+import org.springframework.data.marklogic.MarklogicTypeUtils;
 import org.springframework.data.marklogic.core.convert.MarklogicContentHolder;
 import org.springframework.data.marklogic.core.convert.MarklogicConverter;
+import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import org.springframework.data.marklogic.core.convert.MarklogicWriter;
 import org.springframework.data.marklogic.core.mapping.*;
 import org.springframework.data.marklogic.core.mapping.event.AfterSaveEvent;
@@ -42,12 +42,16 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import javax.xml.namespace.QName;
-import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.net.URI;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -87,6 +91,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         this(contentSource, null);
     }
 
+    @Autowired
     public MarklogicTemplate(ContentSource contentSource, MarklogicConverter marklogicConverter) {
         Assert.notNull(contentSource);
 
@@ -862,7 +867,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     private MarklogicIdentifier resolveMarklogicIdentifier(Object id, MarklogicPersistentProperty idProperty) {
-        if (idProperty.getType().isPrimitive() || idProperty.getType().equals(String.class)) {
+        if (MarklogicTypeUtils.isSimpleType(idProperty.getType())) {
             return new MarklogicIdentifier() {
                 @Override
                 public QName qname() {
