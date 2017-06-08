@@ -1,7 +1,7 @@
 plugins {
     id 'io.spring.dependency-management' version '0.6.1.RELEASE'
     id 'org.asciidoctor.convert' version '1.5.3'
-    id 'nebula.compile-api' version '4.9.1'
+    id 'nebula.compile-api' version '5.1.0'
 }
 
 apply plugin: 'org.asciidoctor.convert'
