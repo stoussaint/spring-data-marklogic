@@ -93,7 +93,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Autowired
     public MarklogicTemplate(ContentSource contentSource, MarklogicConverter marklogicConverter) {
-        Assert.notNull(contentSource);
+        Assert.notNull(contentSource, "contentSource must not be null");
 
         this.contentSource = contentSource;
         this.marklogicConverter = marklogicConverter == null ? getDefaultMarklogicConverter() : marklogicConverter;

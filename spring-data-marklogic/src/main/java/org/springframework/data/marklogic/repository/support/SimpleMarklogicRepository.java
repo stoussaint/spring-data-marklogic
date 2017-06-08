@@ -49,8 +49,8 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
      */
     public SimpleMarklogicRepository(MarklogicEntityInformation<T, ID> metadata, MarklogicOperations marklogicOperations) {
 
-        Assert.notNull(marklogicOperations);
-        Assert.notNull(metadata);
+        Assert.notNull(marklogicOperations, "marklogicOperations must not be null");
+        Assert.notNull(metadata, "marklogic entity information must not be null");
 
         this.entityInformation = metadata;
         this.marklogicOperations = marklogicOperations;

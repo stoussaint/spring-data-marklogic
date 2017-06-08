@@ -35,7 +35,7 @@ public class MarklogicRepositoryFactory extends RepositoryFactorySupport {
 
     public MarklogicRepositoryFactory(MarklogicOperations marklogicOperations) {
 
-        Assert.notNull(marklogicOperations);
+        Assert.notNull(marklogicOperations, "marklogicOperations must not be null");
 
         this.marklogicOperations = marklogicOperations;
         this.mappingContext = marklogicOperations.getConverter().getMappingContext();
