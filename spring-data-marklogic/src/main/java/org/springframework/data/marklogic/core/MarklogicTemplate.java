@@ -167,7 +167,38 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Override
     public void save(Object objectToSave, MarklogicCreateOperationOptions options) {
-        doInsert(objectToSave, options, marklogicConverter);
+        if (!checkIdIsSet(objectToSave)) {
+            LOGGER.debug("Save operation issued with unidentified object. Fallback to insert operation.");
+            insert(objectToSave, options);
+        } else {
+            final String uri = retrieveUri(objectToSave);
+            doInsert(objectToSave, new MarklogicCreateOperationOptions() {
+                @Override
+                public String uri() {
+                    return uri;
+                }
+
+                @Override
+                public String[] extraCollections() {
+                    return options.extraCollections();
+                }
+
+                @Override
+                public String defaultCollection() {
+                    return options.defaultCollection();
+                }
+
+                @Override
+                public boolean idInPropertyFragment() {
+                    return options.idInPropertyFragment();
+                }
+
+                @Override
+                public Class entityClass() {
+                    return options.entityClass();
+                }
+            }, marklogicConverter);
+        }
     }
 
     @Override
