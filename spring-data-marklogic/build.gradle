@@ -6,7 +6,7 @@ apply plugin: 'maven-publish'
 sourceCompatibility = 1.8
 
 group 'org.springframework.data'
-version '1.0.3.BUILD-SNAPSHOT'
+version '1.0.3'
 
 tasks.withType(JavaCompile) {
     options.compilerArgs << "-Xlint:deprecation"
