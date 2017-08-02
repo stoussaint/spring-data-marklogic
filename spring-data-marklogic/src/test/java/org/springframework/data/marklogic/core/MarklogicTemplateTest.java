@@ -6,6 +6,7 @@ import com.marklogic.xcc.impl.ResultItemImpl;
 import com.marklogic.xcc.types.impl.XsStringImpl;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -22,15 +23,16 @@ import org.springframework.data.marklogic.core.convert.MarklogicConverter;
 import org.springframework.data.marklogic.core.mapping.BasicMarklogicPersistentEntity;
 import org.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import org.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
+import org.springframework.data.marklogic.core.query.Criteria;
+import org.springframework.data.marklogic.core.query.Query;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.UUID;
+import java.util.*;
 
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
@@ -189,16 +191,17 @@ public class MarklogicTemplateTest {
     }
 
     @Test
-    public void findByExample() throws Exception {
+    public void findByQuery() throws Exception {
         when(session.newAdhocQuery(anyString())).thenReturn(new AdhocImpl(null, null, new RequestOptions()));
-        MarklogicTemplate template = new MarklogicTemplate(contentSource);
-        Map<String, Object> map = new HashMap<String, Object>() {{
-            put("name", "test");
-        }};
 
-        template.find(map, SimpleEntity.class);
+        MarklogicTemplate template = new MarklogicTemplate(contentSource);
+        Query query = new Query();
+        query.setCriteria(Collections.singletonList(new Criteria(new QName("", "name"), "test")));
+
+        template.find(query, SimpleEntity.class);
+
         verify(session).newAdhocQuery(queryArgumentCaptor.capture());
-        assertThat(queryArgumentCaptor.getValue(), CoreMatchers.containsString("cts:element-value-query(fn:QName(\"\", \"name\"), \"test\")"));
+        assertThat(queryArgumentCaptor.getValue(), is("cts:search(fn:collection(), cts:and-query((cts:element-value-query(fn:QName('', 'name'), 'test'))), ())"));
     }
 
     static class SimpleEntity {

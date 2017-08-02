@@ -25,11 +25,14 @@ import org.springframework.data.marklogic.core.convert.MarklogicContentHolder;
 import org.springframework.data.marklogic.core.convert.MarklogicConverter;
 import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import org.springframework.data.marklogic.core.convert.MarklogicWriter;
+import org.springframework.data.marklogic.core.cts.CTSQueryParser;
 import org.springframework.data.marklogic.core.mapping.*;
 import org.springframework.data.marklogic.core.mapping.event.AfterSaveEvent;
 import org.springframework.data.marklogic.core.mapping.event.BeforeConvertEvent;
 import org.springframework.data.marklogic.core.mapping.event.BeforeSaveEvent;
 import org.springframework.data.marklogic.core.mapping.event.MarklogicMappingEvent;
+import org.springframework.data.marklogic.core.query.Query;
+import org.springframework.data.marklogic.core.query.QueryBuilder;
 import org.springframework.data.marklogic.datasource.ContentSourceUtils;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ParserContext;
@@ -103,6 +106,18 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     @Override
     public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
         this.eventPublisher = applicationEventPublisher;
+    }
+
+    @Override
+    public long count(Query query) {
+        String ctsQuery = new CTSQueryParser(query).disablePagination().asCtsQuery();
+        String countQuery = String.format("xdmp:estimate(%s)", ctsQuery);
+        return invokeAdhocQuery(countQuery, Long.TYPE, new MarklogicInvokeOperationOptions() {
+            @Override
+            public boolean useCacheResult() {
+                return false;
+            }
+        });
     }
 
     @Override
@@ -304,48 +319,14 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     @Override
-    public <T> List<T> find(Object query, Class<T> entityClass) {
+    public <T> List<T> find(Query query, Class<T> entityClass) {
         return find(query, entityClass, new MarklogicOperationOptions() {});
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> List<T> find(Object query, Class<T> entityClass, MarklogicOperationOptions options) {
-        final Class<T> targetEntityClass = options.entityClass() == null ? entityClass : (Class<T>) options.entityClass();
-        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityClass);
-
-        String defaultCollection = options.defaultCollection() != null ? options.defaultCollection() : persistentEntity.getDefaultCollection();
-        final String targetCollection = retrieveTargetCollection(expandDefaultCollection(defaultCollection, new DocumentExpressionContext() {
-            @Override
-            public Class<?> getEntityClass() {
-                return targetEntityClass;
-            }
-
-            @Override
-            public Object getEntity() {
-                return null;
-            }
-
-            @Override
-            public Object getId() {
-                return null;
-            }
-        }));
-
-        LOGGER.debug("Retrieve objects matching query '{}' for collection '{}'", "empty", defaultCollection);
-
-        List<String> ctsConstraint = new ArrayList<>();
-        if (query instanceof Map) {
-            Map<?, ?> constraints = (Map) query;
-
-            for (Map.Entry<?, ?> entry : constraints.entrySet()) {
-                MarklogicPersistentProperty persistentProperty = persistentEntity.getPersistentProperty(entry.getKey().toString());
-                QName qName = persistentProperty.getQName();
-                ctsConstraint.add("cts:element-value-query(fn:QName(\""+ qName.getNamespaceURI() + "\", \"" + qName.getLocalPart() + "\"), \"" + entry.getValue().toString() + "\")");
-            }
-        }
-
-        return invokeAdhocQueryAsList("cts:search(" + targetCollection + ", cts:and-query(("+ StringUtils.collectionToDelimitedString(ctsConstraint, ",") +")))", entityClass, new MarklogicInvokeOperationOptions() {
+    public <T> List<T> find(Query query, Class<T> entityClass, MarklogicOperationOptions options) {
+        return invokeAdhocQueryAsList(new CTSQueryParser(query).asCtsQuery(), entityClass, new MarklogicInvokeOperationOptions() {
             @Override
             public boolean useCacheResult() {
                 return false;
@@ -354,12 +335,12 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     @Override
-    public <T> T findOne(Object query, Class<T> entityClass) {
+    public <T> T findOne(Query query, Class<T> entityClass) {
         return findOne(query, entityClass, new MarklogicOperationOptions() {});
     }
 
     @Override
-    public <T> T findOne(Object query, Class<T> entityClass, MarklogicOperationOptions options) {
+    public <T> T findOne(Query query, Class<T> entityClass, MarklogicOperationOptions options) {
         List<T> resultList = find(query, entityClass, options);
 
         if (CollectionUtils.isEmpty(resultList)) {
@@ -373,12 +354,12 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Override
     public <T> List<T> findAll(Class<T> entityClass) {
-        return find(new Object(), entityClass, new MarklogicOperationOptions() {});
+        return find(new QueryBuilder(mappingContext).ofType(entityClass).build(), entityClass, new MarklogicOperationOptions() {});
     }
 
     @Override
     public <T> List<T> findAll(Class<T> entityClass, MarklogicOperationOptions options) {
-        return find(new Object(), entityClass, options);
+        return find(new QueryBuilder(mappingContext).ofType(entityClass).build(), entityClass, options);
     }
 
     @Override

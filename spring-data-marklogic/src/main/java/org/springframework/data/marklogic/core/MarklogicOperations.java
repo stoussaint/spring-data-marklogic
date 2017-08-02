@@ -1,6 +1,7 @@
 package org.springframework.data.marklogic.core;
 
 import org.springframework.data.marklogic.core.convert.MarklogicConverter;
+import org.springframework.data.marklogic.core.query.Query;
 
 import java.util.List;
 
@@ -125,7 +126,7 @@ public interface MarklogicOperations {
      * @param <T>
      * @return
      */
-    <T> List<T> find(Object query, Class<T> entityClass);
+    <T> List<T> find(Query query, Class<T> entityClass);
 
     /**
      * Returns content matching the given query
@@ -136,7 +137,7 @@ public interface MarklogicOperations {
      * @param <T>
      * @return
      */
-    <T> List<T> find(Object query, Class<T> entityClass, MarklogicOperationOptions options);
+    <T> List<T> find(Query query, Class<T> entityClass, MarklogicOperationOptions options);
 
     /**
      * Returns content matching the given query
@@ -145,7 +146,7 @@ public interface MarklogicOperations {
      * @param <T>
      * @return
      */
-    <T> T findOne(Object query, Class<T> entityClass);
+    <T> T findOne(Query query, Class<T> entityClass);
 
     /**
      * Returns content matching the given query
@@ -156,7 +157,7 @@ public interface MarklogicOperations {
      * @param <T>
      * @return
      */
-    <T> T findOne(Object query, Class<T> entityClass, MarklogicOperationOptions options);
+    <T> T findOne(Query query, Class<T> entityClass, MarklogicOperationOptions options);
 
     <T> List<T> findAll(Class<T> entityClass);
 
@@ -225,6 +226,14 @@ public interface MarklogicOperations {
     <T> String resolveDefaultCollection(T entity, MarklogicOperationOptions options);
 
     <T> Object resolveContentIdentifier(T entity);
+
+    /**
+     * Returns the number of documents for the given {@link Query}.
+     *
+     * @param query the query
+     * @return the number of content matching the query
+     */
+    long count(Query query);
 
     /**
      * Returns the underlying {@link MarklogicConverter}.

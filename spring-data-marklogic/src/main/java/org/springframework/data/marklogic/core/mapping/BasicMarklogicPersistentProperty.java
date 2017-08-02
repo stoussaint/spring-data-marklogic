@@ -6,7 +6,6 @@ import org.springframework.data.mapping.model.SimpleTypeHolder;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlNsForm;
-import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSchema;
 import javax.xml.namespace.QName;
 import java.beans.PropertyDescriptor;
@@ -52,22 +51,20 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
         String namespaceUri = null;
         String localName = null;
 
-        if (getOwner().findAnnotation(XmlRootElement.class) != null) {
-            XmlElement xmlElement = this.findAnnotation(XmlElement.class);
-            if (xmlElement != null) {
-                if (! xmlElement.namespace().equals("##default")) {
-                    namespaceUri = xmlElement.namespace();
-                }
-
-                localName = xmlElement.name().equals("##default") ? getName() : xmlElement.name();
+        XmlElement xmlElement = this.findAnnotation(XmlElement.class);
+        if (xmlElement != null) {
+            if (! xmlElement.namespace().equals("##default")) {
+                namespaceUri = xmlElement.namespace();
             }
 
-            if (namespaceUri == null) {
-                XmlSchema xmlSchema = this.getField().getDeclaringClass().getPackage().getAnnotation(XmlSchema.class);
-                if (xmlSchema != null) {
-                    if (xmlSchema.elementFormDefault().equals(XmlNsForm.QUALIFIED)) {
-                        namespaceUri = xmlSchema.namespace();
-                    }
+            localName = xmlElement.name().equals("##default") ? getName() : xmlElement.name();
+        }
+
+        if (namespaceUri == null) {
+            XmlSchema xmlSchema = this.getField().getDeclaringClass().getPackage().getAnnotation(XmlSchema.class);
+            if (xmlSchema != null) {
+                if (xmlSchema.elementFormDefault().equals(XmlNsForm.QUALIFIED)) {
+                    namespaceUri = xmlSchema.namespace();
                 }
             }
         }

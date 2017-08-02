@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Stéphane Toussaint
  */
-@Document(uri = "/contact/person/#{id}.xml")
+@Document(uri = "/contact/person/#{id}.xml", defaultCollection = "Person")
 @XmlRootElement
 public class Person {
 
@@ -21,7 +21,8 @@ public class Person {
     private String firstname;
     private String lastname;
     private Integer age;
-    private String country;
+
+    private Address address;
 
     public Person() {}
 
@@ -30,7 +31,9 @@ public class Person {
         this.firstname = firstname;
         this.lastname = lastname;
         this.age = age;
-        this.country = country;
+
+        address = new Address();
+        address.setCountry(country);
     }
 
     /**
@@ -91,22 +94,22 @@ public class Person {
     }
 
     /**
-     * @return the country
+     * @return the address
      */
-    public String getCountry() {
-        return country;
+    public Address getAddress() {
+        return address;
     }
 
     /**
-     * @param country the country to set
+     * @param address the address to set
      */
-    public void setCountry(String country) {
-        this.country = country;
+    public void setAddress(Address address) {
+        this.address = address;
     }
 
     /* (non-Javadoc)
-             * @see java.lang.Object#toString()
-             */
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return String.format("%s %s", firstname, lastname);

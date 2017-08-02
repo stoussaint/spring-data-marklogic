@@ -1,5 +1,8 @@
 package org.springframework.data.marklogic.sample;
 
+import org.springframework.data.marklogic.core.mapping.Document;
+
+import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
@@ -9,10 +12,14 @@ import javax.xml.bind.annotation.XmlRootElement;
  * @since 2017-03-29
  */
 @XmlRootElement
-public class Person {
-    private String id;
+@Document(defaultCollection = "#{entityClass.simpleName}")
+public class Person extends Entity {
+
+    @XmlElement(name = "firstname")
     private String name;
     private Integer age;
+
+    private Address address;
 
     public Person() {
     }
@@ -24,20 +31,6 @@ public class Person {
     public Person(String name, int age) {
         this.name = name;
         this.age = age;
-    }
-
-    /**
-     * @return the id
-     */
-    public String getId() {
-        return id;
-    }
-
-    /**
-     * @param id the id to set
-     */
-    public void setId(String id) {
-        this.id = id;
     }
 
     /**
@@ -68,8 +61,29 @@ public class Person {
         this.age = age;
     }
 
+    /**
+     * @param age the age to set
+     */
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    /**
+     * @return the address
+     */
+    public Address getAddress() {
+        return address;
+    }
+
+    /**
+     * @param address the address to set
+     */
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
     @Override
     public String toString() {
-        return "Person [id=" + id + ", name=" + name + ", age=" + age + "]";
+        return "Person [id=" + getId() + ", name=" + name + ", age=" + age + "]";
     }
 }

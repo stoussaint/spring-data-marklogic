@@ -37,7 +37,7 @@ public class MarklogicApp {
         // Update
         p.setAge(35);
         marklogicOps.save(p);
-        p = marklogicOps.findOne(Example.of(new Person("Joe")), Person.class);
+        p = marklogicOps.findOne(null, Person.class);
         log.info("Updated: " + p);
 
         // Delete

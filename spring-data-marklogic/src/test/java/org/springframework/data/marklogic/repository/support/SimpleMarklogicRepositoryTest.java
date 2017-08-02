@@ -14,12 +14,16 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.marklogic.core.MarklogicFactoryBean;
 import org.springframework.data.marklogic.core.MarklogicTemplate;
 import org.springframework.data.marklogic.core.convert.MarklogicConverter;
 import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import org.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import org.springframework.data.marklogic.datasource.ContentSourceTransactionManager;
+import org.springframework.data.marklogic.repository.Address;
 import org.springframework.data.marklogic.repository.Person;
 import org.springframework.data.marklogic.repository.query.MarklogicEntityInformation;
 import org.springframework.test.context.ContextConfiguration;
@@ -34,6 +38,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
@@ -52,6 +57,7 @@ public class SimpleMarklogicRepositoryTest {
 
     Person steph;
     Person sahbi;
+    Person another;
 
     List<Person> all;
 
@@ -64,21 +70,33 @@ public class SimpleMarklogicRepositoryTest {
 
         steph = new Person(null,"Stéphane", "Toussaint", 38, "France");
         sahbi = new Person(null, "Sahbi", "Ktifa", 28, "France");
+        another = new Person(null, "Another", "One", 28, "England");
 
-        all = repository.save(Arrays.asList(steph, sahbi));
+        all = repository.save(Arrays.asList(steph, sahbi, another));
     }
 
     @Test
-    public void findAllFromCustomCollectionName() {
-        List<Person> result = repository.findAll();
-        assertThat(result, hasSize(all.size()));
+    public void countAllInRepository() throws Exception {
+        assertThat(repository.count(), is(3L));
     }
 
     @Test
-    public void insertPersonWithNoId() {
-        Person person = new Person(null,"James", "Bond", 38, "France");
-        repository.save(person);
-        assertThat(person.getId(), notNullValue());
+    public void countBySample() throws Exception {
+        Person samplePerson = new Person();
+        samplePerson.setLastname("Toussaint");
+        assertThat(repository.count(Example.of(samplePerson)), is(1L));
+    }
+
+    @Test
+    public void checkPersonExists() throws Exception {
+        assertThat(repository.exists(steph.getId()), is(true));
+    }
+
+    @Test
+    public void checkPersonExistsBySample() throws Exception {
+        Person samplePerson = new Person();
+        samplePerson.setLastname("Toussaint");
+        assertThat(repository.exists(Example.of(samplePerson)), is(true));
     }
 
     @Test
@@ -87,6 +105,65 @@ public class SimpleMarklogicRepositoryTest {
         assertThat(person, notNullValue());
         assertThat(person.getId(), is(steph.getId()));
         assertThat(person.getFirstname(), is("Stéphane"));
+    }
+
+    @Test
+    public void findOnePersonByExample() {
+        Person person = new Person();
+        person.setLastname("Toussaint");
+        final Person result = repository.findOne(Example.of(person));
+        assertThat(result, notNullValue());
+        assertThat(result.getId(), is(steph.getId()));
+        assertThat(result.getFirstname(), is("Stéphane"));
+    }
+
+    @Test
+    public void throwExceptionWhenFindOneReturnMultiplePersons() {
+        thrown.expect(IncorrectResultSizeDataAccessException.class);
+        thrown.expectMessage("Incorrect result size: expected 1, actual 2");
+
+        Person person = new Person();
+        Address address = new Address();
+        address.setCountry("France");
+        person.setAddress(address);
+
+        repository.findOne(Example.of(person));
+    }
+
+    @Test
+    public void findAllInRepository() {
+        List<Person> result = repository.findAll();
+        assertThat(result, hasSize(all.size()));
+    }
+
+    @Test
+    public void findAllById() {
+        List<Person> result = repository.findAll(Arrays.asList(sahbi.getId(), steph.getId()));
+        assertThat(result, hasSize(2));
+        assertThat(result.stream().map(Person::getLastname).collect(Collectors.toList()), containsInAnyOrder("Toussaint", "Ktifa"));
+    }
+
+    @Test
+    public void findAllInRepositorySortedOrder() {
+        checkOrder(new Sort("lastname"), new String[] {"Ktifa", "One", "Toussaint"});
+        checkOrder(new Sort(Sort.Direction.DESC, "lastname"), new String[] {"Toussaint", "One", "Ktifa"});
+        checkOrder(new Sort(Sort.Direction.DESC, "age", "lastname"), new String[] {"Toussaint", "One", "Ktifa"});
+        checkOrder(new Sort(Sort.Direction.DESC, "age").and(new Sort("lastname")), new String[] {"Toussaint", "Ktifa", "One"});
+    }
+
+    @Test
+    public void findAllWithPagination() {
+        Page<Person> pageResult = repository.findAll(new PageRequest(0, 2));
+        assertThat(pageResult.getTotalElements(), is(3L));
+        assertThat(pageResult.getTotalPages(), is(2));
+        assertThat(pageResult.getContent(), hasSize(2));
+    }
+
+    @Test
+    public void insertPersonWithNoId() {
+        Person person = new Person(null,"James", "Bond", 38, "France");
+        repository.save(person);
+        assertThat(person.getId(), notNullValue());
     }
 
     @Test
@@ -125,23 +202,11 @@ public class SimpleMarklogicRepositoryTest {
         assertThat(result, notNullValue());
     }
 
-    @Test
-    public void findOnePersonByExample() {
-        Person person = new Person();
-        person.setLastname("Toussaint");
-        final Person result = repository.findOne(Example.of(person));
-        assertThat(result, notNullValue());
-        assertThat(result.getId(), is(steph.getId()));
-        assertThat(result.getFirstname(), is("Stéphane"));
-    }
-
-    @Test
-    public void findOnePersonByCountryThrowsException() {
-        thrown.expect(IncorrectResultSizeDataAccessException.class);
-
-        Person person = new Person();
-        person.setCountry("France");
-        repository.findOne(Example.of(person));
+    private void checkOrder(Sort sort, String[] lastnames) {
+        List<Person> result = repository.findAll(sort);
+        assertThat(result.get(0).getLastname(), is(lastnames[0]));
+        assertThat(result.get(1).getLastname(), is(lastnames[1]));
+        assertThat(result.get(2).getLastname(), is(lastnames[2]));
     }
 
     private static class CustomizedPersonInformation implements MarklogicEntityInformation<Person, String> {
