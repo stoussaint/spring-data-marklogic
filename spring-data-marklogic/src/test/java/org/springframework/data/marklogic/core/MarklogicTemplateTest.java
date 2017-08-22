@@ -6,7 +6,6 @@ import com.marklogic.xcc.impl.ResultItemImpl;
 import com.marklogic.xcc.types.impl.XsStringImpl;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -17,9 +16,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.data.mapping.context.MappingContext;
-import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import org.springframework.data.marklogic.core.convert.MarklogicContentHolder;
 import org.springframework.data.marklogic.core.convert.MarklogicConverter;
+import org.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import org.springframework.data.marklogic.core.mapping.BasicMarklogicPersistentEntity;
 import org.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import org.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
@@ -30,7 +29,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Scanner;
+import java.util.UUID;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -196,12 +196,12 @@ public class MarklogicTemplateTest {
 
         MarklogicTemplate template = new MarklogicTemplate(contentSource);
         Query query = new Query();
-        query.setCriteria(Collections.singletonList(new Criteria(new QName("", "name"), "test")));
+        query.setCriteria(new Criteria(new QName("", "name"), "test"));
 
         template.find(query, SimpleEntity.class);
 
         verify(session).newAdhocQuery(queryArgumentCaptor.capture());
-        assertThat(queryArgumentCaptor.getValue(), is("cts:search(fn:collection(), cts:and-query((cts:element-value-query(fn:QName('', 'name'), 'test'))), ())"));
+        assertThat(queryArgumentCaptor.getValue(), is("cts:search(fn:collection(), cts:element-value-query(fn:QName('', 'name'), 'test'), ())"));
     }
 
     static class SimpleEntity {

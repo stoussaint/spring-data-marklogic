@@ -19,7 +19,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -58,7 +57,7 @@ abstract class MarklogicConverters {
 
         @Override
         public Set<ConvertiblePair> getConvertibleTypes() {
-            return Collections.singleton(new ConvertiblePair(Object.class, Serializable.class));
+            return Collections.singleton(new ConvertiblePair(Object.class, String.class));
         }
 
         @Override

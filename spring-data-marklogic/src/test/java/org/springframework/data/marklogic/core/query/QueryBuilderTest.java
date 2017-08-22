@@ -5,9 +5,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.springframework.data.domain.Example;
 import org.springframework.data.marklogic.core.MarklogicOperationOptions;
+import org.springframework.data.marklogic.core.cts.CTSQueryParser;
 import org.springframework.data.marklogic.sample.Address;
 import org.springframework.data.marklogic.sample.Person;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -85,7 +87,7 @@ public class QueryBuilderTest {
         Query query = new QueryBuilder().alike(Example.of(person)).build();
 
         assertThat(query, notNullValue());
-        assertThat(query.getCriteria(), hasSize(0));
+        assertThat(query.getCriteria(), nullValue());
     }
 
     @Test
@@ -103,12 +105,39 @@ public class QueryBuilderTest {
         Query query = new QueryBuilder().alike(Example.of(person)).build();
 
         assertThat(query, notNullValue());
-        assertThat(query.getCriteria(), hasSize(3));
-        assertThat(query.getCriteria().get(2).getValue(), instanceOf(List.class));
         assertThat(query.getCollection(), is("Person"));
+        assertThat(query.getCriteria(), notNullValue());
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.and));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
 
-        List<Criteria> value = (List<Criteria>)query.getCriteria().get(2).getValue();
-        assertThat(value, hasSize(2));
+        List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();
+        assertThat(criteriaList, hasSize(3));
+        assertThat(criteriaList.get(0).getCriteriaObject(), is("Me"));
+        assertThat(criteriaList.get(1).getCriteriaObject(), is(38));
+        assertThat(criteriaList.get(2).getOperator(), is(Criteria.Operator.and));
+        System.out.println(new CTSQueryParser(query).asCtsQuery());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void considerCollectionValuesAsOrQuery() throws Exception {
+        Person person = new Person();
+        person.setSkills(Arrays.asList("java", "xml"));
+        person.setAge(38);
+
+        Query query = new QueryBuilder().alike(Example.of(person)).build();
+        System.out.println(new CTSQueryParser(query).asCtsQuery());
+
+        assertThat(query, notNullValue());
+        assertThat(query.getCollection(), is("Person"));
+        assertThat(query.getCriteria(), notNullValue());
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.and));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
+
+        List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();
+        assertThat(criteriaList, hasSize(2));
+
+
     }
 
     @Test

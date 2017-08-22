@@ -4,6 +4,7 @@ import org.springframework.data.marklogic.core.mapping.Document;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.List;
 
 /**
  * --Description--
@@ -20,6 +21,8 @@ public class Person extends Entity {
     private Integer age;
 
     private Address address;
+
+    private List<String> skills;
 
     public Person() {
     }
@@ -80,6 +83,20 @@ public class Person extends Entity {
      */
     public void setAddress(Address address) {
         this.address = address;
+    }
+
+    /**
+     * @return the skills
+     */
+    public List<String> getSkills() {
+        return skills;
+    }
+
+    /**
+     * @param skills the skills to set
+     */
+    public void setSkills(List<String> skills) {
+        this.skills = skills;
     }
 
     @Override

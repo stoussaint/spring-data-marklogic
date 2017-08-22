@@ -79,10 +79,10 @@ public class MarklogicMappingConverter extends AbstractMarklogicConverter  {
         TypeDescriptor sourceDescriptor = TypeDescriptor.forObject(source);
         sourceDescriptor.getAnnotations();
 
-        TypeDescriptor targetDescriptor = TypeDescriptor.valueOf(Serializable.class);
+        TypeDescriptor targetDescriptor = TypeDescriptor.valueOf(String.class);
 
         if (getConversionService().canConvert(sourceDescriptor, targetDescriptor)) {
-            Serializable content = getConversionService().convert(source, Serializable.class);
+            Serializable content = getConversionService().convert(source, String.class);
             holder.setContent(content);
         } else {
             throw new ConverterNotFoundException(sourceDescriptor, targetDescriptor);

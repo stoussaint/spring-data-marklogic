@@ -7,10 +7,9 @@ import org.springframework.data.marklogic.core.query.SortCriteria;
 
 import javax.xml.namespace.QName;
 import java.util.Arrays;
-import java.util.Collections;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 /**
  * --Description--
@@ -30,14 +29,14 @@ public class CTSQueryParserTest {
     @Test
     public void parsePopulatedQuery() throws Exception {
         Query query = new Query();
-        query.setCriteria(Arrays.asList(
-                new Criteria(new QName("name"), "Me"),
-                new Criteria(new QName("address"), Arrays.asList(
-                        new Criteria(new QName("town"), "Paris")
-                ))));
+        query.setCriteria(new Criteria(Criteria.Operator.and, Arrays.asList(
+            new Criteria(new QName("name"), "Me"),
+            new Criteria(new QName("town"), "Paris")
+        )));
+
         String ctsQuery = new CTSQueryParser(query).asCtsQuery();
 
-        assertThat(ctsQuery, is("cts:search(fn:collection(), cts:and-query((cts:element-value-query(fn:QName('', 'name'), 'Me'), cts:element-query(fn:QName('', 'address'), cts:and-query((cts:element-value-query(fn:QName('', 'town'), 'Paris')))))), ())"));
+        assertThat(ctsQuery, is("cts:search(fn:collection(), cts:and-query((cts:element-value-query(fn:QName('', 'name'), 'Me'), cts:element-value-query(fn:QName('', 'town'), 'Paris'))), ())"));
     }
 
     @Test

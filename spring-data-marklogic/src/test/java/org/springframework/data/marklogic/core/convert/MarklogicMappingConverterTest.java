@@ -9,7 +9,6 @@ import org.springframework.core.convert.converter.GenericConverter;
 import org.springframework.data.marklogic.core.mapping.Document;
 import org.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
@@ -71,7 +70,7 @@ public class MarklogicMappingConverterTest {
 
         @Override
         public Set<ConvertiblePair> getConvertibleTypes() {
-            return Collections.singleton(new ConvertiblePair(ConvertibleObject.class, Serializable.class));
+            return Collections.singleton(new ConvertiblePair(ConvertibleObject.class, String.class));
         }
 
         @Override
@@ -89,7 +88,7 @@ public class MarklogicMappingConverterTest {
 
         @Override
         public Set<ConvertiblePair> getConvertibleTypes() {
-            return Collections.singleton(new ConvertiblePair(Object.class, Serializable.class));
+            return Collections.singleton(new ConvertiblePair(Object.class, String.class));
         }
 
         @Override

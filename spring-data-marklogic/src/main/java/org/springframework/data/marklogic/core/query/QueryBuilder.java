@@ -18,8 +18,9 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * --Description--
@@ -105,37 +106,62 @@ public class QueryBuilder {
         return buildSortCriteria(sort, persistentEntity);
     }
 
-    private List<Criteria> prepareCriteria(Example example) {
+    private Criteria prepareCriteria(Example example) {
         MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(example.getProbeType());
         return buildCriteria(example.getProbe(), persistentEntity);
     }
 
-    private List<Criteria> buildCriteria(Object bean, MarklogicPersistentEntity<?> entity) {
-        ArrayList<Criteria> criteriaList = new ArrayList<>();
+    private Criteria buildCriteria(Object bean, MarklogicPersistentEntity<?> entity) {
+        Stack<Criteria> stack = new Stack<>();
         PersistentPropertyAccessor propertyAccessor = entity.getPropertyAccessor(bean);
 
         entity.doWithProperties((PropertyHandler<MarklogicPersistentProperty>) property -> {
             Object value = propertyAccessor.getProperty(property);
-            if (value != null) {
-                if (!(value instanceof Iterable)) {
-                    Criteria criteria = new Criteria();
-                    criteria.setQname(property.getQName());
-
-                    if (property.getPersistentEntityType() != null) {
-                        for (TypeInformation<?> typeInformation : property.getPersistentEntityType()) {
-                            MarklogicPersistentEntity<?> nestedEntity = mappingContext.getPersistentEntity(typeInformation);
-                            value = buildCriteria(value, nestedEntity);
-                        }
-
-                        criteria.setValue(value);
+            if (hasContent(value)) {
+                if (stack.empty()) {
+                    stack.push(buildCriteria(property, value));
+                } else {
+                    Criteria criteria = stack.peek();
+                    if (criteria.getOperator() == null) {
+                        Criteria andCriteria = new Criteria(Criteria.Operator.and, new ArrayList<>(Arrays.asList(criteria, buildCriteria(property, value))));
+                        stack.pop();
+                        stack.push(andCriteria);
+                    } else {
+                        criteria.add(buildCriteria(property, value));
                     }
-
-                    criteriaList.add(criteria);
                 }
             }
         });
 
-        return criteriaList;
+        return stack.empty() ? null : stack.peek();
+    }
+
+    private boolean hasContent(Object value) {
+        return value != null && (!(value instanceof Collection) || !((Collection) value).isEmpty());
+    }
+
+    private Criteria buildCriteria(MarklogicPersistentProperty property, Object value) {
+        Optional<? extends TypeInformation<?>> typeInformation = StreamSupport.stream(property.getPersistentEntityType().spliterator(), false).findFirst();
+        if (typeInformation.isPresent()) {
+            MarklogicPersistentEntity<?> nestedEntity = mappingContext.getPersistentEntity(typeInformation.get());
+            return buildCriteria(value, nestedEntity);
+        } else {
+            Criteria criteria = new Criteria();
+
+            if (value instanceof Collection) {
+                criteria.setOperator(Criteria.Operator.or);
+                Collection<?> collection = (Collection<?>) value;
+                criteria.setCriteriaObject(collection.stream()
+                        .map(o -> buildCriteria(property, o))
+                        .collect(Collectors.toList())
+                );
+            } else {
+                criteria.setQname(property.getQName());
+                criteria.setCriteriaObject(value);
+            }
+
+            return criteria;
+        }
     }
 
     private List<SortCriteria> buildSortCriteria(Sort sort, MarklogicPersistentEntity<?> entity) {

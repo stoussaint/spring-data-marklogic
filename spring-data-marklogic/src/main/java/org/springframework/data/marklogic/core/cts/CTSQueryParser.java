@@ -35,7 +35,7 @@ public class CTSQueryParser {
         if (!disablePagination && query.getLimit() > 0 && query.getSkip() >= 0) {
             limitPredicate = String.format("[%d to %d]", query.getSkip() + 1, query.getLimit());
         }
-        return String.format("cts:search(%s, %s, %s)%s", collection, serializeCriteriaList(query.getCriteria()), buildOptions(), limitPredicate);
+        return String.format("cts:search(%s, %s, %s)%s", collection, serializeCriteria(query.getCriteria()), buildOptions(), limitPredicate);
     }
 
     private String buildOptions() {
@@ -51,29 +51,24 @@ public class CTSQueryParser {
         return String.format("fn:collection('%s')", query.getCollection());
     }
 
-    private String asCtsQuery(Criteria criteria) {
-        Object value = criteria.getValue();
-        if (value instanceof List) {
-            return handleListCriteria(criteria, value);
-        } else {
-            return handleSimpleValue(criteria, value);
-        }
+    private String handleSimpleValue(Criteria criteria) {
+        return String.format("cts:element-value-query(%s, '%s')", serializeQName(criteria.getQname()), criteria.getCriteriaObject());
     }
 
     @SuppressWarnings("unchecked")
-    private String handleListCriteria(Criteria criteria, Object value) {
-        List<Criteria> criteriaList = (List<Criteria>)value;
-        return String.format("cts:element-query(%s, %s)", serializeQName(criteria.getQname()), serializeCriteriaList(criteriaList));
-    }
+    private String serializeCriteria(Criteria criteria) {
+        if (criteria != null) {
+            if (criteria.getOperator() == null) {
+                return handleSimpleValue(criteria);
+            } else {
+                List<Criteria> criteriaList = (List<Criteria>) criteria.getCriteriaObject();
+                String ctsQueries = criteriaList.stream().map(this::serializeCriteria).collect(Collectors.joining(", "));
 
-    private String handleSimpleValue(Criteria criteria, Object value) {
-        return String.format("cts:element-value-query(%s, '%s')", serializeQName(criteria.getQname()), value);
-    }
-
-    private String serializeCriteriaList(List<Criteria> criteriaList) {
-        if (criteriaList != null) {
-            String ctsQueries = criteriaList.stream().map(this::asCtsQuery).collect(Collectors.joining(", "));
-            return String.format("cts:and-query((%s))", ctsQueries);
+                switch (criteria.getOperator()) {
+                    case and: return String.format("cts:and-query((%s))", ctsQueries);
+                    case or: return String.format("cts:or-query((%s))", ctsQueries);
+                }
+            }
         }
 
         return "()";

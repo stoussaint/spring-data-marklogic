@@ -14,8 +14,15 @@ public class Query {
     private int limit;
     private String collection;
 
-    private List<Criteria> criteria;
+    private Criteria criteria;
     private List<SortCriteria> sortCriteria;
+
+    public Query() {
+    }
+
+    public Query(Criteria criteria) {
+        this.criteria = criteria;
+    }
 
     /**
      * @return the skip
@@ -62,14 +69,14 @@ public class Query {
     /**
      * @return the criteria
      */
-    public List<Criteria> getCriteria() {
+    public Criteria getCriteria() {
         return criteria;
     }
 
     /**
      * @param criteria the criteria to set
      */
-    public void setCriteria(List<Criteria> criteria) {
+    public void setCriteria(Criteria criteria) {
         this.criteria = criteria;
     }
 

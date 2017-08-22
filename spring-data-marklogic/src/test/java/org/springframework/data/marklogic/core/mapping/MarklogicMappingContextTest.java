@@ -43,9 +43,9 @@ public class MarklogicMappingContextTest {
 
         List<Criteria> criteria = doWith(entity, person);
         assertThat(criteria, IsCollectionWithSize.hasSize(4));
-        assertThat(criteria.get(0).getValue(), is("Toussaint"));
-        assertThat(criteria.get(2).getValue(), instanceOf(List.class));
-        assertThat(((List<Criteria>)criteria.get(2).getValue()).get(0).getValue(), is("Plaisir"));
+        assertThat(criteria.get(0).getCriteriaObject(), is("Toussaint"));
+        assertThat(criteria.get(2).getCriteriaObject(), instanceOf(List.class));
+        assertThat(((List<Criteria>)criteria.get(2).getCriteriaObject()).get(0).getCriteriaObject(), is("Plaisir"));
     }
 
     private List<Criteria> doWith(BasicMarklogicPersistentEntity<?> entity, Object bean) {
@@ -65,7 +65,7 @@ public class MarklogicMappingContextTest {
                         value = doWith(subEntity, value);
                     }
 
-                    criteria.setValue(value);
+                    criteria.setCriteriaObject(value);
                 }
 
                 criteriaList.add(criteria);

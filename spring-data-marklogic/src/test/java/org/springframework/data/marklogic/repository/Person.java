@@ -3,7 +3,9 @@ package org.springframework.data.marklogic.repository;
 import org.springframework.data.marklogic.core.mapping.Document;
 
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -21,6 +23,8 @@ public class Person {
     private String firstname;
     private String lastname;
     private Integer age;
+    private List<String> skills;
+    private Boolean active;
 
     private Address address;
 
@@ -107,9 +111,39 @@ public class Person {
         this.address = address;
     }
 
-    /* (non-Javadoc)
-     * @see java.lang.Object#toString()
+    /**
+     * @return the active
      */
+    public Boolean getActive() {
+        return active;
+    }
+
+    /**
+     * @param active the active to set
+     */
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
+
+    /**
+     * @return the skills
+     */
+    @XmlElementWrapper(name = "skills")
+    @XmlElement(name = "skill")
+    public List<String> getSkills() {
+        return skills;
+    }
+
+    /**
+     * @param skills the skills to set
+     */
+    public void setSkills(List<String> skills) {
+        this.skills = skills;
+    }
+
+    /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
     @Override
     public String toString() {
         return String.format("%s %s", firstname, lastname);

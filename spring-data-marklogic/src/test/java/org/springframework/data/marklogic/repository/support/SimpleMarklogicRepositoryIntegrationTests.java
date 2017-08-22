@@ -8,9 +8,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.data.domain.Example;
@@ -50,7 +52,7 @@ import static org.junit.Assert.assertThat;
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration
-public class SimpleMarklogicRepositoryTest {
+public class SimpleMarklogicRepositoryIntegrationTests {
 
     @Autowired
     private SimpleMarklogicRepository<Person, String> repository;
@@ -264,12 +266,16 @@ public class SimpleMarklogicRepositoryTest {
     @Configuration
     @EnableTransactionManagement
     @EnableAspectJAutoProxy(proxyTargetClass = true)
+    @PropertySource(value = "integration-test.properties", ignoreResourceNotFound = true)
     static class TestConfig {
+
+        @Value("${marklogic.uri}")
+        private String marklogicUri;
 
         @Bean
         public MarklogicFactoryBean marklogicContentSource() {
             MarklogicFactoryBean marklogicFactoryBean = new MarklogicFactoryBean();
-            marklogicFactoryBean.setUri(URI.create("xdbc://admin:admin@localhost:8888"));
+            marklogicFactoryBean.setUri(URI.create(marklogicUri));
             return marklogicFactoryBean;
         }
 

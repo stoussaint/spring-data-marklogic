@@ -7,6 +7,8 @@ import org.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity
 import org.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 import org.springframework.data.marklogic.repository.MarklogicRepository;
 import org.springframework.data.marklogic.repository.query.MarklogicEntityInformation;
+import org.springframework.data.marklogic.repository.query.MarklogicQueryMethod;
+import org.springframework.data.marklogic.repository.query.PartTreeMarklogicQuery;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.NamedQueries;
 import org.springframework.data.repository.core.RepositoryInformation;
@@ -100,15 +102,15 @@ public class MarklogicRepositoryFactory extends RepositoryFactorySupport {
         public RepositoryQuery resolveQuery(Method method, RepositoryMetadata metadata, ProjectionFactory factory,
                                             NamedQueries namedQueries) {
 
-            QueryMethod queryMethod = new QueryMethod(method, metadata, factory);
+            MarklogicQueryMethod queryMethod = new MarklogicQueryMethod(method, metadata, factory, mappingContext);
             String namedQueryName = queryMethod.getNamedQueryName();
 
             if (namedQueries.hasQuery(namedQueryName)) {
                 String moduleQueryUri = namedQueries.getQuery(namedQueryName);
                 return new ModuleInvokeDelegateQuery(moduleQueryUri, queryMethod, operations);
+            } else {
+                return new PartTreeMarklogicQuery(queryMethod, operations);
             }
-
-            return null;
         }
     }
 
