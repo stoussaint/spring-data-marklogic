@@ -8,6 +8,7 @@ import org.springframework.data.marklogic.core.MarklogicOperationOptions;
 import org.springframework.data.marklogic.core.cts.CTSQueryParser;
 import org.springframework.data.marklogic.sample.Address;
 import org.springframework.data.marklogic.sample.Person;
+import org.springframework.expression.spel.SpelEvaluationException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -53,15 +54,17 @@ public class QueryBuilderTest {
 
     @Test
     public void buildEmptyQueryWithUnresolvableCollection_throwsException() throws Exception {
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("An example object or an explicit entityClass must be provided in order to expand collection expression");
+        expectedException.expect(SpelEvaluationException.class);
+        expectedException.expectMessage("Attempted to call method getSimpleName() on null context object");
 
-        new QueryBuilder().options(new MarklogicOperationOptions() {
+        Query build = new QueryBuilder().options(new MarklogicOperationOptions() {
             @Override
             public String defaultCollection() {
                 return "#{entityClass.getSimpleName()}";
             }
         }).build();
+
+        assertThat(build, notNullValue());
     }
 
     @Test

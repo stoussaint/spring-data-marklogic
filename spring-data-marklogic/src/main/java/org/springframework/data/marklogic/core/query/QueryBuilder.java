@@ -234,10 +234,6 @@ public class QueryBuilder {
         if (expression == null) {
             return collection;
         } else {
-            if (options.entityClass() == null && example == null) {
-                throw new IllegalArgumentException("An example object or an explicit entityClass must be provided in order to expand collection expression");
-            }
-
             return expression.getValue(identifierContext, String.class);
         }
     }
