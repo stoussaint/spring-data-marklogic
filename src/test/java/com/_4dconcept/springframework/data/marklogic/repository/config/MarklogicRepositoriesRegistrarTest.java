@@ -20,7 +20,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class MarklogicRepositoriesRegistrarTest {
 
     @Configuration
-    @EnableMarklogicRepositories(basePackages = "org.springframework.data.marklogic.repository")
+    @EnableMarklogicRepositories(basePackages = "com._4dconcept.springframework.data.marklogic.repository")
     static class Config {
 
         @Bean
