@@ -11,7 +11,7 @@
 	<logger name="org.springframework" level="debug" />
 	 -->
 
-	<logger name="org.springframework.data.marklogic.datasource.ContentSourceTransactionManager" level="debug" />
+	<logger name="com._4dconcept.springframework.data.marklogic.datasource.ContentSourceTransactionManager" level="debug" />
 	<logger name="org.springframework.data.marklogic.core" level="debug" />
 
 	<root level="error">
