@@ -84,7 +84,6 @@ public class PersonRepositoryTests {
 
     @Test
     public void readsFirstPageCorrectly() {
-
       Page<Person> persons = repository.findAll(new PageRequest(0, 10));
       assertThat(persons.isFirstPage(), is(true));
     }
@@ -97,27 +96,51 @@ The sample creates an application context with Spring's unit test support which 
 [[marklogic.repositories.queries]]
 == Query methods
 
-NOTE: Not currently supported
-//.PersonRepository with query methods
-//====
-//[source,java]
-//----
-//public interface PersonRepository extends PagingAndSortingRepository<Person, String> {
-//
-//    List<Person> findByLastname(String lastname);                      <1>
-//
-//    Page<Person> findByFirstname(String firstname, Pageable pageable); <2>
-//
-//    Person findByShippingAddresses(Address address);                   <3>
-//
-//    Stream<Person> findAllBy();                                        <4>
-//}
-//----
-//<1> The method shows a query for all people with the given lastname. The query will be derived parsing the method name for constraints which can be concatenated with `And` and `Or`.
-//<2> Applies pagination to a query. Just equip your method signature with a `Pageable` parameter and let the method return a `Page` instance and we will automatically page the query accordingly.
-//<3> Shows that you can query based on properties which are not a primitive type.
-//<4> Uses a Java 8 `Stream` which reads and converts individual elements while iterating the stream.
-//====
+Most of the data access operations you usually trigger on a repository result a query being executed against the Marklogic databases. Defining such a query is just a matter of declaring a method on the repository interface.
+More information in the commons section <<repositories.query-methods, Query Methods>> and <<repositories.query-methods.details, Defining query methods>>.
+
+.PersonRepository with query methods
+====
+[source,java]
+----
+public interface PersonRepository extends PagingAndSortingRepository<Person, String> {
+
+    List<Person> findByLastname(String lastname);                      <1>
+
+    List<Person> findByShippingAddressTown(String town);                   <2>
+}
+----
+<1> The method shows a query for all people with the given lastname. The query will be derived parsing the method name for constraints which can be concatenated with `And` and `Or`.
+<2> Shows that you can query based on properties of sub-entity.
+====
+
+[cols="1,2,3", options="header"]
+.Supported keywords for query methods
+|===
+| Keyword
+| Sample
+| Logical result
+
+| `(No keyword)`
+| `findByFirstname(String name)`
+| `Find persons with firstname equals to name parameters`
+
+| `(No keyword)`
+| `findBySkills(collection skills)`
+| `Find persons with skills containing every value in skills parameters (and query)`
+
+| `In` , `Containing`
+| `findBySkillsContaining(Collection skills)`
+| `Find persons with skills containing at least one of the value from skills parameters (or query)`
+
+| `IsTrue, True`
+| `findByActiveIsTrue()`
+| `Find persons with active field set to true`
+
+| `IsFalse, False`
+| `findByActiveIsFalse()`
+| `Find persons with active field set to false`
+|===
 
 == Module invocation
 

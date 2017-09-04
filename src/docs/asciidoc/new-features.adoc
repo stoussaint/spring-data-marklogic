@@ -4,5 +4,8 @@
 [[new-features.1-0-0]]
 == What's new in Spring Data Marklogic 1.0
 
-* It's only the beginning you know !
+=== New in Spring Data Marklogic 1.0.4
+
+- Improve search by Example (fix nested entity constraint)
+- Support for query method
 

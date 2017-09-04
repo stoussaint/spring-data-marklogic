@@ -27,7 +27,7 @@ include::reference/introduction.adoc[]
 include::reference/marklogic.adoc[]
 include::reference/marklogic-repositories.adoc[]
 include::reference/mapping.adoc[]
-include::reference/jmx.adoc[]
+//include::reference/jmx.adoc[]
 :leveloffset: -1
 
 [[appendix]]

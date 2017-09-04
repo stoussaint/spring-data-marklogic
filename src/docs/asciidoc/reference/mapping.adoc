@@ -1,7 +1,7 @@
 [[mapping-chapter]]
 = Mapping
 
-When dealing with content from/to Marklogic a `MarklogicConverter` come into play to perform actually perform conversion operation from the Marklogic Content API to the domain Entity class to use.
+When dealing with content from/to Marklogic a `MarklogicConverter` come into play to perform conversion operation from the Marklogic Content API to the domain Entity class to use.
 A default `MarklogicMappingConverter` is provided to implement this read/write operations. Those operations will mostly be delegated to the ConversionService (expect for reading native content).
 
 [[mapping-conversion]]
@@ -21,7 +21,7 @@ When dealing with invocation parameters. Variable are converted to XdmValue foll
 |===
 | Type
 | Type conversion
-| Saple
+| Sample
 
 | `null`
 | `XSString`
@@ -105,3 +105,4 @@ When storing and querying your objects it is convenient to have a `MarklogicConv
 To selectively handle the conversion yourself, register one or more one or more `org.springframework.core.convert.converter.Converter` instances with the MarklogicConverter.
 
 NOTE: Spring 3.0 introduced a core.convert package that provides a general type conversion system. This is described in detail in the Spring reference documentation section entitled http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/html/validation.html#core-convert[Spring Type Conversion].
+
