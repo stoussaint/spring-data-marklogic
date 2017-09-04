@@ -1,10 +1,76 @@
 plugins {
     id 'io.spring.dependency-management' version '0.6.1.RELEASE'
     id 'org.asciidoctor.convert' version '1.5.3'
-    id 'nebula.compile-api' version '5.1.0'
 }
 
+apply plugin: 'java-library'
 apply plugin: 'org.asciidoctor.convert'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'maven-publish'
+
+sourceCompatibility = 1.8
+
+group 'com.4dconcept.springframework.data'
+version '1.1.0.BUILD-SNAPSHOT'
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:deprecation"
+    options.compilerArgs << "-Xlint:unchecked"
+}
+
+repositories {
+    jcenter()
+    maven { url "http://developer.marklogic.com/maven2" }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("io.spring.platform:platform-bom:${springBomVersion}")
+    }
+}
+
+dependencies {
+    api 'org.springframework.data:spring-data-commons'
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.marklogic:marklogic-xcc:8.0.3'
+    implementation 'javax.transaction:javax.transaction-api'
+    implementation 'org.aspectj:aspectjweaver'
+    implementation 'org.springframework:spring-context'
+    implementation 'org.springframework:spring-oxm'
+    implementation 'org.springframework:spring-tx'
+
+    testImplementation 'ch.qos.logback:logback-classic'
+    testImplementation 'junit:junit'
+    testImplementation 'org.hamcrest:hamcrest-core'
+    testImplementation 'org.hamcrest:hamcrest-library'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.springframework:spring-test'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
+        }
+    }
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+}
+
+test {
+    exclude '**/*IntegrationTests.class'
+}
+
+task integrationTest( type: Test ) {
+    include '**/*IntegrationTests.class'
+}
 
 asciidoctor {
     attributes \
@@ -21,5 +87,5 @@ asciidoctor {
             'idseparator': '-',
             'docinfo1': '',
             'spring-data-commons-docs':file('../spring-data-commons/src/main/asciidoc'),
-            'spring-data-marklogic-source':file('spring-data-marklogic/src/main/java')
+            'spring-data-marklogic-source':file('src/main/java')
 }
