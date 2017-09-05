@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com._4dconcept.springframework.data.marklogic.datasource.lookup;
 
 import org.springframework.core.Constants;
@@ -47,8 +62,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *   &lt;property name="allowCustomIsolationLevels" value="true"/&gt;
  * &lt;/bean&gt;</pre>
  *
+ * @author Stéphane Toussaint
  * @author Juergen Hoeller
- * @since 2.0.1
+ *
  * @see #setTargetContentSources
  * @see #setDefaultTargetContentSource
  * @see TransactionDefinition#ISOLATION_READ_UNCOMMITTED
@@ -59,36 +75,34 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  */
 public class IsolationLevelContentSourceRouter extends AbstractRoutingContentSource {
 
-	/** Constants instance for TransactionDefinition */
-	private static final Constants constants = new Constants(TransactionDefinition.class);
+    /** Constants instance for TransactionDefinition */
+    private static final Constants constants = new Constants(TransactionDefinition.class);
 
 
-	/**
-	 * Supports Integer values for the isolation level constants
-	 * as well as isolation level names as defined on the
-	 * {@link TransactionDefinition TransactionDefinition interface}.
-	 */
-	@Override
-	protected Object resolveSpecifiedLookupKey(Object lookupKey) {
-		if (lookupKey instanceof Integer) {
-			return lookupKey;
-		}
-		else if (lookupKey instanceof String) {
-			String constantName = (String) lookupKey;
-			if (!constantName.startsWith(DefaultTransactionDefinition.PREFIX_ISOLATION)) {
-				throw new IllegalArgumentException("Only isolation constants allowed");
-			}
-			return constants.asNumber(constantName);
-		}
-		else {
-			throw new IllegalArgumentException(
-					"Invalid lookup key - needs to be isolation level Integer or isolation level name String: " + lookupKey);
-		}
-	}
+    /**
+     * Supports Integer values for the isolation level constants
+     * as well as isolation level names as defined on the
+     * {@link TransactionDefinition TransactionDefinition interface}.
+     */
+    @Override
+    protected Object resolveSpecifiedLookupKey(Object lookupKey) {
+        if (lookupKey instanceof Integer) {
+            return lookupKey;
+        } else if (lookupKey instanceof String) {
+            String constantName = (String) lookupKey;
+            if (!constantName.startsWith(DefaultTransactionDefinition.PREFIX_ISOLATION)) {
+                throw new IllegalArgumentException("Only isolation constants allowed");
+            }
+            return constants.asNumber(constantName);
+        } else {
+            throw new IllegalArgumentException(
+                    "Invalid lookup key - needs to be isolation level Integer or isolation level name String: " + lookupKey);
+        }
+    }
 
-	@Override
-	protected Object determineCurrentLookupKey() {
-		return TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();
-	}
+    @Override
+    protected Object determineCurrentLookupKey() {
+        return TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();
+    }
 
 }

@@ -48,6 +48,41 @@ dependencies {
     testImplementation 'org.springframework:spring-test'
 }
 
+def pomConfig = {
+    organization {
+        name '4DConcept'
+        url 'http://www.4dconcept.com/en'
+    }
+    issueManagement {
+        system 'GitHub Issues'
+        url 'https://github.com/stoussaint/spring-data-marklogic/issues'
+    }
+    scm {
+        url "https://github.com/stoussaint/spring-data-marklogic"
+        connection "scm:git:git://github.com/stoussaint/spring-data-marklogic.git"
+        developerConnection "scm:git:git@github.com:stoussaint/spring-data-marklogic.git"
+    }
+    licenses {
+        license {
+            name 'The Apache Software License, Version 2.0'
+            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+            distribution 'repo'
+        }
+    }
+    developers {
+        developer {
+            id 'stoussaint'
+            name 'Stéphane Toussaint'
+            email 'stephane.toussaint@4dconcept.fr'
+        }
+        developer {
+            id 'sktifa'
+            name 'Sahbi Ktifa'
+            email 'sahbi.ktifa@4dconcept.fr'
+        }
+    }
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -55,6 +90,10 @@ publishing {
 
             artifact sourceJar {
                 classifier "sources"
+            }
+
+            pom.withXml {
+                asNode().children().last() + pomConfig
             }
         }
     }

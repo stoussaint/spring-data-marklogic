@@ -13,30 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com._4dconcept.springframework.data.marklogic.core.query;
+package com._4dconcept.springframework.data.marklogic.core.convert;
 
-import javax.xml.namespace.QName;
+import org.springframework.data.convert.EntityReader;
 
 /**
- * Definition of a Criteria. Give access to underlying value (criteria object) and full qualified name if any
+ * EntityReader able of reading from MarklogicContentHolder
  *
- * @author stoussaint
- * @since 2017-08-03
+ * @author Stéphane Toussaint
  */
-public interface CriteriaDefinition {
-
-    /**
-     * Get {@link Object} representation.
-     *
-     * @return the underlying value
-     */
-    Object getCriteriaObject();
-
-    /**
-     * Get the element {@literal QName}.
-     *
-     * @return the current full qualified name if any
-     */
-    QName getQname();
+public interface MarklogicReader<T> extends EntityReader<T, MarklogicContentHolder> {
 
 }

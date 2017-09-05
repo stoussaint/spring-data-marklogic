@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com._4dconcept.springframework.data.marklogic.datasource;
 
 import com.marklogic.xcc.ContentSource;
@@ -49,264 +64,250 @@ import java.lang.reflect.Proxy;
  * You will get the same effect with non-transactional reads, but lazy fetching
  * of XDBC Sessions allows you to still perform reads in transactions.
  *
- * @author Juergen Hoeller
  * @author Stephane Toussaint
- * @since 1.1.4
+ * @author Juergen Hoeller
+ *
  * @see ContentSourceTransactionManager
  */
 public class LazySessionContentSourceProxy extends DelegatingContentSource {
 
-	/** Constants instance for TransactionDefinition */
-	private static final Constants constants = new Constants(Session.class);
+    /** Constants instance for TransactionDefinition */
+    private static final Constants constants = new Constants(Session.class);
 
-	private static final Log logger = LogFactory.getLog(LazySessionContentSourceProxy.class);
+    private static final Log logger = LogFactory.getLog(LazySessionContentSourceProxy.class);
 
-	private String defaultTransactionMode;
+    private String defaultTransactionMode;
 
-	/**
-	 * Create a new LazySessionContentSourceProxy.
-	 * @see #setTargetContentSource
-	 */
-	public LazySessionContentSourceProxy() {
-	}
+    /**
+     * Create a new LazySessionContentSourceProxy.
+     * @see #setTargetContentSource
+     */
+    public LazySessionContentSourceProxy() {
+    }
 
-	/**
-	 * Create a new LazySessionContentSourceProxy.
-	 * @param targetContentSource the target ContentSource
-	 */
-	public LazySessionContentSourceProxy(ContentSource targetContentSource) {
-		setTargetContentSource(targetContentSource);
-		afterPropertiesSet();
-	}
+    /**
+     * Create a new LazySessionContentSourceProxy.
+     * @param targetContentSource the target ContentSource
+     */
+    public LazySessionContentSourceProxy(ContentSource targetContentSource) {
+        setTargetContentSource(targetContentSource);
+        afterPropertiesSet();
+    }
 
-	public void setDefaultTransactionMode(String defaultTransactionMode) {
-		this.defaultTransactionMode = defaultTransactionMode;
-	}
+    public void setDefaultTransactionMode(String defaultTransactionMode) {
+        this.defaultTransactionMode = defaultTransactionMode;
+    }
 
-	@Override
-	public void afterPropertiesSet() {
-		super.afterPropertiesSet();
+    @Override
+    public void afterPropertiesSet() {
+        super.afterPropertiesSet();
 
-		// Determine default auto-commit and transaction isolation
-		// via a Session from the target ContentSource, if possible.
-		if (this.defaultTransactionMode == null) {
-			Session ses = getTargetContentSource().newSession();
-			try {
-				checkDefaultSessionProperties(ses);
-			}
-			finally {
-				ses.close();
-			}
-		}
-	}
+        // Determine default auto-commit and transaction isolation
+        // via a Session from the target ContentSource, if possible.
+        if (this.defaultTransactionMode == null) {
+            Session ses = getTargetContentSource().newSession();
+            try {
+                checkDefaultSessionProperties(ses);
+            } finally {
+                ses.close();
+            }
+        }
+    }
 
-	/**
-	 * Check the default session properties (auto-commit, transaction isolation),
-	 * keeping them to be able to expose them correctly without fetching an actual
-	 * XDBC Session from the target ContentSource.
-	 * <p>This will be invoked once on startup, but also for each retrieval of a
-	 * target Session. If the check failed on startup (because the database was
-	 * down), we'll lazily retrieve those settings.
-	 * @param ses the Session to use for checking
-	 */
-	protected synchronized void checkDefaultSessionProperties(Session ses) {
-		if (this.defaultTransactionMode == null) {
-			this.defaultTransactionMode = ses.getTransactionMode().toString();
-		}
-	}
+    /**
+     * Check the default session properties (auto-commit, transaction isolation),
+     * keeping them to be able to expose them correctly without fetching an actual
+     * XDBC Session from the target ContentSource.
+     * <p>This will be invoked once on startup, but also for each retrieval of a
+     * target Session. If the check failed on startup (because the database was
+     * down), we'll lazily retrieve those settings.
+     * @param ses the Session to use for checking
+     */
+    protected synchronized void checkDefaultSessionProperties(Session ses) {
+        if (this.defaultTransactionMode == null) {
+            this.defaultTransactionMode = ses.getTransactionMode().toString();
+        }
+    }
 
-	/**
-	 * Expose the default transaction mode value.
-	 */
-	protected String defaultTransactionMode() {
-		return this.defaultTransactionMode;
-	}
+    /**
+     * Expose the default transaction mode value.
+     */
+    protected String defaultTransactionMode() {
+        return this.defaultTransactionMode;
+    }
 
-	/**
-	 * Return a Session handle that lazily fetches an actual XDBC Session
-	 * when asked for a Statement (or PreparedStatement or CallableStatement).
-	 * <p>The returned Session handle implements the SessionProxy interface,
-	 * allowing to retrieve the underlying target Session.
-	 * @return a lazy Session handle
-	 * @see SessionProxy#getTargetSession()
-	 */
-	@Override
-	public Session newSession() {
-		return (Session) Proxy.newProxyInstance(
-				SessionProxy.class.getClassLoader(),
-				new Class<?>[] {SessionProxy.class},
-				new LazySessionInvocationHandler());
-	}
+    /**
+     * Return a Session handle that lazily fetches an actual XDBC Session
+     * when asked for a Statement (or PreparedStatement or CallableStatement).
+     * <p>The returned Session handle implements the SessionProxy interface,
+     * allowing to retrieve the underlying target Session.
+     * @return a lazy Session handle
+     * @see SessionProxy#getTargetSession()
+     */
+    @Override
+    public Session newSession() {
+        return (Session) Proxy.newProxyInstance(
+                SessionProxy.class.getClassLoader(),
+                new Class<?>[] {SessionProxy.class},
+                new LazySessionInvocationHandler());
+    }
 
-	/**
-	 * Return a Session handle that lazily fetches an actual XDBC Session
-	 * when asked for a Statement (or PreparedStatement or CallableStatement).
-	 * <p>The returned Session handle implements the SessionProxy interface,
-	 * allowing to retrieve the underlying target Session.
-	 * @param username the per-Session username
-	 * @param password the per-Session password
-	 * @return a lazy Session handle
-	 * @see SessionProxy#getTargetSession() ()
-	 */
-	@Override
-	public Session newSession(String username, String password) {
-		return (Session) Proxy.newProxyInstance(
-				SessionProxy.class.getClassLoader(),
-				new Class<?>[] {SessionProxy.class},
-				new LazySessionInvocationHandler(username, password));
-	}
+    /**
+     * Return a Session handle that lazily fetches an actual XDBC Session
+     * when asked for a Statement (or PreparedStatement or CallableStatement).
+     * <p>The returned Session handle implements the SessionProxy interface,
+     * allowing to retrieve the underlying target Session.
+     * @param username the per-Session username
+     * @param password the per-Session password
+     * @return a lazy Session handle
+     * @see SessionProxy#getTargetSession() ()
+     */
+    @Override
+    public Session newSession(String username, String password) {
+        return (Session) Proxy.newProxyInstance(
+                SessionProxy.class.getClassLoader(),
+                new Class<?>[] {SessionProxy.class},
+                new LazySessionInvocationHandler(username, password));
+    }
 
 
-	/**
-	 * Invocation handler that defers fetching an actual XDBC Session
-	 * until first creation of a Statement.
-	 */
-	private class LazySessionInvocationHandler implements InvocationHandler {
+    /**
+     * Invocation handler that defers fetching an actual XDBC Session
+     * until first creation of a Statement.
+     */
+    private class LazySessionInvocationHandler implements InvocationHandler {
 
-		private String username;
+        private String username;
 
-		private String password;
+        private String password;
 
-		private String transactionMode;
+        private String transactionMode;
 
-		private boolean closed = false;
+        private boolean closed = false;
 
-		private Session target;
+        private Session target;
 
-		public LazySessionInvocationHandler() {
-			this.transactionMode = defaultTransactionMode();
-		}
+        public LazySessionInvocationHandler() {
+            this.transactionMode = defaultTransactionMode();
+        }
 
-		public LazySessionInvocationHandler(String username, String password) {
-			this();
-			this.username = username;
-			this.password = password;
-		}
+        public LazySessionInvocationHandler(String username, String password) {
+            this();
+            this.username = username;
+            this.password = password;
+        }
 
-		@Override
-		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			// Invocation on SessionProxy interface coming in...
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            // Invocation on SessionProxy interface coming in...
 
-			if (method.getName().equals("equals")) {
-				// We must avoid fetching a target Session for "equals".
-				// Only consider equal when proxies are identical.
-				return (proxy == args[0]);
-			}
-			else if (method.getName().equals("hashCode")) {
-				// We must avoid fetching a target Session for "hashCode",
-				// and we must return the same hash code even when the target
-				// Session has been fetched: use hashCode of Session proxy.
-				return System.identityHashCode(proxy);
-			}
-			else if (method.getName().equals("getTargetSession")) {
-				// Handle getTargetSession method: return underlying session.
-				return getTargetSession(method);
-			}
+            if (method.getName().equals("equals")) {
+                // We must avoid fetching a target Session for "equals".
+                // Only consider equal when proxies are identical.
+                return (proxy == args[0]);
+            } else if (method.getName().equals("hashCode")) {
+                // We must avoid fetching a target Session for "hashCode",
+                // and we must return the same hash code even when the target
+                // Session has been fetched: use hashCode of Session proxy.
+                return System.identityHashCode(proxy);
+            } else if (method.getName().equals("getTargetSession")) {
+                // Handle getTargetSession method: return underlying session.
+                return getTargetSession(method);
+            }
 
-			if (!hasTargetSession()) {
-				// No physical target Session kept yet ->
-				// resolve transaction demarcation methods without fetching
-				// a physical XDBC Session until absolutely necessary.
+            if (!hasTargetSession()) {
+                // No physical target Session kept yet ->
+                // resolve transaction demarcation methods without fetching
+                // a physical XDBC Session until absolutely necessary.
 
-				if (method.getName().equals("toString")) {
-					return "Lazy Session proxy for target ContentSource [" + getTargetContentSource() + "]";
-				}
-				else if (method.getName().equals("getTransactionMode")) {
-					if (this.transactionMode != null) {
-						return this.transactionMode;
-					}
-					// Else fetch actual Session and check there,
-					// because we didn't have a default specified.
-				}
-				else if (method.getName().equals("setTransactionMode")) {
-					this.transactionMode = Session.TransactionMode.AUTO.toString();
-					return null;
-				}
-				else if (method.getName().equals("commit")) {
-					// Ignore: no statements created yet.
-					return null;
-				}
-				else if (method.getName().equals("rollback")) {
-					// Ignore: no statements created yet.
-					return null;
-				}
-				else if (method.getName().equals("close")) {
-					// Ignore: no target session yet.
-					this.closed = true;
-					return null;
-				}
-				else if (method.getName().equals("isClosed")) {
-					return this.closed;
-				}
-				else if (this.closed) {
-					// Session proxy closed, without ever having fetched a
-					// physical XDBC Session: throw corresponding SQLException.
-					throw new SessionClosedException();
-				}
-			}
+                if (method.getName().equals("toString")) {
+                    return "Lazy Session proxy for target ContentSource [" + getTargetContentSource() + "]";
+                } else if (method.getName().equals("getTransactionMode")) {
+                    if (this.transactionMode != null) {
+                        return this.transactionMode;
+                    }
+                    // Else fetch actual Session and check there,
+                    // because we didn't have a default specified.
+                } else if (method.getName().equals("setTransactionMode")) {
+                    this.transactionMode = Session.TransactionMode.AUTO.toString();
+                    return null;
+                } else if (method.getName().equals("commit")) {
+                    // Ignore: no statements created yet.
+                    return null;
+                } else if (method.getName().equals("rollback")) {
+                    // Ignore: no statements created yet.
+                    return null;
+                } else if (method.getName().equals("close")) {
+                    // Ignore: no target session yet.
+                    this.closed = true;
+                    return null;
+                } else if (method.getName().equals("isClosed")) {
+                    return this.closed;
+                } else if (this.closed) {
+                    // Session proxy closed, without ever having fetched a
+                    // physical XDBC Session: throw corresponding SQLException.
+                    throw new SessionClosedException();
+                }
+            }
 
-			// Target Session already fetched,
-			// or target Session necessary for current operation ->
-			// invoke method on target session.
-			try {
-				return method.invoke(getTargetSession(method), args);
-			}
-			catch (InvocationTargetException ex) {
-				throw ex.getTargetException();
-			}
-		}
+            // Target Session already fetched,
+            // or target Session necessary for current operation ->
+            // invoke method on target session.
+            try {
+                return method.invoke(getTargetSession(method), args);
+            } catch (InvocationTargetException ex) {
+                throw ex.getTargetException();
+            }
+        }
 
-		/**
-		 * Return whether the proxy currently holds a target Session.
-		 */
-		private boolean hasTargetSession() {
-			return (this.target != null);
-		}
+        /**
+         * Return whether the proxy currently holds a target Session.
+         */
+        private boolean hasTargetSession() {
+            return (this.target != null);
+        }
 
-		/**
-		 * Return the target Session, fetching it and initializing it if necessary.
-		 */
-		private Session getTargetSession(Method operation) {
-			if (this.target == null) {
-				// No target Session held -> fetch one.
-				if (logger.isDebugEnabled()) {
-					logger.debug("Connecting to database for operation '" + operation.getName() + "'");
-				}
+        /**
+         * Return the target Session, fetching it and initializing it if necessary.
+         */
+        private Session getTargetSession(Method operation) {
+            if (this.target == null) {
+                // No target Session held -> fetch one.
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Connecting to database for operation '" + operation.getName() + "'");
+                }
 
-				// Fetch physical Session from ContentSource.
-				this.target = (this.username != null) ?
-						getTargetContentSource().newSession(this.username, this.password) :
-						getTargetContentSource().newSession();
+                // Fetch physical Session from ContentSource.
+                this.target = (this.username != null) ?
+                        getTargetContentSource().newSession(this.username, this.password) :
+                        getTargetContentSource().newSession();
 
-				// If we still lack default session properties, check them now.
-				checkDefaultSessionProperties(this.target);
+                // If we still lack default session properties, check them now.
+                checkDefaultSessionProperties(this.target);
 
-				// Apply kept transaction settings, if any.
-				if (this.transactionMode != null) {
-					try {
-						this.target.setTransactionMode(Session.TransactionMode.valueOf(this.transactionMode));
-					}
-					catch (Exception ex) {
-						logger.debug("Could not set XDBC Session transactionMode", ex);
-					}
-				}
-			}
+                // Apply kept transaction settings, if any.
+                if (this.transactionMode != null) {
+                    try {
+                        this.target.setTransactionMode(Session.TransactionMode.valueOf(this.transactionMode));
+                    } catch (Exception ex) {
+                        logger.debug("Could not set XDBC Session transactionMode", ex);
+                    }
+                }
+            } else {
+                // Target Session already held -> return it.
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Using existing database session for operation '" + operation.getName() + "'");
+                }
+            }
 
-			else {
-				// Target Session already held -> return it.
-				if (logger.isDebugEnabled()) {
-					logger.debug("Using existing database session for operation '" + operation.getName() + "'");
-				}
-			}
+            return this.target;
+        }
 
-			return this.target;
-		}
-
-		public class SessionClosedException extends XccException {
-			public SessionClosedException() {
-				super("Session handle already closed");
-			}
-		}
-	}
+        public class SessionClosedException extends XccException {
+            public SessionClosedException() {
+                super("Session handle already closed");
+            }
+        }
+    }
 
 }

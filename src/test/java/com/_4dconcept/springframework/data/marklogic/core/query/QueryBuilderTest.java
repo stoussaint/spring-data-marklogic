@@ -1,9 +1,23 @@
+/*
+ * Copyright 2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com._4dconcept.springframework.data.marklogic.core.query;
 
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperationOptions;
-import com._4dconcept.springframework.data.marklogic.core.cts.CTSQueryParser;
-import com._4dconcept.springframework.data.marklogic.sample.Address;
-import com._4dconcept.springframework.data.marklogic.sample.Person;
+import com._4dconcept.springframework.data.marklogic.repository.Address;
+import com._4dconcept.springframework.data.marklogic.repository.Person;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -13,14 +27,14 @@ import org.springframework.expression.spel.SpelEvaluationException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
 /**
- * --Description--
- *
  * @author stoussaint
  * @since 2017-08-01
  */
@@ -97,11 +111,11 @@ public class QueryBuilderTest {
     @SuppressWarnings("unchecked")
     public void buildQueryFromFilledExample() throws Exception {
         Person person = new Person();
-        person.setName("Me");
+        person.setFirstname("Me");
         person.setAge(38);
 
         Address address = new Address();
-        address.setCity("Paris");
+        address.setTown("Paris");
         address.setCountry("France");
         person.setAddress(address);
 
@@ -118,7 +132,6 @@ public class QueryBuilderTest {
         assertThat(criteriaList.get(0).getCriteriaObject(), is("Me"));
         assertThat(criteriaList.get(1).getCriteriaObject(), is(38));
         assertThat(criteriaList.get(2).getOperator(), is(Criteria.Operator.and));
-        System.out.println(new CTSQueryParser(query).asCtsQuery());
     }
 
     @Test
@@ -129,7 +142,6 @@ public class QueryBuilderTest {
         person.setAge(38);
 
         Query query = new QueryBuilder().alike(Example.of(person)).build();
-        System.out.println(new CTSQueryParser(query).asCtsQuery());
 
         assertThat(query, notNullValue());
         assertThat(query.getCollection(), is("Person"));
@@ -139,7 +151,6 @@ public class QueryBuilderTest {
 
         List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();
         assertThat(criteriaList, hasSize(2));
-
 
     }
 

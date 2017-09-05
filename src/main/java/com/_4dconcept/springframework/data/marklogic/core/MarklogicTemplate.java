@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com._4dconcept.springframework.data.marklogic.core;
 
 import com._4dconcept.springframework.data.marklogic.MarklogicTypeUtils;
@@ -5,7 +20,7 @@ import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConte
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConverter;
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicWriter;
-import com._4dconcept.springframework.data.marklogic.core.cts.CTSQueryParser;
+import com._4dconcept.springframework.data.marklogic.core.cts.CTSQuerySerializer;
 import com._4dconcept.springframework.data.marklogic.core.mapping.*;
 import com._4dconcept.springframework.data.marklogic.core.mapping.event.AfterSaveEvent;
 import com._4dconcept.springframework.data.marklogic.core.mapping.event.BeforeConvertEvent;
@@ -110,7 +125,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Override
     public long count(Query query) {
-        String ctsQuery = new CTSQueryParser(query).disablePagination().asCtsQuery();
+        String ctsQuery = new CTSQuerySerializer(query).disablePagination().asCtsQuery();
         String countQuery = String.format("xdmp:estimate(%s)", ctsQuery);
         return invokeAdhocQuery(countQuery, Long.TYPE, new MarklogicInvokeOperationOptions() {
             @Override
@@ -326,7 +341,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     @Override
     @SuppressWarnings("unchecked")
     public <T> List<T> find(Query query, Class<T> entityClass, MarklogicOperationOptions options) {
-        return invokeAdhocQueryAsList(new CTSQueryParser(query).asCtsQuery(), entityClass, new MarklogicInvokeOperationOptions() {
+        return invokeAdhocQueryAsList(new CTSQuerySerializer(query).asCtsQuery(), entityClass, new MarklogicInvokeOperationOptions() {
             @Override
             public boolean useCacheResult() {
                 return false;

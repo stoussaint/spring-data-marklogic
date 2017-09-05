@@ -2,4 +2,5 @@
 .gradle
 build/
 integration-test.properties
-spring-data-marklogic/out
+out/production/
+out/test/

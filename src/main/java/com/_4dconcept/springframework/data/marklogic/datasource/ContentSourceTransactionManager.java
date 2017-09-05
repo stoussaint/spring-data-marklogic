@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com._4dconcept.springframework.data.marklogic.datasource;
 
 import com.marklogic.xcc.ContentSource;
@@ -62,8 +77,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * DBCP session pool). Switching between this local strategy and a JTA
  * environment is just a matter of configuration!
  *
+ * @author Stephane Toussaint
  * @author Juergen Hoeller
- * @author Stephane	Toussaint
+ *
  * @see #setNestedTransactionAllowed
  * @see ContentSourceUtils#getSession(ContentSource)
  * @see ContentSourceUtils#applyTransactionTimeout
@@ -73,260 +89,254 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  */
 @SuppressWarnings("serial")
 public class ContentSourceTransactionManager extends AbstractPlatformTransactionManager
-		implements ResourceTransactionManager, InitializingBean {
+        implements ResourceTransactionManager, InitializingBean {
 
-	private ContentSource contentSource;
-
-
-	/**
-	 * Create a new ContentSourceTransactionManager instance.
-	 * A ContentSource has to be set to be able to use it.
-	 * @see #setContentSource
-	 */
-	public ContentSourceTransactionManager() {
-		setNestedTransactionAllowed(true);
-	}
-
-	/**
-	 * Create a new ContentSourceTransactionManager instance.
-	 * @param contentSource XDBC ContentSource to manage transactions for
-	 */
-	public ContentSourceTransactionManager(ContentSource contentSource) {
-		this();
-		setContentSource(contentSource);
-		afterPropertiesSet();
-	}
-
-	/**
-	 * Set the XDBC ContentSource that this instance should manage transactions for.
-	 * <p>This will typically be a locally defined ContentSource, for example an
-	 * Apache Commons DBCP session pool. Alternatively, you can also drive
-	 * transactions for a non-XA J2EE ContentSource fetched from JNDI. For an XA
-	 * ContentSource, use JtaTransactionManager.
-	 * <p>The ContentSource specified here should be the target ContentSource to manage
-	 * transactions for, not a TransactionAwareContentSourceProxy. Only data access
-	 * code may work with TransactionAwareContentSourceProxy, while the transaction
-	 * manager needs to work on the underlying target ContentSource. If there's
-	 * nevertheless a TransactionAwareContentSourceProxy passed in, it will be
-	 * unwrapped to extract its target ContentSource.
-	 * <p><b>The ContentSource passed in here needs to return independent Sessions.</b>
-	 * The Sessions may come from a pool (the typical case), but the ContentSource
-	 * must not return thread-scoped / request-scoped Sessions or the like.
-	 * @see TransactionAwareContentSourceProxy
-	 * @see org.springframework.transaction.jta.JtaTransactionManager
-	 */
-	public void setContentSource(ContentSource contentSource) {
-		if (contentSource instanceof TransactionAwareContentSourceProxy) {
-			// If we got a TransactionAwareContentSourceProxy, we need to perform transactions
-			// for its underlying target ContentSource, else data access code won't see
-			// properly exposed transactions (i.e. transactions for the target ContentSource).
-			this.contentSource = ((TransactionAwareContentSourceProxy) contentSource).getTargetContentSource();
-		}
-		else {
-			this.contentSource = contentSource;
-		}
-	}
-
-	/**
-	 * Return the XDBC ContentSource that this instance manages transactions for.
-	 */
-	public ContentSource getContentSource() {
-		return this.contentSource;
-	}
-
-	@Override
-	public void afterPropertiesSet() {
-		if (getContentSource() == null) {
-			throw new IllegalArgumentException("Property 'contentSource' is required");
-		}
-	}
+    private ContentSource contentSource;
 
 
-	@Override
-	public Object getResourceFactory() {
-		return getContentSource();
-	}
+    /**
+     * Create a new ContentSourceTransactionManager instance.
+     * A ContentSource has to be set to be able to use it.
+     * @see #setContentSource
+     */
+    public ContentSourceTransactionManager() {
+        setNestedTransactionAllowed(true);
+    }
 
-	@Override
-	protected Object doGetTransaction() {
-		ContentSourceTransactionObject txObject = new ContentSourceTransactionObject();
-		SessionHolder sesHolder =
-				(SessionHolder) TransactionSynchronizationManager.getResource(this.contentSource);
-		txObject.setSessionHolder(sesHolder, false);
-		return txObject;
-	}
+    /**
+     * Create a new ContentSourceTransactionManager instance.
+     * @param contentSource XDBC ContentSource to manage transactions for
+     */
+    public ContentSourceTransactionManager(ContentSource contentSource) {
+        this();
+        setContentSource(contentSource);
+        afterPropertiesSet();
+    }
 
-	@Override
-	protected boolean isExistingTransaction(Object transaction) {
-		ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) transaction;
-		return (txObject.getSessionHolder() != null && txObject.getSessionHolder().isTransactionActive());
-	}
+    /**
+     * Return the XDBC ContentSource that this instance manages transactions for.
+     */
+    public ContentSource getContentSource() {
+        return this.contentSource;
+    }
 
-	/**
-	 * This implementation sets the isolation level but ignores the timeout.
-	 */
-	@Override
-	protected void doBegin(Object transaction, TransactionDefinition definition) {
-		ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) transaction;
-		Session ses = null;
+    /**
+     * Set the XDBC ContentSource that this instance should manage transactions for.
+     * <p>This will typically be a locally defined ContentSource, for example an
+     * Apache Commons DBCP session pool. Alternatively, you can also drive
+     * transactions for a non-XA J2EE ContentSource fetched from JNDI. For an XA
+     * ContentSource, use JtaTransactionManager.
+     * <p>The ContentSource specified here should be the target ContentSource to manage
+     * transactions for, not a TransactionAwareContentSourceProxy. Only data access
+     * code may work with TransactionAwareContentSourceProxy, while the transaction
+     * manager needs to work on the underlying target ContentSource. If there's
+     * nevertheless a TransactionAwareContentSourceProxy passed in, it will be
+     * unwrapped to extract its target ContentSource.
+     * <p><b>The ContentSource passed in here needs to return independent Sessions.</b>
+     * The Sessions may come from a pool (the typical case), but the ContentSource
+     * must not return thread-scoped / request-scoped Sessions or the like.
+     * @see TransactionAwareContentSourceProxy
+     * @see org.springframework.transaction.jta.JtaTransactionManager
+     */
+    public void setContentSource(ContentSource contentSource) {
+        if (contentSource instanceof TransactionAwareContentSourceProxy) {
+            // If we got a TransactionAwareContentSourceProxy, we need to perform transactions
+            // for its underlying target ContentSource, else data access code won't see
+            // properly exposed transactions (i.e. transactions for the target ContentSource).
+            this.contentSource = ((TransactionAwareContentSourceProxy) contentSource).getTargetContentSource();
+        } else {
+            this.contentSource = contentSource;
+        }
+    }
 
-		try {
-			if (txObject.getSessionHolder() == null ||
-					txObject.getSessionHolder().isSynchronizedWithTransaction()) {
-				Session newSes = this.contentSource.newSession();
-				if (logger.isDebugEnabled()) {
-					logger.debug("Acquired Session [" + newSes + "] for XDBC transaction");
-				}
-				txObject.setSessionHolder(new SessionHolder(newSes), true);
-			}
-
-			txObject.getSessionHolder().setSynchronizedWithTransaction(true);
-			ses = txObject.getSessionHolder().getSession();
-
-			Integer previousIsolationLevel = ContentSourceUtils.prepareSessionForTransaction(ses, definition);
-			txObject.setPreviousIsolationLevel(previousIsolationLevel);
-
-			txObject.getSessionHolder().setTransactionActive(true);
-
-			int timeout = determineTimeout(definition);
-			if (timeout != TransactionDefinition.TIMEOUT_DEFAULT) {
-				txObject.getSessionHolder().setTimeoutInSeconds(timeout);
-			}
-
-			// Bind the session holder to the thread.
-			if (txObject.isNewSessionHolder()) {
-				TransactionSynchronizationManager.bindResource(getContentSource(), txObject.getSessionHolder());
-			}
-		}
-
-		catch (Throwable ex) {
-			if (txObject.isNewSessionHolder()) {
-				ContentSourceUtils.releaseSession(ses, this.contentSource);
-				txObject.setSessionHolder(null, false);
-			}
-			throw new CannotCreateTransactionException("Could not open XDBC Session for transaction", ex);
-		}
-	}
-
-	@Override
-	protected Object doSuspend(Object transaction) {
-		ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) transaction;
-		txObject.setSessionHolder(null);
-		SessionHolder sesHolder = (SessionHolder)
-				TransactionSynchronizationManager.unbindResource(this.contentSource);
-		return sesHolder;
-	}
-
-	@Override
-	protected void doResume(Object transaction, Object suspendedResources) {
-		SessionHolder sesHolder = (SessionHolder) suspendedResources;
-		TransactionSynchronizationManager.bindResource(this.contentSource, sesHolder);
-	}
-
-	@Override
-	protected void doCommit(DefaultTransactionStatus status) {
-		ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) status.getTransaction();
-		Session ses = txObject.getSessionHolder().getSession();
-		if (status.isDebug()) {
-			logger.debug("Committing XDBC transaction on Session [" + ses + "]");
-		}
-		try {
-			ses.commit();
-		}
-		catch (XccException ex) {
-			throw new TransactionSystemException("Could not commit XDBC transaction", ex);
-		}
-	}
-
-	@Override
-	protected void doRollback(DefaultTransactionStatus status) {
-		ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) status.getTransaction();
-		Session ses = txObject.getSessionHolder().getSession();
-		if (status.isDebug()) {
-			logger.debug("Rolling back XDBC transaction on Session [" + ses + "]");
-		}
-		try {
-			ses.rollback();
-		}
-		catch (XccException ex) {
-			throw new TransactionSystemException("Could not roll back XDBC transaction", ex);
-		}
-	}
-
-	@Override
-	protected void doSetRollbackOnly(DefaultTransactionStatus status) {
-		ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) status.getTransaction();
-		if (status.isDebug()) {
-			logger.debug("Setting XDBC transaction [" + txObject.getSessionHolder().getSession() +
-					"] rollback-only");
-		}
-		txObject.setRollbackOnly();
-	}
-
-	@Override
-	protected void doCleanupAfterCompletion(Object transaction) {
-		ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) transaction;
-
-		// Remove the session holder from the thread, if exposed.
-		if (txObject.isNewSessionHolder()) {
-			TransactionSynchronizationManager.unbindResource(this.contentSource);
-		}
-
-		// Reset session.
-		Session ses = txObject.getSessionHolder().getSession();
-		try {
-			ContentSourceUtils.resetSessionAfterTransaction(ses, txObject.getPreviousIsolationLevel());
-		}
-		catch (Throwable ex) {
-			logger.debug("Could not reset XDBC Session after transaction", ex);
-		}
-
-		if (txObject.isNewSessionHolder()) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Releasing XDBC Session [" + ses + "] after transaction");
-			}
-			ContentSourceUtils.releaseSession(ses, this.contentSource);
-		}
-
-		txObject.getSessionHolder().clear();
-	}
+    @Override
+    public void afterPropertiesSet() {
+        if (getContentSource() == null) {
+            throw new IllegalArgumentException("Property 'contentSource' is required");
+        }
+    }
 
 
-	/**
-	 * ContentSource transaction object, representing a SessionHolder.
-	 * Used as transaction object by ContentSourceTransactionManager.
-	 */
-	private static class ContentSourceTransactionObject extends XdbcTransactionObjectSupport {
+    @Override
+    public Object getResourceFactory() {
+        return getContentSource();
+    }
 
-		private boolean newSessionHolder;
+    @Override
+    protected Object doGetTransaction() {
+        ContentSourceTransactionObject txObject = new ContentSourceTransactionObject();
+        SessionHolder sesHolder =
+                (SessionHolder) TransactionSynchronizationManager.getResource(this.contentSource);
+        txObject.setSessionHolder(sesHolder, false);
+        return txObject;
+    }
 
-		private boolean mustRestoreAutoCommit;
+    @Override
+    protected boolean isExistingTransaction(Object transaction) {
+        ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) transaction;
+        return (txObject.getSessionHolder() != null && txObject.getSessionHolder().isTransactionActive());
+    }
 
-		public void setSessionHolder(SessionHolder sessionHolder, boolean newSessionHolder) {
-			super.setSessionHolder(sessionHolder);
-			this.newSessionHolder = newSessionHolder;
-		}
+    /**
+     * This implementation sets the isolation level but ignores the timeout.
+     */
+    @Override
+    protected void doBegin(Object transaction, TransactionDefinition definition) {
+        ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) transaction;
+        Session ses = null;
 
-		public boolean isNewSessionHolder() {
-			return this.newSessionHolder;
-		}
+        try {
+            if (txObject.getSessionHolder() == null ||
+                    txObject.getSessionHolder().isSynchronizedWithTransaction()) {
+                Session newSes = this.contentSource.newSession();
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Acquired Session [" + newSes + "] for XDBC transaction");
+                }
+                txObject.setSessionHolder(new SessionHolder(newSes), true);
+            }
 
-		public void setMustRestoreAutoCommit(boolean mustRestoreAutoCommit) {
-			this.mustRestoreAutoCommit = mustRestoreAutoCommit;
-		}
+            txObject.getSessionHolder().setSynchronizedWithTransaction(true);
+            ses = txObject.getSessionHolder().getSession();
 
-		public boolean isMustRestoreAutoCommit() {
-			return this.mustRestoreAutoCommit;
-		}
+            Integer previousIsolationLevel = ContentSourceUtils.prepareSessionForTransaction(ses, definition);
+            txObject.setPreviousIsolationLevel(previousIsolationLevel);
 
-		public void setRollbackOnly() {
-			getSessionHolder().setRollbackOnly();
-		}
+            txObject.getSessionHolder().setTransactionActive(true);
 
-		@Override
-		public boolean isRollbackOnly() {
-			return getSessionHolder().isRollbackOnly();
-		}
-	}
+            int timeout = determineTimeout(definition);
+            if (timeout != TransactionDefinition.TIMEOUT_DEFAULT) {
+                txObject.getSessionHolder().setTimeoutInSeconds(timeout);
+            }
+
+            // Bind the session holder to the thread.
+            if (txObject.isNewSessionHolder()) {
+                TransactionSynchronizationManager.bindResource(getContentSource(), txObject.getSessionHolder());
+            }
+        } catch (Throwable ex) {
+            if (txObject.isNewSessionHolder()) {
+                ContentSourceUtils.releaseSession(ses, this.contentSource);
+                txObject.setSessionHolder(null, false);
+            }
+            throw new CannotCreateTransactionException("Could not open XDBC Session for transaction", ex);
+        }
+    }
+
+    @Override
+    protected Object doSuspend(Object transaction) {
+        ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) transaction;
+        txObject.setSessionHolder(null);
+        SessionHolder sesHolder = (SessionHolder)
+                TransactionSynchronizationManager.unbindResource(this.contentSource);
+        return sesHolder;
+    }
+
+    @Override
+    protected void doResume(Object transaction, Object suspendedResources) {
+        SessionHolder sesHolder = (SessionHolder) suspendedResources;
+        TransactionSynchronizationManager.bindResource(this.contentSource, sesHolder);
+    }
+
+    @Override
+    protected void doCommit(DefaultTransactionStatus status) {
+        ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) status.getTransaction();
+        Session ses = txObject.getSessionHolder().getSession();
+        if (status.isDebug()) {
+            logger.debug("Committing XDBC transaction on Session [" + ses + "]");
+        }
+        try {
+            ses.commit();
+        } catch (XccException ex) {
+            throw new TransactionSystemException("Could not commit XDBC transaction", ex);
+        }
+    }
+
+    @Override
+    protected void doRollback(DefaultTransactionStatus status) {
+        ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) status.getTransaction();
+        Session ses = txObject.getSessionHolder().getSession();
+        if (status.isDebug()) {
+            logger.debug("Rolling back XDBC transaction on Session [" + ses + "]");
+        }
+        try {
+            ses.rollback();
+        } catch (XccException ex) {
+            throw new TransactionSystemException("Could not roll back XDBC transaction", ex);
+        }
+    }
+
+    @Override
+    protected void doSetRollbackOnly(DefaultTransactionStatus status) {
+        ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) status.getTransaction();
+        if (status.isDebug()) {
+            logger.debug("Setting XDBC transaction [" + txObject.getSessionHolder().getSession() +
+                    "] rollback-only");
+        }
+        txObject.setRollbackOnly();
+    }
+
+    @Override
+    protected void doCleanupAfterCompletion(Object transaction) {
+        ContentSourceTransactionObject txObject = (ContentSourceTransactionObject) transaction;
+
+        // Remove the session holder from the thread, if exposed.
+        if (txObject.isNewSessionHolder()) {
+            TransactionSynchronizationManager.unbindResource(this.contentSource);
+        }
+
+        // Reset session.
+        Session ses = txObject.getSessionHolder().getSession();
+        try {
+            ContentSourceUtils.resetSessionAfterTransaction(ses, txObject.getPreviousIsolationLevel());
+        } catch (Throwable ex) {
+            logger.debug("Could not reset XDBC Session after transaction", ex);
+        }
+
+        if (txObject.isNewSessionHolder()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Releasing XDBC Session [" + ses + "] after transaction");
+            }
+            ContentSourceUtils.releaseSession(ses, this.contentSource);
+        }
+
+        txObject.getSessionHolder().clear();
+    }
+
+
+    /**
+     * ContentSource transaction object, representing a SessionHolder.
+     * Used as transaction object by ContentSourceTransactionManager.
+     */
+    private static class ContentSourceTransactionObject extends XdbcTransactionObjectSupport {
+
+        private boolean newSessionHolder;
+
+        private boolean mustRestoreAutoCommit;
+
+        public void setSessionHolder(SessionHolder sessionHolder, boolean newSessionHolder) {
+            super.setSessionHolder(sessionHolder);
+            this.newSessionHolder = newSessionHolder;
+        }
+
+        public boolean isNewSessionHolder() {
+            return this.newSessionHolder;
+        }
+
+        public boolean isMustRestoreAutoCommit() {
+            return this.mustRestoreAutoCommit;
+        }
+
+        public void setMustRestoreAutoCommit(boolean mustRestoreAutoCommit) {
+            this.mustRestoreAutoCommit = mustRestoreAutoCommit;
+        }
+
+        public void setRollbackOnly() {
+            getSessionHolder().setRollbackOnly();
+        }
+
+        @Override
+        public boolean isRollbackOnly() {
+            return getSessionHolder().isRollbackOnly();
+        }
+    }
 
 }

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com._4dconcept.springframework.data.marklogic.core;
 
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicContentHolder;
@@ -8,7 +23,13 @@ import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappi
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
-import com.marklogic.xcc.*;
+import com.marklogic.xcc.Content;
+import com.marklogic.xcc.ContentSource;
+import com.marklogic.xcc.DocumentFormat;
+import com.marklogic.xcc.Request;
+import com.marklogic.xcc.RequestOptions;
+import com.marklogic.xcc.ResultSequence;
+import com.marklogic.xcc.Session;
 import com.marklogic.xcc.impl.AdhocImpl;
 import com.marklogic.xcc.impl.ResultItemImpl;
 import com.marklogic.xcc.types.impl.XsStringImpl;
@@ -35,11 +56,14 @@ import java.util.UUID;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
- * --Description--
- *
  * @author Stéphane Toussaint
  */
 @RunWith(MockitoJUnitRunner.class)

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com._4dconcept.springframework.data.marklogic.core.cts;
 
 import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
@@ -17,11 +32,11 @@ import static org.junit.Assert.assertThat;
  * @author stoussaint
  * @since 2017-08-01
  */
-public class CTSQueryParserTest {
+public class CTSQuerySerializerTest {
 
     @Test
     public void parseEmptyQuery() throws Exception {
-        String ctsQuery = new CTSQueryParser(new Query()).asCtsQuery();
+        String ctsQuery = new CTSQuerySerializer(new Query()).asCtsQuery();
 
         assertThat(ctsQuery, is("cts:search(fn:collection(), (), ())"));
     }
@@ -34,7 +49,7 @@ public class CTSQueryParserTest {
             new Criteria(new QName("town"), "Paris")
         )));
 
-        String ctsQuery = new CTSQueryParser(query).asCtsQuery();
+        String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
 
         assertThat(ctsQuery, is("cts:search(fn:collection(), cts:and-query((cts:element-value-query(fn:QName('', 'name'), 'Me'), cts:element-value-query(fn:QName('', 'town'), 'Paris'))), ())"));
     }
@@ -45,7 +60,7 @@ public class CTSQueryParserTest {
         query.setCollection("Collection1");
         query.setLimit(10);
         query.setSkip(0);
-        String ctsQuery = new CTSQueryParser(query).asCtsQuery();
+        String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
 
         assertThat(ctsQuery, is("cts:search(fn:collection('Collection1'), (), ())[1 to 10]"));
     }
@@ -58,7 +73,7 @@ public class CTSQueryParserTest {
                 new SortCriteria(new QName("", "age"), true),
                 new SortCriteria(new QName("", "lastname"))
         ));
-        String ctsQuery = new CTSQueryParser(query).asCtsQuery();
+        String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
 
         assertThat(ctsQuery, is("cts:search(fn:collection('Collection1'), (), (cts:index-order(cts:element-reference(fn:QName('', 'age')), ('descending')), cts:index-order(cts:element-reference(fn:QName('', 'lastname')), ('ascending'))))"));
     }
