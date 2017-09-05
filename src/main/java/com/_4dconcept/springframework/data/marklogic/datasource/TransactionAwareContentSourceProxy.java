@@ -93,6 +93,8 @@ public class TransactionAwareContentSourceProxy extends DelegatingContentSource 
      * on JBoss if you hold on to a Session handle across transaction boundaries.
      * <p>The effect of this setting is similar to the
      * "hibernate.connection.release_mode" value "after_statement".
+     *
+     * @param reobtainTransactionalSessions the reobtain flag
      */
     public void setReobtainTransactionalSessions(boolean reobtainTransactionalSessions) {
         this.reobtainTransactionalSessions = reobtainTransactionalSessions;
@@ -105,9 +107,10 @@ public class TransactionAwareContentSourceProxy extends DelegatingContentSource 
      * <p>The returned Session handle implements the SessionProxy interface,
      * allowing to retrieve the underlying target Session.
      *
-     * @return a transactional Session if any, a new one else
      * @see ContentSourceUtils#doGetSession
      * @see SessionProxy#getTargetSession
+     *
+     * @return a transactional Session if any, a new one else
      */
     @Override
     public Session newSession() {
@@ -142,6 +145,7 @@ public class TransactionAwareContentSourceProxy extends DelegatingContentSource 
      * Note that non-transactional access will always use a fixed Session.
      *
      * @param targetContentSource the target ContentSource
+     * @return whether to obtain a fixed target Session for the proxy
      */
     protected boolean shouldObtainFixedSession(ContentSource targetContentSource) {
         return (!TransactionSynchronizationManager.isSynchronizationActive() ||

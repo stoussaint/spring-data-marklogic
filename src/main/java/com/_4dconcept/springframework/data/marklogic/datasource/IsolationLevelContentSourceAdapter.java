@@ -79,7 +79,7 @@ public class IsolationLevelContentSourceAdapter extends UserCredentialsContentSo
     }
 
     /**
-     * Return the statically specified isolation level,
+     * @return the statically specified isolation level,
      * or {@code null} if none.
      */
     protected Integer getIsolationLevel() {
@@ -94,6 +94,7 @@ public class IsolationLevelContentSourceAdapter extends UserCredentialsContentSo
      * <p>If not specified, the target ContentSource's default will be used.
      * Note that a transaction-specific isolation value will always override
      * any isolation setting specified at the ContentSource level.
+     * @param isolationLevel the default isolation level to use for session retrieval
      * @see Session.TransactionMode#UPDATE
      * @see Session.TransactionMode#QUERY
      * @see TransactionDefinition#ISOLATION_READ_UNCOMMITTED

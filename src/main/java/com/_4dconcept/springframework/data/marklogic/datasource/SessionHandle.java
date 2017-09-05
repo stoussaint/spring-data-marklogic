@@ -30,6 +30,8 @@ public interface SessionHandle {
 
     /**
      * Fetch the XDBC Session that this handle refers to.
+     *
+     * @return the handled xdbc session
      */
     Session getSession();
 

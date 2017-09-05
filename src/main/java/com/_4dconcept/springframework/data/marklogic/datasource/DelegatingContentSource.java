@@ -56,14 +56,14 @@ public class DelegatingContentSource implements ContentSource, InitializingBean 
     }
 
     /**
-     * Return the target ContentSource that this ContentSource should delegate to.
+     * @return the target ContentSource that this ContentSource should delegate to.
      */
     public ContentSource getTargetContentSource() {
         return this.targetContentSource;
     }
 
     /**
-     * Set the target ContentSource that this ContentSource should delegate to.
+     * @param targetContentSource the target ContentSource that this ContentSource should delegate to.
      */
     public void setTargetContentSource(ContentSource targetContentSource) {
         Assert.notNull(targetContentSource, "'targetContentSource' must not be null");

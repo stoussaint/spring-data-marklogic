@@ -31,10 +31,8 @@ public interface MarklogicOperations {
 
     /**
      * Insert the given object.
-     * <p/>
      * Content will be converted if not one of supported type.
      * Uri will be computed as well as creation options (such as defaultCollection)
-     * <p/>
      * Insert is used to initially store the object into the database. To update an existing object use the save method.
      *
      * @param objectToSave the object to store
@@ -43,9 +41,7 @@ public interface MarklogicOperations {
 
     /**
      * Insert the given object at the specified uri with specified creation options.
-     * <p/>
      * Content will be converted if not one of supported type.
-     * <p/>
      * Insert is used to initially store the object into the database. To update an existing object use the save method.
      *
      * @param objectToSave the object to store
@@ -55,9 +51,7 @@ public interface MarklogicOperations {
 
     /**
      * Save the given object.
-     * <p/>
      * Content will be converted if not one of supported type.
-     * <p/>
      * The save method will retrieve uri location to store the content to.
      *
      * @param objectToSave the object to store
@@ -66,9 +60,7 @@ public interface MarklogicOperations {
 
     /**
      * Save the given object.
-     * <p/>
      * Content will be converted if not one of supported type.
-     * <p/>
      * The save method will retrieve uri location to store the content to.
      *
      * @param objectToSave the object to store
@@ -86,7 +78,7 @@ public interface MarklogicOperations {
      * Remove entity with corresponding identifier
      * @param id the identifier
      * @param entityClass the type of the document to remove
-     * @param <T>
+     * @param <T> The entity type
      */
     <T> void remove(Object id, Class<T> entityClass);
 
@@ -95,30 +87,32 @@ public interface MarklogicOperations {
      * @param id the identifier
      * @param entityClass the type of the document to remove
      * @param options content deletion options
-     * @param <T>
+     * @param <T> The entity type
      */
     <T> void remove(Object id, Class<T> entityClass, MarklogicOperationOptions options);
 
     /**
      * Remove every entities of the given type.
      * @param entityClass the type of the documents to be removed
-     * @param <T>
+     * @param <T> The entity type
      */
     <T> void removeAll(Class<T> entityClass);
 
     /**
      * Remove every entities of the given type
+     * @param entityClass the type of the documents to be removed
      * @param options content deletion options
-     * @param <T>
+     * @param <T> The entity type
      */
     <T> void removeAll(Class<T> entityClass, MarklogicOperationOptions options);
 
     /**
-     * Returns the document with the given id for the specified entity type.
+     * Returns the entity with the given id for the specified entity type.
      * @param id the id of the document to retrieve
      * @param entityClass the type of the document to retrieve
-     * @param <T>
-     * @return
+     * @param <T> The entity type
+     *
+     * @return the found entity or null if no entity found with the given id
      */
     <T> T findById(Object id, Class<T> entityClass);
 
@@ -127,8 +121,9 @@ public interface MarklogicOperations {
      * @param id the id of the document to retrieve
      * @param entityClass the type of the document to retrieve
      * @param options the explicit collection the document will be queried
-     * @param <T>
-     * @return
+     * @param <T> The entity type
+     *
+     * @return the found entity or null if no entity found with the given id
      */
     <T> T findById(Object id, Class<T> entityClass, MarklogicOperationOptions options);
 
@@ -138,8 +133,9 @@ public interface MarklogicOperations {
      * Returns content matching the given query
      * @param query the query that specifies criteria used to find contents
      * @param entityClass the entity class the content will be converted to
-     * @param <T>
-     * @return
+     * @param <T> The entity type
+     *
+     * @return the found entities
      */
     <T> List<T> find(Query query, Class<T> entityClass);
 
@@ -149,8 +145,9 @@ public interface MarklogicOperations {
      * @param query the query that specifies criteria used to find contents
      * @param entityClass the entity class the content will be converted to
      * @param options search options
-     * @param <T>
-     * @return
+     * @param <T> The entity type
+     *
+     * @return the found entities
      */
     <T> List<T> find(Query query, Class<T> entityClass, MarklogicOperationOptions options);
 
@@ -158,8 +155,9 @@ public interface MarklogicOperations {
      * Returns content matching the given query
      * @param query the query that specifies criteria used to find contents
      * @param entityClass the entity class the content will be converted to
-     * @param <T>
-     * @return
+     * @param <T> The entity type
+     *
+     * @return the found entity or null if no entity found with the given {@link Query} constraint
      */
     <T> T findOne(Query query, Class<T> entityClass);
 
@@ -169,13 +167,29 @@ public interface MarklogicOperations {
      * @param query the query that specifies criteria used to find contents
      * @param entityClass the entity class the content will be converted to
      * @param options search options
-     * @param <T>
-     * @return
+     * @param <T> The entity type
+     *
+     * @return the found entity or null if no entity found with the given {@link Query} constraint
      */
     <T> T findOne(Query query, Class<T> entityClass, MarklogicOperationOptions options);
 
+    /**
+     * Returns every contents of the given type
+     *
+     * @param entityClass the entity class of the entity to find
+     * @param <T> The entity type
+     * @return the found entities
+     */
     <T> List<T> findAll(Class<T> entityClass);
 
+    /**
+     * Returns every contents of the given type
+     *
+     * @param entityClass the entity class of the entity to find
+     * @param options search options
+     * @param <T> The entity type
+     * @return the found entities
+     */
     <T> List<T> findAll(Class<T> entityClass, MarklogicOperationOptions options);
 
     /**
@@ -192,8 +206,8 @@ public interface MarklogicOperations {
      * @param query the query to execute
      * @param resultClass the expected return content type.
      * @param options optional options used for the query execution
-     * @param <T> type of the expected content
-     * @return one T result or null if no content returned
+     * @param <T> The entity type
+     * @return one result or null if no content returned
      */
     <T> T invokeAdhocQuery(String query, Class<T> resultClass, MarklogicInvokeOperationOptions options);
 
@@ -203,8 +217,8 @@ public interface MarklogicOperations {
      * @param query the query to execute
      * @param resultClass the expected return content type.
      * @param options optional options used for the query execution
-     * @param <T> type of the expected content
-     * @return a List of T result or null if no content returned
+     * @param <T> The entity type
+     * @return a List of result or null if no content returned
      */
     <T> List<T> invokeAdhocQueryAsList(String query, Class<T> resultClass, MarklogicInvokeOperationOptions options);
 
@@ -222,8 +236,8 @@ public interface MarklogicOperations {
      * @param moduleName the uri of the module to invoke
      * @param resultClass the expected return content type.
      * @param options optional options used for the query execution
-     * @param <T> type of the expected content
-     * @return one T result or null if no content returned
+     * @param <T> The entity type
+     * @return one result or null if no content returned
      */
     <T> T invokeModule(String moduleName, Class<T> resultClass, MarklogicInvokeOperationOptions options);
 
@@ -233,13 +247,26 @@ public interface MarklogicOperations {
      * @param moduleName the uri of the module to invoke
      * @param resultClass the expected return content type.
      * @param options optional options used for the query execution
-     * @param <T> type of the expected content
-     * @return a List of T result or null if no content returned
+     * @param <T> The entity type
+     * @return a List of result or null if no content returned
      */
     <T> List<T> invokeModuleAsList(String moduleName, Class<T> resultClass, MarklogicInvokeOperationOptions options);
 
+    /**
+     * Retrieve the default collection of the given entity
+     * @param entity the entity
+     * @param options search options
+     * @param <T> The entity type
+     * @return the default collection
+     */
     <T> String resolveDefaultCollection(T entity, MarklogicOperationOptions options);
 
+    /**
+     * Retrieve the content idenfitier of the given entity
+     * @param entity the entity
+     * @param <T> The entity type
+     * @return the content identifier
+     */
     <T> Object resolveContentIdentifier(T entity);
 
     /**
@@ -251,9 +278,7 @@ public interface MarklogicOperations {
     long count(Query query);
 
     /**
-     * Returns the underlying {@link MarklogicConverter}.
-     *
-     * @return
+     * @return the underlying {@link MarklogicConverter}.
      */
     MarklogicConverter getConverter();
 }

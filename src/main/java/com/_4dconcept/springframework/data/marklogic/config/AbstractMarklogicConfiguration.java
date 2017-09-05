@@ -35,7 +35,10 @@ import org.springframework.data.support.IsNewStrategyFactory;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Base class for Spring Data Marklogic configuration using JavaConfig.
@@ -87,40 +90,36 @@ public abstract class AbstractMarklogicConfiguration {
      * Creates a {@link MarklogicMappingContext} equipped with entity classes scanned from the mapping base package.
      *
      * @see #getMappingBasePackage()
-     * @return
-     * @throws ClassNotFoundException
+     * @return the initialized Marklogic mapping context
      */
     @Bean
-    public MarklogicMappingContext marklogicMappingContext() throws ClassNotFoundException  {
+    public MarklogicMappingContext marklogicMappingContext() {
         MarklogicMappingContext marklogicMappingContext = new MarklogicMappingContext();
         marklogicMappingContext.setInitialEntitySet(getInitialEntitySet());
         return marklogicMappingContext;
     }
 
     /**
-     * Returns a {@link MappingContextIsNewStrategyFactory} wrapped into a {@link CachingIsNewStrategyFactory}.
-     * @return
-     * @throws ClassNotFoundException
+     * @return a {@link MappingContextIsNewStrategyFactory} wrapped into a {@link CachingIsNewStrategyFactory}.
      */
     @Bean
-    public IsNewStrategyFactory isNewStrategyFactory() throws ClassNotFoundException {
-        PersistentEntities persistentEntities = new PersistentEntities(Arrays.asList(marklogicMappingContext()));
+    public IsNewStrategyFactory isNewStrategyFactory() {
+        PersistentEntities persistentEntities = new PersistentEntities(Collections.singletonList(marklogicMappingContext()));
         return new CachingIsNewStrategyFactory(new MappingContextIsNewStrategyFactory(persistentEntities));
     }
 
     /**
      * Creates a {@link MarklogicMappingConverter} using the configured {@link #marklogicMappingContext()}.
-     * @return
-     * @throws Exception
+     * @return the prepared marklogic mapping converter
      */
     @Bean
-    public MarklogicMappingConverter mappingMarklogicConverter() throws Exception {
+    public MarklogicMappingConverter mappingMarklogicConverter() {
         MarklogicMappingConverter converter = new MarklogicMappingConverter(marklogicMappingContext(), conversionService);
         converter.setConverters(getConverters());
         return converter;
     }
 
-    protected Set<Class<?>> getInitialEntitySet() throws ClassNotFoundException {
+    private Set<Class<?>> getInitialEntitySet() {
         String basePackage = getMappingBasePackage();
         Set<Class<?>> initialEntitySet = new HashSet<>();
 
@@ -129,8 +128,12 @@ public abstract class AbstractMarklogicConfiguration {
             componentProvider.addIncludeFilter(new AnnotationTypeFilter(Document.class));
 
             for (BeanDefinition candidate : componentProvider.findCandidateComponents(basePackage)) {
-                initialEntitySet.add(ClassUtils.forName(candidate.getBeanClassName(),
-                        AbstractMarklogicConfiguration.class.getClassLoader()));
+                try {
+                    initialEntitySet.add(ClassUtils.forName(candidate.getBeanClassName(),
+                            AbstractMarklogicConfiguration.class.getClassLoader()));
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 

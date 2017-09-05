@@ -25,20 +25,17 @@ import org.springframework.data.mapping.PersistentEntity;
 public interface MarklogicPersistentEntity<T> extends PersistentEntity<T, MarklogicPersistentProperty> {
 
     /**
-     * Returns the uri the entity shall be persisted to.
-     * @return
+     * @return the uri the entity shall be persisted to.
      */
     String getUri();
 
     /**
-     * Returns the default defaultCollection the entity should be created with
-     * @return
+     * @return the default defaultCollection the entity should be created with
      */
     String getDefaultCollection();
 
     /**
-     * Return true if the id is to be found in property fragment
-     * @return
+     * @return true if the id is to be found in property fragment
      */
     boolean idInPropertyFragment();
 

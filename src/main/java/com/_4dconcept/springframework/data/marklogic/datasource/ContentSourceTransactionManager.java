@@ -114,7 +114,7 @@ public class ContentSourceTransactionManager extends AbstractPlatformTransaction
     }
 
     /**
-     * Return the XDBC ContentSource that this instance manages transactions for.
+     * @return the XDBC ContentSource that this instance manages transactions for.
      */
     public ContentSource getContentSource() {
         return this.contentSource;
@@ -137,6 +137,8 @@ public class ContentSourceTransactionManager extends AbstractPlatformTransaction
      * must not return thread-scoped / request-scoped Sessions or the like.
      * @see TransactionAwareContentSourceProxy
      * @see org.springframework.transaction.jta.JtaTransactionManager
+     *
+     * @param contentSource the contentSource the manager will work on
      */
     public void setContentSource(ContentSource contentSource) {
         if (contentSource instanceof TransactionAwareContentSourceProxy) {
@@ -156,7 +158,9 @@ public class ContentSourceTransactionManager extends AbstractPlatformTransaction
         }
     }
 
-
+    /**
+     * @return the resource factory
+     */
     @Override
     public Object getResourceFactory() {
         return getContentSource();

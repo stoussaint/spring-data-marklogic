@@ -79,28 +79,28 @@ public class SessionHolder extends ResourceHolderSupport {
 
 
     /**
-     * Return the SessionHandle held by this SessionHolder.
+     * @return the SessionHandle held by this SessionHolder.
      */
     public SessionHandle getSessionHandle() {
         return this.sessionHandle;
     }
 
     /**
-     * Return whether this holder currently has a Session.
+     * @return whether this holder currently has a Session.
      */
     protected boolean hasSession() {
         return (this.sessionHandle != null);
     }
 
     /**
-     * Return whether this holder represents an active, XDBC-managed transaction.
+     * @return whether this holder represents an active, XDBC-managed transaction.
      */
     protected boolean isTransactionActive() {
         return this.transactionActive;
     }
 
     /**
-     * Set whether this holder represents an active, XDBC-managed transaction.
+     * @param transactionActive whether this holder represents an active, XDBC-managed transaction.
      * @see ContentSourceTransactionManager
      */
     protected void setTransactionActive(boolean transactionActive) {
@@ -114,6 +114,7 @@ public class SessionHolder extends ResourceHolderSupport {
      * held Session, fetching a new Session on demand.
      * @see SessionHandle#getSession()
      * @see #released()
+     * @return the current session
      */
     public Session getSession() {
         Assert.notNull(this.sessionHandle, "Active Session is required");
@@ -128,6 +129,8 @@ public class SessionHolder extends ResourceHolderSupport {
      * Reset the handle if given {@code null}.
      * <p>Used for releasing the Session on suspend (with a {@code null}
      * argument) and setting a fresh Session on resume.
+     *
+     * @param session the new session to be handled
      */
     protected void setSession(Session session) {
         if (this.currentSession != null) {

@@ -17,8 +17,6 @@ package com._4dconcept.springframework.data.marklogic;
 
 /**
  * Helper class featuring helper methods for working with Marklogic urls.
- * <p/>
- * <p/>
  * Mainly intended for internal use within the framework.
  *
  * @author Stéphane Toussaint

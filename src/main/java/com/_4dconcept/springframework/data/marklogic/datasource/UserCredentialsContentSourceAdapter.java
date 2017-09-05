@@ -44,7 +44,7 @@ import org.springframework.util.StringUtils;
  *   &lt;property name="targetContentSource" ref="myTargetContentSource"/&gt;
  *   &lt;property name="username" value="myusername"/&gt;
  *   &lt;property name="password" value="mypassword"/&gt;
- * &lt;/bean></pre>
+ * &lt;/bean&gt;</pre>
  *
  * <p>If the "username" is empty, this proxy will simply delegate to the
  * standard {@code newSession()} method of the target ContentSource.
@@ -67,6 +67,7 @@ public class UserCredentialsContentSourceAdapter extends DelegatingContentSource
      * Set the default username that this adapter should use for retrieving Sessions.
      * <p>Default is no specific user. Note that an explicitly specified username
      * will always override any username/password specified at the ContentSource level.
+     * @param username the default username used for credential
      * @see #setPassword
      * @see #setCredentialsForCurrentThread(String, String)
      * @see #newSession(String, String)
@@ -79,6 +80,7 @@ public class UserCredentialsContentSourceAdapter extends DelegatingContentSource
      * Set the default user's password that this adapter should use for retrieving Sessions.
      * <p>Default is no specific password. Note that an explicitly specified username
      * will always override any username/password specified at the ContentSource level.
+     * @param password the default password used for credential
      * @see #setUsername
      * @see #setCredentialsForCurrentThread(String, String)
      * @see #newSession(String, String)

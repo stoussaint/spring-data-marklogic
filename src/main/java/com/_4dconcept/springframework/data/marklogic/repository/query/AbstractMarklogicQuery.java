@@ -72,7 +72,7 @@ public abstract class AbstractMarklogicQuery implements RepositoryQuery {
      * Creates a {@link Query} instance using the given {@link ParameterAccessor}
      *
      * @param accessor must not be {@literal null}.
-     * @return
+     * @return a created Query instance
      */
     protected abstract Query createQuery(ParameterAccessor accessor);
 

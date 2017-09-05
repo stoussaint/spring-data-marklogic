@@ -92,6 +92,10 @@ publishing {
                 classifier "sources"
             }
 
+            artifact javadocJar {
+                classifier "javadoc"
+            }
+
             pom.withXml {
                 asNode().children().last() + pomConfig
             }
@@ -101,6 +105,10 @@ publishing {
 
 task sourceJar(type: Jar) {
     from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    from javadoc.destinationDir
 }
 
 test {

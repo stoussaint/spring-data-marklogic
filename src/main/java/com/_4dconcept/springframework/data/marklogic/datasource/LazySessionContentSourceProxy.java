@@ -131,6 +131,7 @@ public class LazySessionContentSourceProxy extends DelegatingContentSource {
 
     /**
      * Expose the default transaction mode value.
+     * @return the default transaction mode
      */
     protected String defaultTransactionMode() {
         return this.defaultTransactionMode;

@@ -57,6 +57,7 @@ public abstract class AbstractRoutingContentSource extends AbstractContentSource
      * generic lookup process only. The concrete key representation will
      * be handled by {@link #resolveSpecifiedLookupKey(Object)} and
      * {@link #determineCurrentLookupKey()}.
+     * @param targetContentSources the map of target ContentSources
      */
     public void setTargetContentSources(Map<Object, Object> targetContentSources) {
         this.targetContentSources = targetContentSources;
@@ -69,6 +70,7 @@ public abstract class AbstractRoutingContentSource extends AbstractContentSource
      * <p>This ContentSource will be used as target if none of the keyed
      * {@link #setTargetContentSources targetContentSources} match the
      * {@link #determineCurrentLookupKey()} current lookup key.
+     * @param defaultTargetContentSource the default target ContentSource
      */
     public void setDefaultTargetContentSource(Object defaultTargetContentSource) {
         this.defaultTargetContentSource = defaultTargetContentSource;
@@ -86,6 +88,8 @@ public abstract class AbstractRoutingContentSource extends AbstractContentSource
      * @see #setTargetContentSources
      * @see #setDefaultTargetContentSource
      * @see #determineCurrentLookupKey()
+     *
+     * @param lenientFallback whether to apply a lenient fallback to the default ContentSource
      */
     public void setLenientFallback(boolean lenientFallback) {
         this.lenientFallback = lenientFallback;
@@ -96,7 +100,7 @@ public abstract class AbstractRoutingContentSource extends AbstractContentSource
         if (this.targetContentSources == null) {
             throw new IllegalArgumentException("Property 'targetContentSources' is required");
         }
-        this.resolvedContentSources = new HashMap<Object, ContentSource>(this.targetContentSources.size());
+        this.resolvedContentSources = new HashMap<>(this.targetContentSources.size());
         for (Map.Entry<Object, Object> entry : this.targetContentSources.entrySet()) {
             Object lookupKey = resolveSpecifiedLookupKey(entry.getKey());
             ContentSource contentSource = resolveSpecifiedContentSource(entry.getValue());
@@ -164,6 +168,7 @@ public abstract class AbstractRoutingContentSource extends AbstractContentSource
      * falls back to the specified
      * {@link #setDefaultTargetContentSource default target ContentSource} if necessary.
      * @see #determineCurrentLookupKey()
+     * @return the current target ContentSource
      */
     protected ContentSource determineTargetContentSource() {
         Assert.notNull(this.resolvedContentSources, "ContentSource router not initialized");
@@ -184,6 +189,7 @@ public abstract class AbstractRoutingContentSource extends AbstractContentSource
      * <p>Allows for arbitrary keys. The returned key needs
      * to match the stored lookup key type, as resolved by the
      * {@link #resolveSpecifiedLookupKey} method.
+     * @return the current lookup key
      */
     protected abstract Object determineCurrentLookupKey();
 

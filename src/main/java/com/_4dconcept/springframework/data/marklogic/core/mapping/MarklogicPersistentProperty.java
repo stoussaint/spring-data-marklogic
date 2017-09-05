@@ -28,15 +28,12 @@ import javax.xml.namespace.QName;
 public interface MarklogicPersistentProperty extends PersistentProperty<MarklogicPersistentProperty> {
 
     /**
-     * Returns whether the property is explicitly marked as an identifier property of the owning {@link PersistentEntity}.
-     *
-     * @return
+     * @return whether the property is explicitly marked as an identifier property of the owning {@link PersistentEntity}.
      */
     boolean isExplicitIdProperty();
 
     /**
-     * Retrieve the full qualified name of the property ()
-     * @return
+     * @return the full qualified name of the property
      */
     QName getQName();
 

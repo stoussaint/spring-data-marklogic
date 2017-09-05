@@ -27,20 +27,17 @@ import java.io.Serializable;
 public interface MarklogicEntityInformation<T, ID extends Serializable> extends EntityInformation<T, ID> {
 
     /**
-     * Returns the uri the entity shall be persisted to.
-     * @return
+     * @return the uri the entity shall be persisted to.
      */
     String getUri();
 
     /**
-     * Returns the default collection the entity will be persisted in
-     * @return
+     * @return the default collection the entity will be persisted in
      */
     String getDefaultCollection();
 
     /**
-     * Return true if the id element is expected to be find in property fragment
-     * @return
+     * @return true if the id element is expected to be find in property fragment
      */
     boolean idInPropertyFragment();
 
