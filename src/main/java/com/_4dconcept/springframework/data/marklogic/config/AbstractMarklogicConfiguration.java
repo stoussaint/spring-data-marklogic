@@ -21,6 +21,8 @@ import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicMappi
 import com._4dconcept.springframework.data.marklogic.core.mapping.Document;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com.marklogic.xcc.ContentSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Bean;
@@ -35,6 +37,7 @@ import org.springframework.data.support.IsNewStrategyFactory;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -48,21 +51,24 @@ import java.util.Set;
 @Configuration
 public abstract class AbstractMarklogicConfiguration {
 
+    protected Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+
     @Autowired(required = false)
     private GenericConversionService conversionService;
 
-    /**
-     * Return the name of the database to connect to.
-     * @return must not be {@literal null}.
-     */
-    protected abstract String getDatabaseName();
+    protected abstract URI getMarklogicUri();
 
     protected void beforeMarklogicTemplateCreation(ContentSource contentSource) {}
 
     protected void afterMarklogicTemplateCreation(MarklogicTemplate marklogicTemplate) {}
 
     @Bean
-    public abstract MarklogicFactoryBean marklogicContentSource();
+    public MarklogicFactoryBean marklogicContentSource() {
+        LOGGER.info("Init marklogic connexion at {}:{}", getMarklogicUri().getHost(), getMarklogicUri().getPort());
+        MarklogicFactoryBean marklogicFactoryBean = new MarklogicFactoryBean();
+        marklogicFactoryBean.setUri(getMarklogicUri());
+        return marklogicFactoryBean;
+    }
 
     @Bean
     public MarklogicTemplate marklogicTemplate(ContentSource contentSource) throws Exception {
