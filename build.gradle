@@ -7,15 +7,20 @@ apply plugin: 'java-library'
 apply plugin: 'org.asciidoctor.convert'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 sourceCompatibility = 1.8
 
 group 'com.4dconcept.springframework.data'
-version '1.1.0.BUILD-SNAPSHOT'
 
 tasks.withType(JavaCompile) {
     options.compilerArgs << "-Xlint:deprecation"
     options.compilerArgs << "-Xlint:unchecked"
+}
+
+ext {
+    pomFile = file("${project.buildDir}/generated-pom.xml")
+    isReleaseVersion = !(project.version =~ /-SNAPSHOT$/)
 }
 
 repositories {
@@ -49,6 +54,10 @@ dependencies {
 }
 
 def pomConfig = {
+    resolveStrategy = Closure.DELEGATE_FIRST
+    name 'Spring Data Marklogic'
+    url 'https://github.com/stoussaint/spring-data-marklogic'
+    description 'Marklogic support for Spring Data'
     organization {
         name '4DConcept'
         url 'http://www.4dconcept.com/en'
@@ -58,15 +67,22 @@ def pomConfig = {
         url 'https://github.com/stoussaint/spring-data-marklogic/issues'
     }
     scm {
-        url "https://github.com/stoussaint/spring-data-marklogic"
-        connection "scm:git:git://github.com/stoussaint/spring-data-marklogic.git"
-        developerConnection "scm:git:git@github.com:stoussaint/spring-data-marklogic.git"
+        url 'https://github.com/stoussaint/spring-data-marklogic'
+        connection 'scm:git:git://github.com/stoussaint/spring-data-marklogic.git'
+        developerConnection 'scm:git:git@github.com:stoussaint/spring-data-marklogic.git'
     }
     licenses {
         license {
             name 'The Apache Software License, Version 2.0'
             url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
             distribution 'repo'
+        }
+    }
+    repositories {
+        repository {
+            id 'maven2-repository.com.marklogic.developer'
+            name 'Marklogic Maven Repository'
+            url 'http://developer.marklogic.com/maven2'
         }
     }
     developers {
@@ -83,32 +99,86 @@ def pomConfig = {
     }
 }
 
+task sourcesJar(type: Jar) {
+    classifier "sources"
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar) {
+    classifier "javadoc"
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives jar, javadocJar, sourcesJar
+}
+
+signing {
+    required { signatory != null && project.ext.isReleaseVersion }
+    sign configurations.archives
+}
+
+
 publishing {
+    repositories {
+        maven {
+            if(project.ext.isReleaseVersion) {
+                url "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            } else {
+                url "https://oss.sonatype.org/content/repositories/snapshots/"
+            }
+
+            credentials {
+                username = "$ossrhUsername"
+                password = "$ossrhPassword"
+            }
+        }
+    }
+
     publications {
         mavenJava(MavenPublication) {
             from components.java
 
-            artifact sourceJar {
-                classifier "sources"
+            artifact(sourcesJar) {
+                classifier = "sources"
+            }
+            artifact(javadocJar) {
+                classifier = "javadoc"
             }
 
-            artifact javadocJar {
-                classifier "javadoc"
-            }
+            pom.packaging = "jar"
 
             pom.withXml {
-                asNode().children().last() + pomConfig
+                asNode().get("version") + pomConfig
+            }
+
+            if (signing.required) {
+                // Sign the pom.xml.
+                pom.withXml {
+                    writeTo(project.ext.pomFile)
+                    def pomAscFile = signing.sign(project.ext.pomFile).signatureFiles[0]
+                    artifact(pomAscFile) {
+                        classifier = null
+                        extension = 'pom.asc'
+                    }
+                    project.ext.pomFile.delete()
+                }
+
+                // Sign the artifacts.
+                project.tasks.signArchives.signatureFiles.each {
+                    artifact(it) {
+                        def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
+                        if (matcher.find()) {
+                            classifier = matcher.group(1)
+                        } else {
+                            classifier = null
+                        }
+                        extension = 'jar.asc'
+                    }
+                }
             }
         }
     }
-}
-
-task sourceJar(type: Jar) {
-    from sourceSets.main.allJava
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    from javadoc.destinationDir
 }
 
 test {
