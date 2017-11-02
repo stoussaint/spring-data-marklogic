@@ -109,7 +109,6 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         this(contentSource, null);
     }
 
-    @Autowired
     public MarklogicTemplate(ContentSource contentSource, MarklogicConverter marklogicConverter) {
         Assert.notNull(contentSource, "contentSource must not be null");
 
@@ -765,7 +764,9 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     private static MarklogicConverter getDefaultMarklogicConverter() {
-        return new MarklogicMappingConverter(new MarklogicMappingContext());
+        MarklogicMappingConverter marklogicMappingConverter = new MarklogicMappingConverter(new MarklogicMappingContext());
+        marklogicMappingConverter.afterPropertiesSet();
+        return marklogicMappingConverter;
     }
 
     /**

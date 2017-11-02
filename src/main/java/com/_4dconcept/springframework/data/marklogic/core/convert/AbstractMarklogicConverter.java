@@ -38,7 +38,7 @@ public abstract class AbstractMarklogicConverter implements MarklogicConverter, 
 
     private List<?> converters = new ArrayList<>();
 
-    public AbstractMarklogicConverter(GenericConversionService conversionService) {
+    AbstractMarklogicConverter(GenericConversionService conversionService) {
         this.conversionService = conversionService == null ? new DefaultConversionService() : conversionService;
     }
 
@@ -56,7 +56,7 @@ public abstract class AbstractMarklogicConverter implements MarklogicConverter, 
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
+    public void afterPropertiesSet() {
         initializeConverters();
     }
 
