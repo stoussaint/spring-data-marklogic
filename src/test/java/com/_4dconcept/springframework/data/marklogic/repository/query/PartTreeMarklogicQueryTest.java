@@ -73,6 +73,12 @@ public class PartTreeMarklogicQueryTest {
     }
 
     @Test
+    public void buildQueryUseExpectedCollection() {
+        assertThat(deriveQueryFromMethod("findByLastname", "foo").getCollection(), is("Person"));
+        assertThat(deriveQueryFromMethod("findBySkills", "foo").getCollection(), is("Person"));
+    }
+
+    @Test
     public void singleFieldShouldBeConsidered() {
         Query query = deriveQueryFromMethod("findByLastname", "foo");
 
