@@ -30,6 +30,7 @@ import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
 
 import javax.xml.namespace.QName;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -47,7 +48,7 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
 
     private MappingContext<?, MarklogicPersistentProperty> context;
 
-    public MarklogicQueryCreator(PartTree tree, ParameterAccessor parameters, MappingContext<?, MarklogicPersistentProperty> context) {
+    MarklogicQueryCreator(PartTree tree, ParameterAccessor parameters, MappingContext<?, MarklogicPersistentProperty> context) {
         super(tree, parameters);
 
         this.context = context;
@@ -57,14 +58,14 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     protected Criteria create(Part part, Iterator<Object> iterator) {
         PersistentPropertyPath<MarklogicPersistentProperty> path = context.getPersistentPropertyPath(part.getProperty());
         MarklogicPersistentProperty property = path.getLeafProperty();
-        return from(part, property, null, iterator);
+        return from(part, property, iterator);
     }
 
     @Override
     protected Criteria and(Part part, Criteria base, Iterator<Object> iterator) {
         Criteria newCriteria = create(part, iterator);
         if (base.getOperator() == null) {
-            return new Criteria(Criteria.Operator.and, Arrays.asList(base, newCriteria));
+            return new Criteria(Criteria.Operator.and, new ArrayList<>(Arrays.asList(base, newCriteria)));
         }
 
         base.add(newCriteria);
@@ -90,13 +91,12 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     /**
      * Populates the given {@link CriteriaDefinition} depending on the {@link Part} given.
      *
-     * @param part
-     * @param property
-     * @param criteria
-     * @param parameters
-     * @return
+     * @param part the current method part
+     * @param property the resolve entity property
+     * @param parameters the method parameters iterator
+     * @return the build criteria
      */
-    private Criteria from(Part part, MarklogicPersistentProperty property, Criteria criteria, Iterator<Object> parameters) {
+    private Criteria from(Part part, MarklogicPersistentProperty property, Iterator<Object> parameters) {
 
         Part.Type type = part.getType();
 

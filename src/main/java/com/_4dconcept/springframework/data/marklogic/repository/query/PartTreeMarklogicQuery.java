@@ -22,7 +22,6 @@ import com._4dconcept.springframework.data.marklogic.core.query.Query;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.RepositoryQuery;
-import org.springframework.data.repository.query.ResultProcessor;
 import org.springframework.data.repository.query.parser.PartTree;
 
 /**
@@ -38,8 +37,7 @@ public class PartTreeMarklogicQuery extends AbstractMarklogicQuery {
     public PartTreeMarklogicQuery(MarklogicQueryMethod method, MarklogicOperations marklogicOperations) {
         super(method, marklogicOperations);
 
-        ResultProcessor processor = method.getResultProcessor();
-        this.tree = new PartTree(method.getName(), processor.getReturnedType().getDomainType());
+        this.tree = new PartTree(method.getName(), method.getResultProcessor().getReturnedType().getDomainType());
         this.context = marklogicOperations.getConverter().getMappingContext();
     }
 

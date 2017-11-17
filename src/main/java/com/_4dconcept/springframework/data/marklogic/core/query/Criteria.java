@@ -84,13 +84,13 @@ public class Criteria implements CriteriaDefinition {
     /**
      * @param operator the operator to set
      */
-    public void setOperator(Operator operator) {
+    void setOperator(Operator operator) {
         this.operator = operator;
     }
 
     @SuppressWarnings("unchecked")
     public void add(Criteria criteria) {
-        if (criteriaObject instanceof Collection) {
+        if (criteriaObject instanceof Collection<?>) {
             ((Collection<Criteria>)criteriaObject).add(criteria);
         }
     }
