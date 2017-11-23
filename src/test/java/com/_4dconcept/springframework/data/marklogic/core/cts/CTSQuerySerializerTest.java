@@ -18,6 +18,7 @@ package com._4dconcept.springframework.data.marklogic.core.cts;
 import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
 import com._4dconcept.springframework.data.marklogic.core.query.SortCriteria;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import javax.xml.namespace.QName;
@@ -76,5 +77,25 @@ public class CTSQuerySerializerTest {
         String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
 
         assertThat(ctsQuery, is("cts:search(fn:collection('Collection1'), (), (cts:index-order(cts:element-reference(fn:QName('', 'age')), ('descending')), cts:index-order(cts:element-reference(fn:QName('', 'lastname')), ('ascending'))))"));
+    }
+
+    @Test
+    public void parseQueryWithNonStringValue() throws Exception {
+        Query query = new Query();
+        query.setCriteria(new Criteria(new QName("age"), 38));
+
+        String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
+        System.out.println(ctsQuery);
+    }
+
+    // Issue #6
+    @Test
+    public void parseQueryWithStringValueContainingApostropheIsEscaped() throws Exception {
+        Query query = new Query();
+        query.setCriteria(new Criteria(new QName("name"), "l'apostrophe"));
+
+        String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
+        System.out.println(ctsQuery);
+        assertThat(ctsQuery, Matchers.containsString("l''apostrophe"));
     }
 }

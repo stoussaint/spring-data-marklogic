@@ -221,6 +221,10 @@ public class SimpleMarklogicRepositoryIntegrationTests {
         person.setLastname("Toussaint");
         Iterable<Person> result = repository.findAll(Example.of(person));
         assertThat(result, notNullValue());
+
+        Person byAgeSample = new Person();
+        byAgeSample.setAge(28);
+        assertThat(repository.findAll(Example.of(byAgeSample)), hasSize(2));
     }
 
     private void checkOrder(Sort sort, String[] lastnames) {

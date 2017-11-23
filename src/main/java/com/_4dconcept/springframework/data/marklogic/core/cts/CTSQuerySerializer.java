@@ -67,7 +67,14 @@ public class CTSQuerySerializer {
     }
 
     private String handleSimpleValue(Criteria criteria) {
-        return String.format("cts:element-value-query(%s, '%s')", serializeQName(criteria.getQname()), criteria.getCriteriaObject());
+        if (criteria.getCriteriaObject() instanceof String) {
+            String escapedValue = criteria.getCriteriaObject().toString().replaceAll("'", "''");
+            return String.format("cts:element-value-query(%s, '%s')", serializeQName(criteria.getQname()), escapedValue);
+        } else if (criteria.getCriteriaObject() != null) {
+            return String.format("cts:element-value-query(%s, '%s')", serializeQName(criteria.getQname()), criteria.getCriteriaObject());
+        }
+
+        return "";
     }
 
     @SuppressWarnings("unchecked")
