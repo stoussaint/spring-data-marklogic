@@ -21,18 +21,15 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Sample domain class.
  *
  * @author Stéphane Toussaint
  */
-@Document(uri = "/contact/person/#{id}.xml", defaultCollection = "Person")
+@Document(uri = "/contact/person/#{id}.xml", defaultCollection = "#{entityClass.getSimpleName()}")
 @XmlRootElement
 public class Person {
-
-    private static AtomicInteger INCREMENT = new AtomicInteger(1);
 
     private String id;
     private String firstname;
@@ -157,8 +154,8 @@ public class Person {
     }
 
     /* (non-Javadoc)
-         * @see java.lang.Object#toString()
-         */
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return String.format("%s %s", firstname, lastname);

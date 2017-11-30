@@ -15,17 +15,10 @@
  */
 package com._4dconcept.springframework.data.marklogic.repository.support;
 
-import com._4dconcept.springframework.data.marklogic.core.MarklogicFactoryBean;
-import com._4dconcept.springframework.data.marklogic.core.MarklogicTemplate;
-import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConverter;
-import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
-import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
-import com._4dconcept.springframework.data.marklogic.datasource.ContentSourceTransactionManager;
+import com._4dconcept.springframework.data.marklogic.config.AbstractMarklogicConfiguration;
 import com._4dconcept.springframework.data.marklogic.repository.Address;
 import com._4dconcept.springframework.data.marklogic.repository.Person;
-import com._4dconcept.springframework.data.marklogic.repository.query.MarklogicEntityInformation;
-import com.marklogic.xcc.ContentSource;
-import com.marklogic.xcc.exceptions.XccConfigException;
+import com._4dconcept.springframework.data.marklogic.repository.config.EnableMarklogicRepositories;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,7 +26,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.PropertySource;
@@ -54,6 +46,7 @@ import java.io.Serializable;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,22 +58,22 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
- * Integration tests for {@link SimpleMarklogicRepository}.
+ * Integration tests for the repository layer.
  *
  * @author Stéphane Toussaint
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration
-public class SimpleMarklogicRepositoryIntegrationTests {
+public class RepositoryIntegrationTests {
 
     @Autowired
-    private SimpleMarklogicRepository<Person, String> repository;
+    private PersonRepository repository;
 
-    Person steph;
-    Person sahbi;
-    Person another;
+    private Person steph;
+    private Person sahbi;
+    private Person another;
 
-    List<Person> all;
+    private List<Person> all;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -123,6 +116,14 @@ public class SimpleMarklogicRepositoryIntegrationTests {
     @Test
     public void findPersonById() {
         Person person = repository.findOne(steph.getId());
+        assertThat(person, notNullValue());
+        assertThat(person.getId(), is(steph.getId()));
+        assertThat(person.getFirstname(), is("Stéphane"));
+    }
+
+    @Test
+    public void findByIdWithMethodQuery() {
+        Person person = repository.findById(steph.getId());
         assertThat(person, notNullValue());
         assertThat(person.getId(), is(steph.getId()));
         assertThat(person.getFirstname(), is("Stéphane"));
@@ -234,44 +235,6 @@ public class SimpleMarklogicRepositoryIntegrationTests {
         assertThat(result.get(2).getLastname(), is(lastnames[2]));
     }
 
-    private static class CustomizedPersonInformation implements MarklogicEntityInformation<Person, String> {
-
-        @Override
-        public boolean isNew(Person entity) {
-            return entity.getId() == null;
-        }
-
-        @Override
-        public String getId(Person entity) {
-            return entity.getId();
-        }
-
-        @Override
-        public Class<String> getIdType() {
-            return String.class;
-        }
-
-        @Override
-        public Class<Person> getJavaType() {
-            return Person.class;
-        }
-
-        @Override
-        public String getUri() {
-            return "/person/#{id}.xml";
-        }
-
-        @Override
-        public String getDefaultCollection() {
-            return "Person";
-        }
-
-        @Override
-        public boolean idInPropertyFragment() {
-            return false;
-        }
-    }
-
     static class PersonConverter implements Converter<Person, Serializable> {
         @Override
         public Serializable convert(Person source) {
@@ -287,47 +250,23 @@ public class SimpleMarklogicRepositoryIntegrationTests {
     }
 
     @Configuration
+    @EnableMarklogicRepositories
     @EnableTransactionManagement
     @EnableAspectJAutoProxy(proxyTargetClass = true)
     @PropertySource(value = "integration-test.properties", ignoreResourceNotFound = true)
-    static class TestConfig {
+    static class TestConfig extends AbstractMarklogicConfiguration {
 
         @Value("${marklogic.uri}")
         private String marklogicUri;
 
-        @Bean
-        public MarklogicFactoryBean marklogicContentSource() {
-            MarklogicFactoryBean marklogicFactoryBean = new MarklogicFactoryBean();
-            marklogicFactoryBean.setUri(URI.create(marklogicUri));
-            return marklogicFactoryBean;
+        @Override
+        public URI getMarklogicUri() {
+            return URI.create(marklogicUri);
         }
 
-        @Bean
-        public MarklogicTemplate marklogicTemplate(ContentSource contentSource, MarklogicConverter marklogicConverter) {
-            MarklogicTemplate marklogicTemplate = new MarklogicTemplate(contentSource, marklogicConverter);
-            return marklogicTemplate;
-        }
-
-        @Bean
-        public MarklogicConverter marklogicConverter() {
-            MarklogicMappingConverter marklogicConverter = new MarklogicMappingConverter(new MarklogicMappingContext());
-            marklogicConverter.setConverters(Arrays.asList(personConverter()));
-            return marklogicConverter;
-        }
-
-        @Bean
-        public PersonConverter personConverter() {
-            return new PersonConverter();
-        }
-
-        @Bean
-        public ContentSourceTransactionManager transactionManager(ContentSource contentSource) throws XccConfigException {
-            return new ContentSourceTransactionManager(contentSource);
-        }
-
-        @Bean
-        public SimpleMarklogicRepository<Person, String> simpleMarklogicRepository(MarklogicTemplate marklogicTemplate) {
-            return new SimpleMarklogicRepository<>(new CustomizedPersonInformation(), marklogicTemplate);
+        @Override
+        protected List<Object> getConverters() {
+            return Collections.singletonList(new PersonConverter());
         }
 
     }
