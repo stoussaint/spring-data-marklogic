@@ -15,6 +15,7 @@
  */
 package com._4dconcept.springframework.data.marklogic.repository.query;
 
+import com._4dconcept.springframework.data.marklogic.MarklogicUtils;
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperations;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
@@ -49,7 +50,7 @@ public class PartTreeMarklogicQuery extends AbstractMarklogicQuery {
         Class<?> domainType = getQueryMethod().getReturnedObjectType();
 
         String defaultCollection = context.getPersistentEntity(domainType).getDefaultCollection();
-        query.setCollection(defaultCollection);
+        query.setCollection(MarklogicUtils.expandCollection(defaultCollection, domainType));
 
         if (tree.isLimiting()) {
             query.setLimit(tree.getMaxResults());
