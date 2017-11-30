@@ -10,8 +10,24 @@ public class MarklogicUtilsTest {
 
     @Test
     public void checkCollectionExpansion() throws Exception {
-        assertThat(MarklogicUtils.expandCollection("myCollection", null), is("myCollection"));
+        assertThat(MarklogicUtils.expandCollection("myCollection", (Class<?>) null), is("myCollection"));
         assertThat(MarklogicUtils.expandCollection("#{entityClass.getSimpleName()}", Person.class), is("Person"));
+        assertThat(MarklogicUtils.expandCollection("#{id}", new MarklogicUtils.DocumentExpressionContext() {
+            @Override
+            public Class<?> getEntityClass() {
+                return null;
+            }
+
+            @Override
+            public Object getEntity() {
+                return null;
+            }
+
+            @Override
+            public Object getId() {
+                return "12";
+            }
+        }), is("12"));
     }
 
     @Test

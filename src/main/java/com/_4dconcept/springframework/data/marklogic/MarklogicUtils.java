@@ -42,8 +42,7 @@ public final class MarklogicUtils {
      * @return the expanded collection. If the given collection is not an expression, it is return as it.
      */
     public static String expandCollection(String collection, Class<?> entityType) {
-        Expression expression = detectExpression(collection);
-        return expression == null ? collection : expression.getValue(new DocumentExpressionContext() {
+        return expandCollection(collection, new DocumentExpressionContext() {
             @Override
             public Class<?> getEntityClass() {
                 return entityType;
@@ -58,7 +57,19 @@ public final class MarklogicUtils {
             public Object getId() {
                 return null;
             }
-        }, String.class);
+        });
+    }
+
+    /**
+     * Expands the given collection using the provided type.
+     *
+     * @param collection the collection to expand
+     * @param expressionContext the entityType used as context
+     * @return the expanded collection. If the given collection is not an expression, it is return as it.
+     */
+    public static String expandCollection(String collection, DocumentExpressionContext expressionContext) {
+        Expression expression = detectExpression(collection);
+        return expression == null ? collection : expression.getValue(expressionContext, String.class);
     }
 
     /**

@@ -295,7 +295,22 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     public <T> T findById(Object id, Class<T> entityClass, MarklogicOperationOptions options) {
         final Class<T> targetEntityClass = options.entityClass() == null ? entityClass : (Class<T>) options.entityClass();
         MarklogicIdentifier identifier = resolveMarklogicIdentifier(id, targetEntityClass);
-        final String targetCollection = retrieveTargetCollection(MarklogicUtils.expandCollection(options.defaultCollection(), targetEntityClass));
+        final String targetCollection = retrieveTargetCollection(MarklogicUtils.expandCollection(options.defaultCollection(), new MarklogicUtils.DocumentExpressionContext() {
+            @Override
+            public Class<?> getEntityClass() {
+                return targetEntityClass;
+            }
+
+            @Override
+            public Object getEntity() {
+                return null;
+            }
+
+            @Override
+            public Object getId() {
+                return id;
+            }
+        }));
 
         final boolean isIdInPropertyFragment = options.idInPropertyFragment();
 
@@ -443,7 +458,22 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     public <T> String resolveDefaultCollection(T entity, MarklogicOperationOptions options) {
         MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(entity.getClass());
         String defaultCollection = options.defaultCollection() == null ? persistentEntity.getDefaultCollection() : options.defaultCollection();
-        return MarklogicUtils.expandCollection(defaultCollection, entity.getClass());
+        return MarklogicUtils.expandCollection(defaultCollection, new MarklogicUtils.DocumentExpressionContext() {
+            @Override
+            public Class<?> getEntityClass() {
+                return entity.getClass();
+            }
+
+            @Override
+            public Object getEntity() {
+                return entity;
+            }
+
+            @Override
+            public Object getId() {
+                return resolveMarklogicIdentifier(entity);
+            }
+        });
     }
 
     @Override
@@ -479,7 +509,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     private <T> void doInsert(T objectToSave, MarklogicCreateOperationOptions options, MarklogicWriter<T> writer) {
         MarklogicUtils.DocumentExpressionContext documentExpressionContext = buildDocumentExpressionContext(objectToSave);
         String uri =  MarklogicUtils.expandUri(options.uri(), documentExpressionContext);
-        String collection = MarklogicUtils.expandCollection(options.defaultCollection(), objectToSave.getClass());
+        String collection = MarklogicUtils.expandCollection(options.defaultCollection(), documentExpressionContext);
 
         LOGGER.debug("Insert entity '{}' at '{}' within '{}' default collection", objectToSave, uri, collection);
 
@@ -559,7 +589,22 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(objectToSave.getClass());
 
         final MarklogicIdentifier identifier = resolveMarklogicIdentifier(objectToSave);
-        final String collection = MarklogicUtils.expandCollection(persistentEntity.getDefaultCollection(), objectToSave.getClass());
+        final String collection = MarklogicUtils.expandCollection(persistentEntity.getDefaultCollection(), new MarklogicUtils.DocumentExpressionContext() {
+            @Override
+            public Class<?> getEntityClass() {
+                return objectToSave.getClass();
+            }
+
+            @Override
+            public Object getEntity() {
+                return null;
+            }
+
+            @Override
+            public Object getId() {
+                return retrieveIdentifier(objectToSave);
+            }
+        });
 
         String collectionConstraints = retrieveConstraintCollection(collection);
 
