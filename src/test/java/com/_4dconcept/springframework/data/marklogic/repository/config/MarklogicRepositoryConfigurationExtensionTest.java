@@ -18,6 +18,7 @@ package com._4dconcept.springframework.data.marklogic.repository.config;
 import com._4dconcept.springframework.data.marklogic.core.mapping.Document;
 import com._4dconcept.springframework.data.marklogic.repository.MarklogicRepository;
 import org.junit.Test;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.ResourceLoader;
@@ -31,6 +32,7 @@ import org.springframework.data.repository.config.RepositoryConfigurationSource;
 import java.util.Collection;
 
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 /**
  * Unit tests for {@link MarklogicRepositoryConfigurationExtension}.
@@ -42,8 +44,9 @@ public class MarklogicRepositoryConfigurationExtensionTest {
     StandardAnnotationMetadata metadata = new StandardAnnotationMetadata(Config.class, true);
     ResourceLoader loader = new PathMatchingResourcePatternResolver();
     Environment environment = new StandardEnvironment();
+    BeanDefinitionRegistry registry = mock(BeanDefinitionRegistry.class);
     RepositoryConfigurationSource configurationSource = new AnnotationRepositoryConfigurationSource(metadata,
-            EnableMarklogicRepositories.class, loader, environment);
+            EnableMarklogicRepositories.class, loader, environment, registry);
 
     @Test
     public void isStrictMatchIfDomainTypeIsAnnotatedWithDocument() {

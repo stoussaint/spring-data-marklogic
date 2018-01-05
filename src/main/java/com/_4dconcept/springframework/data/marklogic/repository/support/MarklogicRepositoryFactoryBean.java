@@ -36,6 +36,10 @@ public class MarklogicRepositoryFactoryBean<T extends Repository<S, ID>, S, ID e
     private MarklogicOperations marklogicOperations;
     private boolean mappingContextConfigured = false;
 
+    public MarklogicRepositoryFactoryBean(Class<? extends T> repositoryInterface) {
+        super(repositoryInterface);
+    }
+
     @Override
     protected RepositoryFactorySupport createRepositoryFactory() {
         RepositoryFactorySupport factory = getFactoryInstance(marklogicOperations);
