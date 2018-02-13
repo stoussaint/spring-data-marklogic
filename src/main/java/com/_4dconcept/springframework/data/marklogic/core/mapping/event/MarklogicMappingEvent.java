@@ -23,12 +23,12 @@ import org.springframework.context.ApplicationEvent;
  *
  * @author Stéphane Toussaint
  */
-public class MarklogicMappingEvent<T> extends ApplicationEvent {
+public abstract class MarklogicMappingEvent<T> extends ApplicationEvent {
 
     private final String uri;
     private final Content content;
 
-    public MarklogicMappingEvent(T source, Content content, String uri) {
+    MarklogicMappingEvent(T source, Content content, String uri) {
         super(source);
         this.content = content;
         this.uri = uri;

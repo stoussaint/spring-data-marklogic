@@ -27,10 +27,10 @@ import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappi
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicSimpleTypes;
+import com._4dconcept.springframework.data.marklogic.core.mapping.event.AfterRetrieveEvent;
 import com._4dconcept.springframework.data.marklogic.core.mapping.event.AfterSaveEvent;
 import com._4dconcept.springframework.data.marklogic.core.mapping.event.BeforeConvertEvent;
 import com._4dconcept.springframework.data.marklogic.core.mapping.event.BeforeSaveEvent;
-import com._4dconcept.springframework.data.marklogic.core.mapping.event.MarklogicMappingEvent;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
 import com._4dconcept.springframework.data.marklogic.core.query.QueryBuilder;
 import com._4dconcept.springframework.data.marklogic.datasource.ContentSourceUtils;
@@ -51,6 +51,7 @@ import com.marklogic.xcc.types.XdmValue;
 import com.marklogic.xcc.types.XdmVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.convert.ConversionService;
@@ -544,7 +545,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         };
     }
 
-    private <T> void maybeEmitEvent(MarklogicMappingEvent<T> event) {
+    private void maybeEmitEvent(ApplicationEvent event) {
         if (null != eventPublisher) {
             eventPublisher.publishEvent(event);
         }
@@ -830,7 +831,11 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         MarklogicContentHolder holder = new MarklogicContentHolder();
         holder.setContent(resultItem);
 
-        return marklogicConverter.read(returnType, holder);
+        T item = marklogicConverter.read(returnType, holder);
+        if (item != null) {
+            maybeEmitEvent(new AfterRetrieveEvent<>(item, resultItem.getDocumentURI()));
+        }
+        return item;
     }
 
     private String retrieveTargetCollection(String defaultCollection) {

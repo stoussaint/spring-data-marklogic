@@ -70,24 +70,31 @@ import static org.mockito.Mockito.when;
 public class MarklogicTemplateTest {
 
     @Mock
+    private
     ContentSource contentSource;
 
     @Mock
+    private
     Session session;
 
     @Mock
+    private
     MarklogicConverter marklogicConverter;
 
     @Mock
+    private
     ConversionService conversionService;
 
     @Mock
+    private
     ResultSequence resultSequence;
 
     @Captor
+    private
     ArgumentCaptor<Content> contentArgumentCaptor;
 
     @Captor
+    private
     ArgumentCaptor<String> queryArgumentCaptor;
 
     @Before
