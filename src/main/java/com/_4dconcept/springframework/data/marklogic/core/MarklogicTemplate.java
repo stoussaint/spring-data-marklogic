@@ -75,6 +75,7 @@ import java.io.RandomAccessFile;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -174,7 +175,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Override
     public void save(Object objectToSave) {
-        if (!checkIdIsSet(objectToSave)) {
+        if (isUnidentifiedObject(objectToSave)) {
             LOGGER.debug("Save operation issued with unidentified object. Fallback to insert operation.");
             insert(objectToSave);
         } else {
@@ -202,7 +203,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Override
     public void save(Object objectToSave, MarklogicCreateOperationOptions options) {
-        if (!checkIdIsSet(objectToSave)) {
+        if (isUnidentifiedObject(objectToSave)) {
             LOGGER.debug("Save operation issued with unidentified object. Fallback to insert operation.");
             insert(objectToSave, options);
         } else {
@@ -336,7 +337,14 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
         LOGGER.trace(sb.toString());
 
-        return invokeAdhocQuery(sb.toString(), entityClass, new MarklogicInvokeOperationOptions() {});
+        return invokeAdhocQuery(sb.toString(), entityClass, new MarklogicInvokeOperationOptions() {
+            @Override
+            public Map<Object, Object> params() {
+                Map<Object, Object> params = new HashMap<>();
+                params.put("id", id);
+                return params;
+            }
+        });
     }
 
     @Override
@@ -388,7 +396,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         return returnInSession(session -> {
             try {
                 ResultSequence resultSequence = session.submitRequest(buildModuleRequest(moduleName, options, session));
-                return prepareResultList(resultSequence, resultClass);
+                return prepareResultList(resultSequence, resultClass, options);
             } catch (RequestException re) {
                 throw new DataRetrievalFailureException("Unable to submit request", re);
             }
@@ -424,7 +432,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         return returnInSession(session -> {
             try {
                 ResultSequence resultSequence = session.submitRequest(buildAdhocRequest(query, options, session));
-                return prepareResultList(resultSequence, resultClass);
+                return prepareResultList(resultSequence, resultClass, options);
             } catch (RequestException re) {
                 throw new DataRetrievalFailureException("Unable to submit request", re);
             }
@@ -575,15 +583,15 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         new ConvertingPropertyAccessor(accessor, conversionService).setProperty(property, UUID.randomUUID());
     }
 
-    private boolean checkIdIsSet(Object objectToSave) {
+    private boolean isUnidentifiedObject(Object objectToSave) {
         MarklogicPersistentProperty property = getIdPropertyFor(objectToSave.getClass());
 
         if (property == null) {
-            return false;
+            return true;
         }
 
         MarklogicPersistentEntity<?> entity = mappingContext.getPersistentEntity(objectToSave.getClass());
-        return entity.getPropertyAccessor(objectToSave).getProperty(property) != null;
+        return entity.getPropertyAccessor(objectToSave).getProperty(property) == null;
     }
 
     private String retrieveUri(Object objectToSave) {
@@ -816,24 +824,26 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         return marklogicConverter.getConversionService().convert(value, XdmValue.class);
     }
 
-    private <T> List<T> prepareResultList(ResultSequence resultSequence, Class<T> returnType) {
+    private <T> List<T> prepareResultList(ResultSequence resultSequence, Class<T> returnType, MarklogicInvokeOperationOptions options) {
         List<T> resultList = null;
         if (resultSequence != null && !resultSequence.isEmpty() && returnType != null) {
             resultList = new ArrayList<>();
             while (resultSequence.hasNext()) {
-                resultList.add(prepareResultItem(resultSequence.next(), returnType));
+                resultList.add(prepareResultItem(resultSequence.next(), returnType, options));
             }
         }
         return resultList;
     }
 
-    private <T> T prepareResultItem(ResultItem resultItem, Class<T> returnType) {
+    private <T> T prepareResultItem(ResultItem resultItem, Class<T> returnType, MarklogicInvokeOperationOptions options) {
         MarklogicContentHolder holder = new MarklogicContentHolder();
         holder.setContent(resultItem);
 
         T item = marklogicConverter.read(returnType, holder);
         if (item != null) {
-            maybeEmitEvent(new AfterRetrieveEvent<>(item, resultItem.getDocumentURI()));
+            AfterRetrieveEvent<T> event = new AfterRetrieveEvent<>(item, resultItem.getDocumentURI());
+            event.setParams(options.params());
+            maybeEmitEvent(event);
         }
         return item;
     }
@@ -855,7 +865,12 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     private MarklogicIdentifier resolveMarklogicIdentifier(Object object) {
-        return resolveMarklogicIdentifier(retrieveIdentifier(object), getIdPropertyFor(object.getClass()));
+        MarklogicPersistentProperty idProperty = getIdPropertyFor(object.getClass());
+
+        if (idProperty == null)
+            throw new  InvalidDataAccessApiUsageException("Unable to retrieve expected identifier property !");
+
+        return resolveMarklogicIdentifier(retrieveIdentifier(object), idProperty);
     }
 
     private Object retrieveIdentifier(Object object) {
