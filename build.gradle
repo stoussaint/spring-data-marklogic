@@ -1,5 +1,13 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'io.spring.gradle:dependency-management-plugin:1.0.0.RELEASE'
+    }
+}
+
 plugins {
-    id 'io.spring.dependency-management' version '0.6.1.RELEASE'
     id 'org.asciidoctor.convert' version '1.5.3'
 }
 
