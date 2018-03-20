@@ -49,11 +49,17 @@ public class PartTreeMarklogicQuery extends AbstractMarklogicQuery {
 
         Class<?> domainType = getQueryMethod().getReturnedObjectType();
 
-        String defaultCollection = context.getPersistentEntity(domainType).getDefaultCollection();
-        query.setCollection(MarklogicUtils.expandCollection(defaultCollection, domainType));
+        MarklogicPersistentEntity<?> persistentEntity = context.getPersistentEntity(domainType);
+        if (persistentEntity != null) {
+            String defaultCollection = persistentEntity.getDefaultCollection();
+            String collection = MarklogicUtils.expandCollection(defaultCollection, domainType);
+            if (collection != null) {
+                query.setCollection(collection);
+            }
+        }
 
         if (tree.isLimiting()) {
-            query.setLimit(tree.getMaxResults());
+            query.setLimit(tree.getMaxResults() == null ? 0 : tree.getMaxResults());
         }
 
         return query;

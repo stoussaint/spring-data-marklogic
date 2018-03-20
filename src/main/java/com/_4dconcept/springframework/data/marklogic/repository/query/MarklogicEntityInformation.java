@@ -17,14 +17,12 @@ package com._4dconcept.springframework.data.marklogic.repository.query;
 
 import org.springframework.data.repository.core.EntityInformation;
 
-import java.io.Serializable;
-
 /**
  * Marklogic specific {@link EntityInformation}.
  *
  * @author Stéphane Toussaint
  */
-public interface MarklogicEntityInformation<T, ID extends Serializable> extends EntityInformation<T, ID> {
+public interface MarklogicEntityInformation<T, ID> extends EntityInformation<T, ID> {
 
     /**
      * @return the uri the entity shall be persisted to.

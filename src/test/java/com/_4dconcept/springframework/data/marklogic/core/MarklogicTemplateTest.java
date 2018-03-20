@@ -15,9 +15,9 @@
  */
 package com._4dconcept.springframework.data.marklogic.core;
 
+import com._4dconcept.springframework.data.marklogic.core.convert.MappingMarklogicConverter;
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicContentHolder;
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConverter;
-import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import com._4dconcept.springframework.data.marklogic.core.mapping.BasicMarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
@@ -41,14 +41,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.data.mapping.context.MappingContext;
+import org.springframework.lang.Nullable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.xml.namespace.QName;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;
 import java.util.UUID;
@@ -56,12 +56,7 @@ import java.util.UUID;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Stéphane Toussaint
@@ -108,15 +103,10 @@ public class MarklogicTemplateTest {
         when(session.submitRequest(any(Request.class))).thenReturn(resultSequence);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void rejectsNullContentSource() throws Exception {
-        new MarklogicTemplate(null);
-    }
-
     @Test
-    public void defaultsConverterToMappingMarklogicConverter() throws Exception {
+    public void defaultsConverterToMappingMarklogicConverter() {
         MarklogicTemplate template = new MarklogicTemplate(contentSource);
-        assertTrue(ReflectionTestUtils.getField(template, "marklogicConverter") instanceof MarklogicMappingConverter);
+        assertTrue(ReflectionTestUtils.getField(template, "marklogicConverter") instanceof MappingMarklogicConverter);
     }
 
     @Test
@@ -126,7 +116,7 @@ public class MarklogicTemplateTest {
         when(conversionService.convert(any(UUID.class), eq(String.class))).thenReturn("generatedId");
 
         doAnswer(invocationOnMock -> {
-            MarklogicContentHolder holder = invocationOnMock.getArgumentAt(1, MarklogicContentHolder.class);
+            MarklogicContentHolder holder = invocationOnMock.getArgument(1);
             holder.setContent(SAMPLE_CONTENT);
             return null;
         }).when(marklogicConverter).write(Mockito.any(SimpleEntity.class), Mockito.any(MarklogicContentHolder.class));
@@ -145,13 +135,13 @@ public class MarklogicTemplateTest {
         final String SAMPLE_CONTENT = "<simpleEntity><id>1</id><name>entity</name></simpleEntity>";
 
         doAnswer(invocationOnMock -> {
-            MarklogicContentHolder holder = invocationOnMock.getArgumentAt(1, MarklogicContentHolder.class);
+            MarklogicContentHolder holder = invocationOnMock.getArgument(1);
             holder.setContent(SAMPLE_CONTENT);
             return null;
         }).when(marklogicConverter).write(Mockito.any(SimpleEntity.class), Mockito.any(MarklogicContentHolder.class));
 
         MarklogicTemplate template = new MarklogicTemplate(contentSource, marklogicConverter);
-        template.insert(new SimpleEntity(null, "entity"), buildCreateOperationOptions("/test/entity/1.xml"));
+        template.insert(new SimpleEntity(null, "entity"), buildCreateOperationOptions());
         verify(session).insertContent(contentArgumentCaptor.capture());
 
         assertThat(contentArgumentCaptor.getValue().getUri(), CoreMatchers.equalTo("/test/entity/1.xml"));
@@ -166,7 +156,7 @@ public class MarklogicTemplateTest {
         when(conversionService.convert(any(UUID.class), eq(String.class))).thenReturn("generatedId");
 
         doAnswer(invocationOnMock -> {
-            MarklogicContentHolder holder = invocationOnMock.getArgumentAt(1, MarklogicContentHolder.class);
+            MarklogicContentHolder holder = invocationOnMock.getArgument(1);
             holder.setContent(SAMPLE_CONTENT);
             return null;
         }).when(marklogicConverter).write(Mockito.any(SimpleEntity.class), Mockito.any(MarklogicContentHolder.class));
@@ -187,7 +177,7 @@ public class MarklogicTemplateTest {
         when(session.newAdhocQuery(eq("cts:uris((), (), cts:and-query((cts:element-value-query(fn:QName(\"\", \"id\"), \"1\"))))"))).thenReturn(new AdhocImpl(session, null, new RequestOptions()));
 
         doAnswer(invocationOnMock -> {
-            MarklogicContentHolder holder = invocationOnMock.getArgumentAt(1, MarklogicContentHolder.class);
+            MarklogicContentHolder holder = invocationOnMock.getArgument(1);
             holder.setContent(SAMPLE_CONTENT);
             return null;
         }).when(marklogicConverter).write(Mockito.any(SimpleEntity.class), Mockito.any(MarklogicContentHolder.class));
@@ -203,12 +193,14 @@ public class MarklogicTemplateTest {
 
     @Test
     public void removeEntity() {
+        final String contentUri = "/test/entity/1.xml";
+
         AdhocImpl request = new AdhocImpl(session, null, new RequestOptions());
         when(session.newAdhocQuery(any(String.class))).thenReturn(request);
-        when(resultSequence.isEmpty()).thenReturn(false);
         when(resultSequence.hasNext()).thenReturn(true, false, true, false);
-        when(resultSequence.next()).thenReturn(new ResultItemImpl(null, 0, null, null), new ResultItemImpl(new XsStringImpl("/test/entity/1.xml"), 0, null, null));
+        when(resultSequence.next()).thenReturn(new ResultItemImpl(null, 0, null, null), new ResultItemImpl(new XsStringImpl(contentUri), 0, null, null));
         when(marklogicConverter.read(eq(SimpleEntity.class), any(MarklogicContentHolder.class))).thenReturn(new SimpleEntity("1", "entity"));
+        when(marklogicConverter.read(eq(String.class), any(MarklogicContentHolder.class))).thenReturn(contentUri);
 
         MarklogicTemplate template = new MarklogicTemplate(contentSource, marklogicConverter);
         template.remove("1", SimpleEntity.class);
@@ -216,13 +208,13 @@ public class MarklogicTemplateTest {
     }
 
     @Test(expected = ConverterNotFoundException.class)
-    public void rejectsInsertionOfNonAnnotatedEntity() throws Exception {
+    public void rejectsInsertionOfNonAnnotatedEntity() {
         MarklogicTemplate template = new MarklogicTemplate(contentSource);
-        template.insert(new NonAnnotatedEntity("1", "entity"), buildCreateOperationOptions("/test/entity/1.xml"));
+        template.insert(new NonAnnotatedEntity("1", "entity"), buildCreateOperationOptions());
     }
 
     @Test
-    public void findByQuery() throws Exception {
+    public void findByQuery() {
         when(session.newAdhocQuery(anyString())).thenReturn(new AdhocImpl(null, null, new RequestOptions()));
 
         MarklogicTemplate template = new MarklogicTemplate(contentSource);
@@ -237,12 +229,12 @@ public class MarklogicTemplateTest {
 
     static class SimpleEntity {
 
-        String id;
+        @Nullable String id;
         String name;
 
         SimpleEntity() {}
 
-        SimpleEntity(String id, String name) {
+        SimpleEntity(@Nullable String id, String name) {
             this.id = id;
             this.name = name;
         }
@@ -272,15 +264,15 @@ public class MarklogicTemplateTest {
         }
     }
 
-    public static String toString(InputStream input) throws IOException {
+    public static String toString(InputStream input) {
         return new Scanner(input).useDelimiter("\\Z").next();
     }
 
-    private MarklogicCreateOperationOptions buildCreateOperationOptions(String uri) {
+    private MarklogicCreateOperationOptions buildCreateOperationOptions() {
         return new MarklogicCreateOperationOptions() {
             @Override
             public String uri() {
-                return uri;
+                return "/test/entity/1.xml";
             }
 
             @Override

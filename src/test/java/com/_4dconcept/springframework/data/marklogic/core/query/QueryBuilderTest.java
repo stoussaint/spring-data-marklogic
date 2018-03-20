@@ -30,6 +30,7 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -44,18 +45,18 @@ public class QueryBuilderTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void buildEmptyQuery() throws Exception {
+    public void buildEmptyQuery() {
         Query query = new QueryBuilder().build();
 
         assertThat(query, notNullValue());
         assertThat(query.getCriteria(), nullValue());
-        assertThat(query.getSortCriteria(), nullValue());
-        assertThat(query.getSkip(), is(0));
+        assertThat(query.getSortCriteria(), empty());
+        assertThat(query.getSkip(), is(0L));
         assertThat(query.getLimit(), is(0));
     }
 
     @Test
-    public void name() throws Exception {
+    public void name() {
         Query query = new QueryBuilder().options(new MarklogicOperationOptions() {
             @Override
             public Class entityClass() {
@@ -67,7 +68,7 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void buildEmptyQueryWithUnresolvableCollection_throwsException() throws Exception {
+    public void buildEmptyQueryWithUnresolvableCollection_throwsException() {
         expectedException.expect(SpelEvaluationException.class);
         expectedException.expectMessage("Attempted to call method getSimpleName() on null context object");
 
@@ -82,7 +83,7 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void buildEmptyQueryWithSpecificCollection() throws Exception {
+    public void buildEmptyQueryWithSpecificCollection() {
         Query query = new QueryBuilder().options(new MarklogicOperationOptions() {
             @Override
             public String defaultCollection() {
@@ -99,7 +100,7 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void buildQueryFromEmptyExample() throws Exception {
+    public void buildQueryFromEmptyExample() {
         Person person = new Person();
         Query query = new QueryBuilder().alike(Example.of(person)).build();
 
@@ -109,7 +110,7 @@ public class QueryBuilderTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void buildQueryFromFilledExample() throws Exception {
+    public void buildQueryFromFilledExample() {
         Person person = new Person();
         person.setFirstname("Me");
         person.setAge(38);
@@ -128,6 +129,7 @@ public class QueryBuilderTest {
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
 
         List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();
+        assertThat(criteriaList, notNullValue());
         assertThat(criteriaList, hasSize(3));
         assertThat(criteriaList.get(0).getCriteriaObject(), is("Me"));
         assertThat(criteriaList.get(1).getCriteriaObject(), is(38));
@@ -136,7 +138,7 @@ public class QueryBuilderTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void considerCollectionValuesAsOrQuery() throws Exception {
+    public void considerCollectionValuesAsOrQuery() {
         Person person = new Person();
         person.setSkills(Arrays.asList("java", "xml"));
         person.setAge(38);
@@ -155,7 +157,7 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void buildQueryWithExplicitCollection() throws Exception {
+    public void buildQueryWithExplicitCollection() {
         Person person = new Person();
 
         Query query = new QueryBuilder().alike(Example.of(person)).options(new MarklogicOperationOptions() {

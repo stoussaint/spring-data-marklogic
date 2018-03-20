@@ -18,10 +18,14 @@ package com._4dconcept.springframework.data.marklogic.core.cts;
 import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
 import com._4dconcept.springframework.data.marklogic.core.query.SortCriteria;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 import javax.xml.namespace.QName;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Serialize a given {@link Query} as cts query expression (String)
@@ -67,28 +71,33 @@ public class CTSQuerySerializer {
     }
 
     private String handleSimpleValue(Criteria criteria) {
-        if (criteria.getCriteriaObject() instanceof String) {
-            String escapedValue = criteria.getCriteriaObject().toString().replaceAll("'", "''");
-            return String.format("cts:element-value-query(%s, '%s')", serializeQName(criteria.getQname()), escapedValue);
-        } else if (criteria.getCriteriaObject() != null) {
-            return String.format("cts:element-value-query(%s, '%s')", serializeQName(criteria.getQname()), criteria.getCriteriaObject());
-        }
+        QName qname = criteria.getQname();
+        Object criteriaObject = criteria.getCriteriaObject();
 
-        return "";
+        Assert.notNull(qname, "A criteria QName is expected");
+        Assert.notNull(criteriaObject, "A criteria value is expected");
+
+        if (criteriaObject instanceof String) {
+            String escapedValue = ((String) criteriaObject).replaceAll("'", "''");
+            return String.format("cts:element-value-query(%s, '%s')", serializeQName(qname), escapedValue);
+        } else {
+            return String.format("cts:element-value-query(%s, '%s')", serializeQName(qname), criteriaObject);
+        }
     }
 
-    @SuppressWarnings("unchecked")
-    private String serializeCriteria(Criteria criteria) {
+    private String serializeCriteria(@Nullable Criteria criteria) {
         if (criteria != null) {
             if (criteria.getOperator() == null) {
                 return handleSimpleValue(criteria);
             } else {
-                List<Criteria> criteriaList = (List<Criteria>) criteria.getCriteriaObject();
+                List<Criteria> criteriaList = retrieveCriteriaList(criteria);
                 String ctsQueries = criteriaList.stream().map(this::serializeCriteria).collect(Collectors.joining(", "));
 
                 switch (criteria.getOperator()) {
-                    case and: return String.format("cts:and-query((%s))", ctsQueries);
-                    case or: return String.format("cts:or-query((%s))", ctsQueries);
+                    case and:
+                        return String.format("cts:and-query((%s))", ctsQueries);
+                    case or:
+                        return String.format("cts:or-query((%s))", ctsQueries);
                 }
             }
         }
@@ -96,16 +105,22 @@ public class CTSQuerySerializer {
         return "()";
     }
 
+    private List<Criteria> retrieveCriteriaList(Criteria criteria) {
+        Object criteriaObject = criteria.getCriteriaObject();
+
+        if (criteriaObject instanceof List) {
+            return ((List<?>) criteriaObject).stream().filter(o -> o instanceof Criteria).map(o -> (Criteria) o).collect(toList());
+        }
+
+        throw new IllegalArgumentException(String.format("Unexpected criteria type %s", criteria.getClass()));
+    }
+
     private String serializeQName(QName qname) {
         return String.format("fn:QName('%s', '%s')", qname.getNamespaceURI(), qname.getLocalPart());
     }
 
     private String serializeSortCriteriaList(List<SortCriteria> sortCriteriaList) {
-        if (sortCriteriaList != null) {
-            return sortCriteriaList.stream().map(this::asCtsOrder).collect(Collectors.joining(", "));
-        }
-
-        return "";
+        return sortCriteriaList.stream().map(this::asCtsOrder).collect(Collectors.joining(", "));
     }
 
     private String asCtsOrder(SortCriteria sortCriteria) {

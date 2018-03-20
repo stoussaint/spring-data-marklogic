@@ -16,6 +16,7 @@
 package com._4dconcept.springframework.data.marklogic.core;
 
 import com._4dconcept.springframework.data.marklogic.repository.query.MarklogicEntityInformation;
+import org.springframework.lang.Nullable;
 
 /**
  * This class use entityInformation to resolve operation options values
@@ -24,15 +25,15 @@ import com._4dconcept.springframework.data.marklogic.repository.query.MarklogicE
  */
 public class EntityInformationOperationOptions implements MarklogicCreateOperationOptions {
 
-    private MarklogicEntityInformation entityInformation;
+    private MarklogicEntityInformation<?, ?> entityInformation;
 
     private String[] extraCollections;
 
-    public EntityInformationOperationOptions(MarklogicEntityInformation entityInformation) {
+    public EntityInformationOperationOptions(MarklogicEntityInformation<?, ?> entityInformation) {
         this(entityInformation, null);
     }
 
-    public EntityInformationOperationOptions(MarklogicEntityInformation entityInformation, String[] extraCollections) {
+    private EntityInformationOperationOptions(MarklogicEntityInformation<?, ?> entityInformation, @Nullable String[] extraCollections) {
         this.entityInformation = entityInformation;
         this.extraCollections = extraCollections;
     }
@@ -58,7 +59,7 @@ public class EntityInformationOperationOptions implements MarklogicCreateOperati
     }
 
     @Override
-    public Class entityClass() {
+    public Class<?> entityClass() {
         return entityInformation.getJavaType();
     }
 }

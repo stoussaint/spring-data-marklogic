@@ -36,30 +36,30 @@ import static org.junit.Assert.assertThat;
  * @author Stéphane Toussaint
  */
 
-public class MarklogicMappingConverterTest {
+public class MappingMarklogicConverterTest {
 
     @Test(expected = ConverterNotFoundException.class)
     public void throwsExceptionIfUnConvertibleObject() throws Exception {
-        MarklogicMappingConverter marklogicMappingConverter = createConverterWithDelegates();
-        marklogicMappingConverter.write(new UnConvertibleObject(), new MarklogicContentHolder());
+        MappingMarklogicConverter mappingMarklogicConverter = createConverterWithDelegates();
+        mappingMarklogicConverter.write(new UnConvertibleObject(), new MarklogicContentHolder());
     }
 
     @Test
     public void marklogicContentHolderSetWithConvertedContentWithExplicitConverter() throws Exception {
-        MarklogicMappingConverter marklogicMappingConverter = createConverterWithDelegates(new ConvertibleObjectConverter());
+        MappingMarklogicConverter mappingMarklogicConverter = createConverterWithDelegates(new ConvertibleObjectConverter());
 
         MarklogicContentHolder contentHolder = new MarklogicContentHolder();
-        marklogicMappingConverter.write(new ConvertibleObject(), contentHolder);
+        mappingMarklogicConverter.write(new ConvertibleObject(), contentHolder);
         assertThat(contentHolder.getContent(), CoreMatchers.notNullValue());
         assertThat(contentHolder.getContent(), CoreMatchers.is("<empty />"));
     }
 
     @Test
     public void marklogicContentHolderSetWithConvertedContentWithConditionalConverter() throws Exception {
-        MarklogicMappingConverter marklogicMappingConverter = createConverterWithDelegates(new DocumentConverter());
+        MappingMarklogicConverter mappingMarklogicConverter = createConverterWithDelegates(new DocumentConverter());
 
         MarklogicContentHolder contentHolder = new MarklogicContentHolder();
-        marklogicMappingConverter.write(new Person("1"), contentHolder);
+        mappingMarklogicConverter.write(new Person("1"), contentHolder);
         assertThat(contentHolder.getContent(), CoreMatchers.notNullValue());
         assertThat(contentHolder.getContent(), CoreMatchers.is("<person><id>1</id></person>"));
     }
@@ -113,11 +113,11 @@ public class MarklogicMappingConverterTest {
 
     }
 
-    private MarklogicMappingConverter createConverterWithDelegates(GenericConverter... converters) throws Exception {
-        MarklogicMappingConverter marklogicMappingConverter = new MarklogicMappingConverter(new MarklogicMappingContext());
-        marklogicMappingConverter.setConverters(Arrays.asList(converters));
-        marklogicMappingConverter.afterPropertiesSet();
-        return marklogicMappingConverter;
+    private MappingMarklogicConverter createConverterWithDelegates(GenericConverter... converters) throws Exception {
+        MappingMarklogicConverter mappingMarklogicConverter = new MappingMarklogicConverter(new MarklogicMappingContext());
+        mappingMarklogicConverter.setConverters(Arrays.asList(converters));
+        mappingMarklogicConverter.afterPropertiesSet();
+        return mappingMarklogicConverter;
     }
 
 }

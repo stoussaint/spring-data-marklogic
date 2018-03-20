@@ -30,7 +30,7 @@ import java.io.Serializable;
  *
  * @author Stéphane Toussaint
  */
-public class MarklogicRepositoryFactoryBean<T extends Repository<S, ID>, S, ID extends Serializable> extends
+public class MarklogicRepositoryFactoryBean<T extends Repository<S, ID>, S, ID> extends
         RepositoryFactoryBeanSupport<T, S, ID> {
 
     private MarklogicOperations marklogicOperations;
@@ -42,9 +42,7 @@ public class MarklogicRepositoryFactoryBean<T extends Repository<S, ID>, S, ID e
 
     @Override
     protected RepositoryFactorySupport createRepositoryFactory() {
-        RepositoryFactorySupport factory = getFactoryInstance(marklogicOperations);
-
-        return factory;
+        return getFactoryInstance(marklogicOperations);
     }
 
     /**
@@ -57,7 +55,7 @@ public class MarklogicRepositoryFactoryBean<T extends Repository<S, ID>, S, ID e
         this.marklogicOperations = marklogicOperations;
     }
 
-    protected RepositoryFactorySupport getFactoryInstance(MarklogicOperations operations) {
+    private RepositoryFactorySupport getFactoryInstance(MarklogicOperations operations) {
         return new MarklogicRepositoryFactory(operations);
     }
 

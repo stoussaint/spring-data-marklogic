@@ -26,6 +26,7 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.convert.WritingConverter;
+import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 
 import javax.xml.bind.JAXBContext;
@@ -35,7 +36,13 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -81,7 +88,11 @@ abstract class MarklogicConverters {
         }
 
         @Override
-        public String convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+        public String convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+            if (source == null) {
+                return null;
+            }
+
             try {
                 StringWriter writer = new StringWriter();
                 initJAXBContext(sourceType).createMarshaller().marshal(source, new StreamResult(writer));
@@ -110,7 +121,11 @@ abstract class MarklogicConverters {
         }
 
         @Override
-        public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+        public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+            if (source == null) {
+                return null;
+            }
+
             ResultItem resultItem = (ResultItem) source;
             InputStream inputStream = resultItem.asInputStream();
 
@@ -152,7 +167,7 @@ abstract class MarklogicConverters {
             return ValueFactory.newXSString(sequenceAsString);
         }
 
-        private String serializeCollectionItem(Object item) {
+        private String serializeCollectionItem(@Nullable Object item) {
             if (item == null) {
                 return "";
             }
@@ -163,7 +178,7 @@ abstract class MarklogicConverters {
 
             if (conversionService.canConvert(item.getClass(), String.class)) {
                 String convert = conversionService.convert(item, String.class);
-                return convert.replaceAll("^<\\?xml.*?\\?>", ""); // Remove xml prologue
+                return convert == null ? "" : convert.replaceAll("^<\\?xml.*?\\?>", ""); // Remove xml prologue
             } else {
                 return "--Unknown-type--" + item.getClass();
             }
@@ -175,10 +190,6 @@ abstract class MarklogicConverters {
 
         @Override
         public XdmValue convert(Object source) {
-            if (source == null) {
-                return ValueFactory.newXSString("");
-            }
-
             if (source instanceof String) {
                 return ValueFactory.newXSString((String) source);
             }

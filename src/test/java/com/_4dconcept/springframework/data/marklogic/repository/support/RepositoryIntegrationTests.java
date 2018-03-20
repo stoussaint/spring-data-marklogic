@@ -54,7 +54,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -71,7 +70,9 @@ public class RepositoryIntegrationTests {
 
     private Person steph;
     private Person sahbi;
-    private Person another;
+
+    private String stephId;
+    private String sahbiId;
 
     private List<Person> all;
 
@@ -84,30 +85,33 @@ public class RepositoryIntegrationTests {
 
         steph = new Person(null,"Stéphane", "Toussaint", 38, "France");
         sahbi = new Person(null, "Sahbi", "Ktifa", 28, "France");
-        another = new Person(null, "Another", "One", 28, "England");
+        Person another = new Person(null, "Another", "One", 28, "England");
 
-        all = repository.save(Arrays.asList(steph, sahbi, another));
+        all = repository.saveAll(Arrays.asList(steph, sahbi, another));
+
+        stephId = steph.getId();
+        sahbiId = sahbi.getId();
     }
 
     @Test
-    public void countAllInRepository() throws Exception {
+    public void countAllInRepository() {
         assertThat(repository.count(), is(3L));
     }
 
     @Test
-    public void countBySample() throws Exception {
+    public void countBySample() {
         Person samplePerson = new Person();
         samplePerson.setLastname("Toussaint");
         assertThat(repository.count(Example.of(samplePerson)), is(1L));
     }
 
     @Test
-    public void checkPersonExists() throws Exception {
-        assertThat(repository.exists(steph.getId()), is(true));
+    public void checkPersonExists() {
+        assertThat(repository.existsById(stephId), is(true));
     }
 
     @Test
-    public void checkPersonExistsBySample() throws Exception {
+    public void checkPersonExistsBySample() {
         Person samplePerson = new Person();
         samplePerson.setLastname("Toussaint");
         assertThat(repository.exists(Example.of(samplePerson)), is(true));
@@ -115,17 +119,9 @@ public class RepositoryIntegrationTests {
 
     @Test
     public void findPersonById() {
-        Person person = repository.findOne(steph.getId());
+        Person person = repository.findById(stephId).orElse(null);
         assertThat(person, notNullValue());
-        assertThat(person.getId(), is(steph.getId()));
-        assertThat(person.getFirstname(), is("Stéphane"));
-    }
-
-    @Test
-    public void findByIdWithMethodQuery() {
-        Person person = repository.findById(steph.getId());
-        assertThat(person, notNullValue());
-        assertThat(person.getId(), is(steph.getId()));
+        assertThat(person.getId(), is(stephId));
         assertThat(person.getFirstname(), is("Stéphane"));
     }
 
@@ -133,9 +129,9 @@ public class RepositoryIntegrationTests {
     public void findOnePersonByExample() {
         Person person = new Person();
         person.setLastname("Toussaint");
-        final Person result = repository.findOne(Example.of(person));
+        final Person result = repository.findOne(Example.of(person)).orElse(null);
         assertThat(result, notNullValue());
-        assertThat(result.getId(), is(steph.getId()));
+        assertThat(result.getId(), is(stephId));
         assertThat(result.getFirstname(), is("Stéphane"));
     }
 
@@ -160,22 +156,22 @@ public class RepositoryIntegrationTests {
 
     @Test
     public void findAllById() {
-        List<Person> result = repository.findAll(Arrays.asList(sahbi.getId(), steph.getId()));
+        List<Person> result = repository.findAllById(Arrays.asList(sahbiId, stephId));
         assertThat(result, hasSize(2));
         assertThat(result.stream().map(Person::getLastname).collect(Collectors.toList()), containsInAnyOrder("Toussaint", "Ktifa"));
     }
 
     @Test
     public void findAllInRepositorySortedOrder() {
-        checkOrder(new Sort("lastname"), new String[] {"Ktifa", "One", "Toussaint"});
+        checkOrder(Sort.by("lastname"), new String[] {"Ktifa", "One", "Toussaint"});
         checkOrder(new Sort(Sort.Direction.DESC, "lastname"), new String[] {"Toussaint", "One", "Ktifa"});
         checkOrder(new Sort(Sort.Direction.DESC, "age", "lastname"), new String[] {"Toussaint", "One", "Ktifa"});
-        checkOrder(new Sort(Sort.Direction.DESC, "age").and(new Sort("lastname")), new String[] {"Toussaint", "Ktifa", "One"});
+        checkOrder(new Sort(Sort.Direction.DESC, "age").and(Sort.by("lastname")), new String[] {"Toussaint", "Ktifa", "One"});
     }
 
     @Test
     public void findAllWithPagination() {
-        Page<Person> pageResult = repository.findAll(new PageRequest(0, 2));
+        Page<Person> pageResult = repository.findAll(PageRequest.of(0, 2));
         assertThat(pageResult.getTotalElements(), is(3L));
         assertThat(pageResult.getTotalPages(), is(2));
         assertThat(pageResult.getContent(), hasSize(2));
@@ -190,21 +186,22 @@ public class RepositoryIntegrationTests {
 
     @Test
     public void updatePerson() {
-        Person person = repository.findOne(sahbi.getId());
+        Person person = repository.findById(sahbiId).orElseThrow(() -> new IllegalArgumentException("unexpected id"));
         person.setAge(425);
         person.setFirstname("Duncan");
         person.setLastname("MacLeod");
         repository.save(person);
-        assertThat(person.getId(), is(sahbi.getId()));
+        assertThat(person.getId(), is(sahbiId));
 
-        assertThat(repository.findOne(sahbi.getId()).getAge(), is(425));
+
+        repository.findById(sahbiId).ifPresent(p -> assertThat(p.getAge(), is(425)));
     }
 
     @Test
     public void deletePerson() {
         repository.delete(steph);
 
-        assertThat(repository.findOne(steph.getId()), nullValue());
+        assertThat(repository.findById(stephId).isPresent(), is(false));
 
         List<Person> result = repository.findAll();
         assertThat(result, hasSize(all.size() - 1));
@@ -212,8 +209,8 @@ public class RepositoryIntegrationTests {
 
     @Test
     public void existsPerson() {
-        assertThat(repository.exists(steph.getId()), is(true));
-        assertThat(repository.exists("unknown"), is(false));
+        assertThat(repository.existsById(stephId), is(true));
+        assertThat(repository.existsById("unknown"), is(false));
     }
 
     @Test
@@ -261,6 +258,7 @@ public class RepositoryIntegrationTests {
 
         @Override
         public URI getMarklogicUri() {
+            LOGGER.debug("Marklogic uri set to {}", marklogicUri);
             return URI.create(marklogicUri);
         }
 

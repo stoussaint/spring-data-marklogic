@@ -26,7 +26,7 @@ import java.util.Map;
  */
 public class MarklogicTypeUtils {
 
-    public static final Map<Class,Class> primitiveMap = new HashMap<Class, Class>() {{
+    public static final Map<Class<?>,Class<?>> primitiveMap = new HashMap<Class<?>, Class<?>>() {{
         put(boolean.class, Boolean.class);
         put(byte.class, Byte.class);
         put(char.class, Character.class);
@@ -41,7 +41,7 @@ public class MarklogicTypeUtils {
         return type.isPrimitive() || type.equals(String.class) || isBoxingType(type);
     }
 
-    public static boolean isBoxingType(Class<?> type) {
+    private static boolean isBoxingType(Class<?> type) {
         return MarklogicTypeUtils.primitiveMap.values().contains(type);
     }
 

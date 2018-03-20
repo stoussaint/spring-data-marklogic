@@ -74,8 +74,8 @@ public class MarklogicMappingContextTest {
                 Criteria criteria = new Criteria();
                 criteria.setQname(property.getQName());
 
-                if (property.getPersistentEntityType() != null) {
-                    for (TypeInformation<?> typeInformation : property.getPersistentEntityType()) {
+                if (property.getPersistentEntityTypes() != null) {
+                    for (TypeInformation<?> typeInformation : property.getPersistentEntityTypes()) {
                         MarklogicMappingContext mappingContext = new MarklogicMappingContext();
                         BasicMarklogicPersistentEntity<?> subEntity = mappingContext.getPersistentEntity(typeInformation);
                         value = doWith(subEntity, value);

@@ -26,7 +26,11 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.data.config.ParsingUtils;
-import org.springframework.data.repository.config.*;
+import org.springframework.data.repository.config.AnnotationRepositoryConfigurationSource;
+import org.springframework.data.repository.config.RepositoryConfigurationExtension;
+import org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport;
+import org.springframework.data.repository.config.RepositoryConfigurationSource;
+import org.springframework.data.repository.config.XmlRepositoryConfigurationSource;
 import org.w3c.dom.Element;
 
 import java.lang.annotation.Annotation;
@@ -58,7 +62,7 @@ public class MarklogicRepositoryConfigurationExtension extends RepositoryConfigu
 	 * @see org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport#registerBeansForRoot(org.springframework.beans.factory.support.BeanDefinitionRegistry, org.springframework.data.repository.config.RepositoryConfigurationSource)
 	 */
     @Override
-    public String getRepositoryFactoryClassName() {
+    public String getRepositoryFactoryBeanClassName() {
         return MarklogicRepositoryFactoryBean.class.getName();
     }
 

@@ -18,8 +18,7 @@ package com._4dconcept.springframework.data.marklogic.repository.support;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.repository.query.MarklogicEntityInformation;
 import org.springframework.data.repository.core.support.PersistentEntityInformation;
-
-import java.io.Serializable;
+import org.springframework.lang.Nullable;
 
 /**
  * {@link MarklogicEntityInformation} implementation using a {@link MarklogicPersistentEntity} instance to lookup the necessary
@@ -28,18 +27,18 @@ import java.io.Serializable;
  *
  * @author Stéphane Toussaint
  */
-public class MappingMarklogicEntityInformation<T, ID extends Serializable> extends PersistentEntityInformation<T, ID>
+public class MappingMarklogicEntityInformation<T, ID> extends PersistentEntityInformation<T, ID>
         implements MarklogicEntityInformation<T, ID> {
 
     private final MarklogicPersistentEntity<T> entityMetadata;
-    private final String customUri;
-    private final String customDefaultCollection;
+    private final @Nullable String customUri;
+    private final @Nullable String customDefaultCollection;
 
     public MappingMarklogicEntityInformation(MarklogicPersistentEntity<T> entity) {
         this(entity, null, null);
     }
 
-    public MappingMarklogicEntityInformation(MarklogicPersistentEntity<T> entity, String customUri, String customDefaultCollection) {
+    public MappingMarklogicEntityInformation(MarklogicPersistentEntity<T> entity, @Nullable String customUri, @Nullable String customDefaultCollection) {
         super(entity);
 
         this.entityMetadata = entity;

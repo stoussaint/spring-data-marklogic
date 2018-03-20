@@ -16,9 +16,10 @@
 package com._4dconcept.springframework.data.marklogic.core.mapping;
 
 import com._4dconcept.springframework.data.marklogic.MarklogicUrlUtils;
+import org.springframework.data.mapping.MappingException;
 import org.springframework.data.mapping.model.BasicPersistentEntity;
-import org.springframework.data.mapping.model.MappingException;
 import org.springframework.data.util.TypeInformation;
+import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 import java.util.Comparator;
@@ -32,14 +33,14 @@ import java.util.Comparator;
 public class BasicMarklogicPersistentEntity<T> extends BasicPersistentEntity<T, MarklogicPersistentProperty> implements MarklogicPersistentEntity<T> {
 
     private final String uri;
-    private final String defaultCollection;
+    private @Nullable final String defaultCollection;
     private final boolean idInPropertyFragment;
 
-    public BasicMarklogicPersistentEntity(TypeInformation<T> information) {
+    BasicMarklogicPersistentEntity(TypeInformation<T> information) {
         this(information, null);
     }
 
-    public BasicMarklogicPersistentEntity(TypeInformation<T> information, Comparator<MarklogicPersistentProperty> comparator) {
+    private BasicMarklogicPersistentEntity(TypeInformation<T> information, @Nullable Comparator<MarklogicPersistentProperty> comparator) {
         super(information, comparator);
 
         Class<T> rawType = getTypeInformation().getType();
@@ -58,6 +59,7 @@ public class BasicMarklogicPersistentEntity<T> extends BasicPersistentEntity<T, 
         }
     }
 
+    @Nullable
     private String buildDefaultCollection(Document document) {
         StringBuilder sb = new StringBuilder();
         if (StringUtils.hasText(document.defaultCollectionPrefix())) {
@@ -81,6 +83,7 @@ public class BasicMarklogicPersistentEntity<T> extends BasicPersistentEntity<T, 
     /**
      * @return the default Class level defined defaultCollection
      */
+    @Nullable
     public String getDefaultCollection() {
         return defaultCollection;
     }

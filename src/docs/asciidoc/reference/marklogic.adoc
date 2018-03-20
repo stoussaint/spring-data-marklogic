@@ -89,9 +89,9 @@ public class MarklogicApp {
     private static Logger LOGGER = LoggerFactory.getLogger(MarklogicApp.class);
 
     public static void main(String[] args) throws Exception {
-        MappingMarklogicConverter marklogicMappingConverter = new MappingMarklogicConverter(new MarklogicMappingContext());
-        marklogicMappingConverter.afterPropertiesSet();
-        MarklogicOperations marklogicOps = new MarklogicTemplate(ContentSourceFactory.newContentSource("localhost", 8888, "admin", "admin"), marklogicMappingConverter);
+        MappingMarklogicConverter mappingMarklogicConverter = new MappingMarklogicConverter(new MarklogicMappingContext());
+        mappingMarklogicConverter.afterPropertiesSet();
+        MarklogicOperations marklogicOps = new MarklogicTemplate(ContentSourceFactory.newContentSource("localhost", 8888, "admin", "admin"), mappingMarklogicConverter);
 
         Person person = new Person("Joe", 34);
 
@@ -261,12 +261,12 @@ public class MarklogicApp {
     private static final Logger log = LoggerFactory.getLogger(MarklogicApp.class);
 
     public static void main(String[] args) throws Exception {
-        MarklogicMappingConverter marklogicMappingConverter = new MarklogicMappingConverter(new MarklogicMappingContext());
-        marklogicMappingConverter.afterPropertiesSet();
+        MarklogicMappingConverter mappingMarklogicConverter = new MarklogicMappingConverter(new MarklogicMappingContext());
+        mappingMarklogicConverter.afterPropertiesSet();
 
         MarklogicOperations marklogicOps = new MarklogicTemplate(
                 ContentSourceFactory.newContentSource("localhost", 8888, "login", "password"),
-                marklogicMappingConverter
+                mappingMarklogicConverter
         );
 
         Person p = new Person("Joe", 34);

@@ -17,6 +17,7 @@ package com._4dconcept.springframework.data.marklogic.core.mapping.event;
 
 import com.marklogic.xcc.Content;
 import org.springframework.context.ApplicationEvent;
+import org.springframework.lang.Nullable;
 
 /**
  * Base {@link ApplicationEvent} triggered by Spring Data Marklogic.
@@ -26,9 +27,9 @@ import org.springframework.context.ApplicationEvent;
 public abstract class MarklogicMappingEvent<T> extends ApplicationEvent {
 
     private final String uri;
-    private final Content content;
+    private final @Nullable Content content;
 
-    MarklogicMappingEvent(T source, Content content, String uri) {
+    MarklogicMappingEvent(T source, @Nullable Content content, String uri) {
         super(source);
         this.content = content;
         this.uri = uri;
@@ -44,6 +45,7 @@ public abstract class MarklogicMappingEvent<T> extends ApplicationEvent {
     /**
      * @return the content
      */
+    @Nullable
     public Content getContent() {
         return content;
     }

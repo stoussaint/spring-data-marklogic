@@ -17,6 +17,7 @@ package com._4dconcept.springframework.data.marklogic.core;
 
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConverter;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
+import org.springframework.lang.Nullable;
 
 import java.util.List;
 
@@ -114,6 +115,7 @@ public interface MarklogicOperations {
      *
      * @return the found entity or null if no entity found with the given id
      */
+    @Nullable
     <T> T findById(Object id, Class<T> entityClass);
 
     /**
@@ -125,10 +127,33 @@ public interface MarklogicOperations {
      *
      * @return the found entity or null if no entity found with the given id
      */
+    @Nullable
     <T> T findById(Object id, Class<T> entityClass, MarklogicOperationOptions options);
 
+    /**
+     * Returns content matching the given query
+     * @param query the query that specifies criteria used to find contents
+     * @param entityClass the entity class the content will be converted to
+     * @param <T> The entity type
+     *
+     * @return the found entity or null if no entity found with the given {@link Query} constraint
+     */
+    @Nullable
+    <T> T findOne(Query query, Class<T> entityClass);
 
-    // TODO Provide an object structure for a so called 'Query' : Backport from QuadroContent ?
+    /**
+     * Returns content matching the given query
+     *
+     * @param query the query that specifies criteria used to find contents
+     * @param entityClass the entity class the content will be converted to
+     * @param options search options
+     * @param <T> The entity type
+     *
+     * @return the found entity or null if no entity found with the given {@link Query} constraint
+     */
+    @Nullable
+    <T> T findOne(Query query, Class<T> entityClass, MarklogicOperationOptions options);
+
     /**
      * Returns content matching the given query
      * @param query the query that specifies criteria used to find contents
@@ -150,28 +175,6 @@ public interface MarklogicOperations {
      * @return the found entities
      */
     <T> List<T> find(Query query, Class<T> entityClass, MarklogicOperationOptions options);
-
-    /**
-     * Returns content matching the given query
-     * @param query the query that specifies criteria used to find contents
-     * @param entityClass the entity class the content will be converted to
-     * @param <T> The entity type
-     *
-     * @return the found entity or null if no entity found with the given {@link Query} constraint
-     */
-    <T> T findOne(Query query, Class<T> entityClass);
-
-    /**
-     * Returns content matching the given query
-     *
-     * @param query the query that specifies criteria used to find contents
-     * @param entityClass the entity class the content will be converted to
-     * @param options search options
-     * @param <T> The entity type
-     *
-     * @return the found entity or null if no entity found with the given {@link Query} constraint
-     */
-    <T> T findOne(Query query, Class<T> entityClass, MarklogicOperationOptions options);
 
     /**
      * Returns every contents of the given type
@@ -209,6 +212,7 @@ public interface MarklogicOperations {
      * @param <T> The entity type
      * @return one result or null if no content returned
      */
+    @Nullable
     <T> T invokeAdhocQuery(String query, Class<T> resultClass, MarklogicInvokeOperationOptions options);
 
     /**
@@ -239,6 +243,7 @@ public interface MarklogicOperations {
      * @param <T> The entity type
      * @return one result or null if no content returned
      */
+    @Nullable
     <T> T invokeModule(String moduleName, Class<T> resultClass, MarklogicInvokeOperationOptions options);
 
     /**
@@ -259,6 +264,7 @@ public interface MarklogicOperations {
      * @param <T> The entity type
      * @return the default collection
      */
+    @Nullable
     <T> String resolveDefaultCollection(T entity, MarklogicOperationOptions options);
 
     /**
@@ -267,6 +273,7 @@ public interface MarklogicOperations {
      * @param <T> The entity type
      * @return the content identifier
      */
+    @Nullable
     <T> Object resolveContentIdentifier(T entity);
 
     /**

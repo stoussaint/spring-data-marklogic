@@ -19,6 +19,7 @@ import com.marklogic.xcc.ContentSource;
 import com.marklogic.xcc.Session;
 import com.marklogic.xcc.exceptions.XccException;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionSystemException;
@@ -91,7 +92,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class ContentSourceTransactionManager extends AbstractPlatformTransactionManager
         implements ResourceTransactionManager, InitializingBean {
 
-    private ContentSource contentSource;
+    private @Nullable ContentSource contentSource;
 
 
     /**
@@ -99,7 +100,7 @@ public class ContentSourceTransactionManager extends AbstractPlatformTransaction
      * A ContentSource has to be set to be able to use it.
      * @see #setContentSource
      */
-    public ContentSourceTransactionManager() {
+    private ContentSourceTransactionManager() {
         setNestedTransactionAllowed(true);
     }
 
@@ -116,7 +117,8 @@ public class ContentSourceTransactionManager extends AbstractPlatformTransaction
     /**
      * @return the XDBC ContentSource that this instance manages transactions for.
      */
-    public ContentSource getContentSource() {
+    @Nullable
+    private ContentSource getContentSource() {
         return this.contentSource;
     }
 
@@ -140,7 +142,7 @@ public class ContentSourceTransactionManager extends AbstractPlatformTransaction
      *
      * @param contentSource the contentSource the manager will work on
      */
-    public void setContentSource(ContentSource contentSource) {
+    private void setContentSource(ContentSource contentSource) {
         if (contentSource instanceof TransactionAwareContentSourceProxy) {
             // If we got a TransactionAwareContentSourceProxy, we need to perform transactions
             // for its underlying target ContentSource, else data access code won't see
@@ -161,6 +163,7 @@ public class ContentSourceTransactionManager extends AbstractPlatformTransaction
     /**
      * @return the resource factory
      */
+    @Nullable
     @Override
     public Object getResourceFactory() {
         return getContentSource();

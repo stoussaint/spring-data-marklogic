@@ -15,6 +15,9 @@
  */
 package com._4dconcept.springframework.data.marklogic.core.query;
 
+import org.springframework.lang.Nullable;
+
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -25,11 +28,10 @@ import java.util.List;
  */
 public class Query {
 
-    private int skip;
+    private long skip;
     private int limit;
-    private String collection;
-
-    private Criteria criteria;
+    private @Nullable String collection;
+    private @Nullable Criteria criteria;
     private List<SortCriteria> sortCriteria;
 
     public Query() {
@@ -42,14 +44,14 @@ public class Query {
     /**
      * @return the skip
      */
-    public int getSkip() {
+    public long getSkip() {
         return skip;
     }
 
     /**
      * @param skip the skip to set
      */
-    public void setSkip(int skip) {
+    public void setSkip(long skip) {
         this.skip = skip;
     }
 
@@ -70,6 +72,7 @@ public class Query {
     /**
      * @return the collection
      */
+    @Nullable
     public String getCollection() {
         return collection;
     }
@@ -84,6 +87,7 @@ public class Query {
     /**
      * @return the criteria
      */
+    @Nullable
     public Criteria getCriteria() {
         return criteria;
     }
@@ -99,7 +103,7 @@ public class Query {
      * @return the sortCriteria
      */
     public List<SortCriteria> getSortCriteria() {
-        return sortCriteria;
+        return sortCriteria == null ? Collections.emptyList() : sortCriteria;
     }
 
     /**

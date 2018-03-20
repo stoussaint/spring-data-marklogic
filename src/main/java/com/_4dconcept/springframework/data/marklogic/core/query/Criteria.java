@@ -15,6 +15,8 @@
  */
 package com._4dconcept.springframework.data.marklogic.core.query;
 
+import org.springframework.lang.Nullable;
+
 import javax.xml.namespace.QName;
 import java.util.Collection;
 
@@ -29,9 +31,9 @@ public class Criteria implements CriteriaDefinition {
 
     public enum Operator {and, or}
 
-    private QName qname;
-    private Object criteriaObject;
-    private Operator operator;
+    private @Nullable QName qname;
+    private @Nullable Object criteriaObject;
+    private @Nullable Operator operator;
 
     public Criteria() {
     }
@@ -49,6 +51,7 @@ public class Criteria implements CriteriaDefinition {
     /**
      * @return the qname
      */
+    @Nullable
     public QName getQname() {
         return qname;
     }
@@ -63,6 +66,7 @@ public class Criteria implements CriteriaDefinition {
     /**
      * @return the criteriaObject
      */
+    @Nullable
     public Object getCriteriaObject() {
         return criteriaObject;
     }
@@ -77,6 +81,7 @@ public class Criteria implements CriteriaDefinition {
     /**
      * @return the operator
      */
+    @Nullable
     public Operator getOperator() {
         return operator;
     }

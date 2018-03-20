@@ -35,13 +35,13 @@ import java.util.Set;
  */
 public class MarklogicExceptionTranslator implements PersistenceExceptionTranslator {
 
-    private static final Set<String> RESOURCE_FAILURE_EXCEPTIONS = new HashSet<String>(
+    private static final Set<String> RESOURCE_FAILURE_EXCEPTIONS = new HashSet<>(
             Arrays.asList("ServerConnectionException", "ServerResponseException", "XccConfigException"));
 
-    private static final Set<String> RESOURCE_USAGE_EXCEPTIONS = new HashSet<String>(
+    private static final Set<String> RESOURCE_USAGE_EXCEPTIONS = new HashSet<>(
             Arrays.asList("StreamingResultException", "UnexpectedResponseException", "XccException"));
 
-    private static final Set<String> DATA_INTEGRETY_EXCEPTIONS = new HashSet<String>(
+    private static final Set<String> DATA_INTEGRETY_EXCEPTIONS = new HashSet<>(
             Arrays.asList("ContentInsertEntityException", "ContentInsertException"));
 
     @Override

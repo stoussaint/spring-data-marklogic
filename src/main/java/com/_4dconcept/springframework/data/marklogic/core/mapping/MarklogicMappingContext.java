@@ -17,11 +17,9 @@ package com._4dconcept.springframework.data.marklogic.core.mapping;
 
 import org.springframework.data.mapping.context.AbstractMappingContext;
 import org.springframework.data.mapping.context.MappingContext;
+import org.springframework.data.mapping.model.Property;
 import org.springframework.data.mapping.model.SimpleTypeHolder;
 import org.springframework.data.util.TypeInformation;
-
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.Field;
 
 /**
  * Default implementation of a {@link MappingContext} for Marklogic using {@link BasicMarklogicPersistentEntity} and
@@ -37,8 +35,8 @@ public class MarklogicMappingContext extends AbstractMappingContext<BasicMarklog
     }
 
     @Override
-    protected MarklogicPersistentProperty createPersistentProperty(Field field, PropertyDescriptor descriptor,
+    protected MarklogicPersistentProperty createPersistentProperty(Property property,
             BasicMarklogicPersistentEntity<?> owner, SimpleTypeHolder simpleTypeHolder) {
-        return new BasicMarklogicPersistentProperty(field, descriptor, owner, simpleTypeHolder);
+        return new BasicMarklogicPersistentProperty(property, owner, simpleTypeHolder);
     }
 }

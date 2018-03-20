@@ -16,6 +16,7 @@
 package com._4dconcept.springframework.data.marklogic.repository;
 
 import com._4dconcept.springframework.data.marklogic.core.mapping.Document;
+import org.springframework.lang.Nullable;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
@@ -31,7 +32,7 @@ import java.util.List;
 @XmlRootElement
 public class Person {
 
-    private String id;
+    @Nullable private String id;
     private String firstname;
     private String lastname;
     private Integer age;
@@ -42,7 +43,7 @@ public class Person {
 
     public Person() {}
 
-    public Person(String id, String firstname, String lastname, Integer age, String country) {
+    public Person(@Nullable String id, String firstname, String lastname, Integer age, String country) {
         this.id = id;
         this.firstname = firstname;
         this.lastname = lastname;
@@ -55,7 +56,8 @@ public class Person {
     /**
      * @return the id
      */
-    @XmlElement()
+    @XmlElement
+    @Nullable
     public String getId() {
         return id;
     }

@@ -12,7 +12,4 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 interface PersonRepository extends MarklogicRepository<Person, String> {
-
-    Person findById(String id);
-
 }

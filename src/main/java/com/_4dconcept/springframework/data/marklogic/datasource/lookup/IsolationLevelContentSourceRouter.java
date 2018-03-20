@@ -16,6 +16,7 @@
 package com._4dconcept.springframework.data.marklogic.datasource.lookup;
 
 import org.springframework.core.Constants;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -101,6 +102,7 @@ public class IsolationLevelContentSourceRouter extends AbstractRoutingContentSou
     }
 
     @Override
+    @Nullable
     protected Object determineCurrentLookupKey() {
         return TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();
     }

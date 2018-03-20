@@ -15,6 +15,8 @@
  */
 package com._4dconcept.springframework.data.marklogic.core;
 
+import org.springframework.lang.Nullable;
+
 /**
  * Definition of a Marklogic create operation options holder
  *
@@ -23,6 +25,8 @@ package com._4dconcept.springframework.data.marklogic.core;
 public interface MarklogicCreateOperationOptions extends MarklogicOperationOptions {
 
     String uri();
+
+    @Nullable
     String[] extraCollections();
 
 }

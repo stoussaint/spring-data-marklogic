@@ -17,7 +17,7 @@ package com._4dconcept.springframework.data.marklogic.repository.query;
 
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperations;
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConverter;
-import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
+import com._4dconcept.springframework.data.marklogic.core.convert.MappingMarklogicConverter;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
 import org.springframework.data.repository.core.support.DefaultRepositoryMetadata;
@@ -67,7 +67,7 @@ public class PartTreeMarklogicQueryTest {
     @Before
     public void setUp() {
         mappingContext = new MarklogicMappingContext();
-        MarklogicConverter converter = new MarklogicMappingConverter(mappingContext);
+        MarklogicConverter converter = new MappingMarklogicConverter(mappingContext);
 
         when(marklogicOperationsMock.getConverter()).thenReturn(converter);
     }
@@ -251,8 +251,7 @@ public class PartTreeMarklogicQueryTest {
 
             Method method = Repo.class.getMethod(methodName, paramTypes);
             ProjectionFactory factory = new SpelAwareProxyProjectionFactory();
-            MarklogicQueryMethod queryMethod = new MarklogicQueryMethod(method, new DefaultRepositoryMetadata(Repo.class), factory,
-                    mappingContext);
+            MarklogicQueryMethod queryMethod = new MarklogicQueryMethod(method, new DefaultRepositoryMetadata(Repo.class), factory);
 
             return new PartTreeMarklogicQuery(queryMethod, marklogicOperationsMock);
         } catch (NoSuchMethodException | SecurityException e) {

@@ -23,9 +23,6 @@ package com._4dconcept.springframework.data.marklogic;
  */
 public abstract class MarklogicUrlUtils {
 
-    private static String URL_PREFIX = "/content/";
-    private static String URL_SUFFIX = "/#{id}.xml";
-
     /**
      * Private constructor to prevent instantiation.
      */
@@ -38,6 +35,8 @@ public abstract class MarklogicUrlUtils {
      * @return The preferred rul name
      */
     public static String getPreferredUrlPattern(Class<?> entityClass) {
+        String URL_PREFIX = "/content/";
+        String URL_SUFFIX = "/#{id}.xml";
         return URL_PREFIX + entityClass.getSimpleName().toLowerCase() + URL_SUFFIX;
     }
 }

@@ -17,9 +17,10 @@ package com._4dconcept.springframework.data.marklogic.core;
 
 import com._4dconcept.springframework.data.marklogic.MarklogicTypeUtils;
 import com._4dconcept.springframework.data.marklogic.MarklogicUtils;
+import com._4dconcept.springframework.data.marklogic.core.convert.MappingMarklogicConverter;
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicContentHolder;
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConverter;
-import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
+import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicReader;
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicWriter;
 import com._4dconcept.springframework.data.marklogic.core.cts.CTSQuerySerializer;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicIdentifier;
@@ -54,14 +55,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.dao.TypeMismatchDataAccessException;
+import org.springframework.data.mapping.MappingException;
 import org.springframework.data.mapping.PersistentPropertyAccessor;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.mapping.model.ConvertingPropertyAccessor;
-import org.springframework.data.mapping.model.MappingException;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.w3c.dom.Document;
@@ -116,12 +121,16 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         this(contentSource, null);
     }
 
-    public MarklogicTemplate(ContentSource contentSource, MarklogicConverter marklogicConverter) {
-        Assert.notNull(contentSource, "contentSource must not be null");
-
+    public MarklogicTemplate(ContentSource contentSource, @Nullable MarklogicConverter marklogicConverter) {
         this.contentSource = contentSource;
         this.marklogicConverter = marklogicConverter == null ? getDefaultMarklogicConverter() : marklogicConverter;
         this.mappingContext = this.marklogicConverter.getMappingContext();
+    }
+
+    private static MarklogicConverter getDefaultMarklogicConverter() {
+        MappingMarklogicConverter mappingMarklogicConverter = new MappingMarklogicConverter(new MarklogicMappingContext());
+        mappingMarklogicConverter.afterPropertiesSet();
+        return mappingMarklogicConverter;
     }
 
     @Override
@@ -133,33 +142,33 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     public long count(Query query) {
         String ctsQuery = new CTSQuerySerializer(query).disablePagination().asCtsQuery();
         String countQuery = String.format("xdmp:estimate(%s)", ctsQuery);
-        return invokeAdhocQuery(countQuery, Long.TYPE, new MarklogicInvokeOperationOptions() {
+        Long count = invokeAdhocQuery(countQuery, Long.TYPE, new MarklogicInvokeOperationOptions() {
             @Override
             public boolean useCacheResult() {
                 return false;
             }
         });
+        return count == null ? 0 : count;
     }
 
     @Override
     public void insert(Object objectToSave) {
-        final String uri = mappingContext.getPersistentEntity(objectToSave.getClass()).getUri();
-        final String defaultCollection = mappingContext.getPersistentEntity(objectToSave.getClass()).getDefaultCollection();
+        MarklogicPersistentEntity<?> persistentEntity = retrievePersistentEntity(objectToSave.getClass());
 
         insert(objectToSave, new MarklogicCreateOperationOptions() {
             @Override
             public String uri() {
-                return uri;
+                return persistentEntity.getUri();
             }
 
             @Override
             public String[] extraCollections() {
-                return null;
+                return new String[0];
             }
 
             @Override
             public String defaultCollection() {
-                return defaultCollection;
+                return persistentEntity.getDefaultCollection();
             }
         });
     }
@@ -179,8 +188,10 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
             LOGGER.debug("Save operation issued with unidentified object. Fallback to insert operation.");
             insert(objectToSave);
         } else {
+            MarklogicPersistentEntity<?> persistentEntity = retrievePersistentEntity(objectToSave.getClass());
+
             final String uri = retrieveUri(objectToSave);
-            final String defaultCollection = mappingContext.getPersistentEntity(objectToSave.getClass()).getDefaultCollection();
+            final String defaultCollection = persistentEntity.getDefaultCollection();
 
             save(objectToSave, new MarklogicCreateOperationOptions() {
                 @Override
@@ -190,7 +201,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
                 @Override
                 public String[] extraCollections() {
-                    return null;
+                    return new String[0];
                 }
 
                 @Override
@@ -230,7 +241,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
                 }
 
                 @Override
-                public Class entityClass() {
+                public Class<?> entityClass() {
                     return options.entityClass();
                 }
             }, marklogicConverter);
@@ -240,27 +251,32 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     @Override
     public void remove(Object entity) {
         String uri = retrieveUri(entity);
-        if (uri != null) {
-            LOGGER.debug("Remove '{}' from '{}'", entity, uri);
-            invokeAdhocQuery("xdmp:document-delete('" + uri + "')", new MarklogicInvokeOperationOptions() {
-                @Override
-                public boolean useCacheResult() {
-                    return false;
-                }
-            });
-        }
+        LOGGER.debug("Remove '{}' from '{}'", entity, uri);
+        invokeAdhocQuery("xdmp:document-delete('" + uri + "')", new MarklogicInvokeOperationOptions() {
+            @Override
+            public boolean useCacheResult() {
+                return false;
+            }
+        });
     }
 
     @Override
     public <T> void remove(Object id, Class<T> entityClass) {
-        T entity = findById(id, entityClass);
-        remove(entity);
+        remove(id, entityClass, new MarklogicOperationOptions() {
+            @Override
+            public String defaultCollection() {
+                return determineCollectionName(entityClass);
+            }
+        });
     }
 
     @Override
     public <T> void remove(Object id, Class<T> entityClass, MarklogicOperationOptions options) {
         T entity = findById(id, entityClass, options);
-        remove(entity);
+
+        if (entity != null) {
+            remove(entity);
+        }
     }
 
     @Override
@@ -279,9 +295,13 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         Assert.notNull(options.defaultCollection(), "A collection should be provided for removeAll operation!");
 
         String collection = MarklogicUtils.expandCollection(options.defaultCollection(), entityClass);
-        doRemoveAll(collection);
+
+        if (collection != null) {
+            doRemoveAll(collection);
+        }
     }
 
+    @Nullable
     @Override
     public <T> T findById(Object id, Class<T> entityClass) {
         return findById(id, entityClass, new MarklogicOperationOptions() {
@@ -292,10 +312,13 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         });
     }
 
+    @Nullable
     @Override
     @SuppressWarnings("unchecked")
     public <T> T findById(Object id, Class<T> entityClass, MarklogicOperationOptions options) {
-        final Class<T> targetEntityClass = options.entityClass() == null ? entityClass : (Class<T>) options.entityClass();
+        Assert.notNull(entityClass, "EntityClass can not be null");
+
+        final Class<?> targetEntityClass = retrieveTargetEntityClass(entityClass, options);
         MarklogicIdentifier identifier = resolveMarklogicIdentifier(id, targetEntityClass);
         final String targetCollection = retrieveTargetCollection(MarklogicUtils.expandCollection(options.defaultCollection(), new MarklogicUtils.DocumentExpressionContext() {
             @Override
@@ -323,13 +346,13 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
             sb.append("cts:properties-fragment-query(");
         }
         sb
-            .append("cts:element-value-query(fn:QName(\"")
-            .append(identifier.qname().getNamespaceURI())
-            .append("\", \"")
-            .append(identifier.qname().getLocalPart())
-            .append("\"), \"")
-            .append(identifier.value())
-            .append("\")");
+                .append("cts:element-value-query(fn:QName(\"")
+                .append(identifier.qname().getNamespaceURI())
+                .append("\", \"")
+                .append(identifier.qname().getLocalPart())
+                .append("\"), \"")
+                .append(identifier.value())
+                .append("\")");
         if (isIdInPropertyFragment) {
             sb.append(")");
         }
@@ -347,9 +370,15 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         });
     }
 
+    private <T> Class<?> retrieveTargetEntityClass(Class<T> entityClass, MarklogicOperationOptions options) {
+        Class<?> optionEntityClass = options.entityClass();
+        return optionEntityClass == null ? entityClass : optionEntityClass;
+    }
+
     @Override
     public <T> List<T> find(Query query, Class<T> entityClass) {
-        return find(query, entityClass, new MarklogicOperationOptions() {});
+        return find(query, entityClass, new MarklogicOperationOptions() {
+        });
     }
 
     @Override
@@ -363,32 +392,35 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         });
     }
 
+    @Nullable
     @Override
     public <T> T findOne(Query query, Class<T> entityClass) {
-        return findOne(query, entityClass, new MarklogicOperationOptions() {});
+        return findOne(query, entityClass, new MarklogicOperationOptions() {
+        });
     }
 
+    @Nullable
     @Override
     public <T> T findOne(Query query, Class<T> entityClass, MarklogicOperationOptions options) {
-        List<T> resultList = find(query, entityClass, options);
 
-        if (CollectionUtils.isEmpty(resultList)) {
-            return null;
-        } else if (resultList.size() == 1) {
-            return resultList.get(0);
-        } else {
-            throw new DataRetrievalFailureException("Only one result expected. You should probably call find instead");
-        }
+        Assert.notNull(query, "Query must not be null!");
+        Assert.notNull(entityClass, "EntityClass must not be null!");
+        Assert.notNull(options, "MarklogicOperationOptions must not be null!");
+
+        query.setLimit(1);
+        List<T> resultList = find(query, entityClass, options);
+        return resultList.isEmpty() ? null : resultList.get(0);
     }
 
     @Override
     public <T> List<T> findAll(Class<T> entityClass) {
-        return find(new QueryBuilder(mappingContext).ofType(entityClass).build(), entityClass, new MarklogicOperationOptions() {});
+        return find(new QueryBuilder(this).ofType(entityClass).build(), entityClass, new MarklogicOperationOptions() {
+        });
     }
 
     @Override
     public <T> List<T> findAll(Class<T> entityClass, MarklogicOperationOptions options) {
-        return find(new QueryBuilder(mappingContext).ofType(entityClass).build(), entityClass, options);
+        return find(new QueryBuilder(this).ofType(entityClass).build(), entityClass, options);
     }
 
     @Override
@@ -396,13 +428,14 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         return returnInSession(session -> {
             try {
                 ResultSequence resultSequence = session.submitRequest(buildModuleRequest(moduleName, options, session));
-                return prepareResultList(resultSequence, resultClass, options);
+                return prepareResultList(resultSequence, resultClass, options, marklogicConverter);
             } catch (RequestException re) {
                 throw new DataRetrievalFailureException("Unable to submit request", re);
             }
         });
     }
 
+    @Nullable
     @Override
     public <T> T invokeModule(String moduleName, Class<T> resultClass, MarklogicInvokeOperationOptions options) {
         List<T> resultList = invokeModuleAsList(moduleName, resultClass, options);
@@ -432,7 +465,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         return returnInSession(session -> {
             try {
                 ResultSequence resultSequence = session.submitRequest(buildAdhocRequest(query, options, session));
-                return prepareResultList(resultSequence, resultClass, options);
+                return prepareResultList(resultSequence, resultClass, options, this.marklogicConverter);
             } catch (RequestException re) {
                 throw new DataRetrievalFailureException("Unable to submit request", re);
             }
@@ -463,9 +496,10 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         });
     }
 
+    @Nullable
     @Override
     public <T> String resolveDefaultCollection(T entity, MarklogicOperationOptions options) {
-        MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(entity.getClass());
+        MarklogicPersistentEntity<?> persistentEntity = retrievePersistentEntity(entity.getClass());
         String defaultCollection = options.defaultCollection() == null ? persistentEntity.getDefaultCollection() : options.defaultCollection();
         return MarklogicUtils.expandCollection(defaultCollection, new MarklogicUtils.DocumentExpressionContext() {
             @Override
@@ -485,6 +519,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         });
     }
 
+    @Nullable
     @Override
     public <T> Object resolveContentIdentifier(T entity) {
         return retrieveIdentifier(entity);
@@ -496,10 +531,10 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     /*
-        #############################
-        ## PRIVATE IMPLEMENTATIONS ##
-        #############################
-        */
+    #############################
+    ## PRIVATE IMPLEMENTATIONS ##
+    #############################
+    */
     private void doRemoveAll(String collection) {
         LOGGER.debug("Remove all entities stored in '{}' default collection", collection);
 
@@ -515,9 +550,9 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         });
     }
 
-    private <T> void doInsert(T objectToSave, MarklogicCreateOperationOptions options, MarklogicWriter<T> writer) {
+    private void doInsert(Object objectToSave, MarklogicCreateOperationOptions options, MarklogicWriter<Object> writer) {
         MarklogicUtils.DocumentExpressionContext documentExpressionContext = buildDocumentExpressionContext(objectToSave);
-        String uri =  MarklogicUtils.expandUri(options.uri(), documentExpressionContext);
+        String uri = MarklogicUtils.expandUri(options.uri(), documentExpressionContext);
         String collection = MarklogicUtils.expandCollection(options.defaultCollection(), documentExpressionContext);
 
         LOGGER.debug("Insert entity '{}' at '{}' within '{}' default collection", objectToSave, uri, collection);
@@ -529,6 +564,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         maybeEmitEvent(new BeforeSaveEvent<>(objectToSave, content, uri));
 
         doInsertContent(content);
+
         doPostInsert(uri, objectToSave);
 
         maybeEmitEvent(new AfterSaveEvent<>(objectToSave, content, uri));
@@ -565,14 +601,13 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
      * @param objectToSave The object currently saved
      */
     private void generateIdIfNecessary(Object objectToSave) {
-
         MarklogicPersistentProperty property = getIdPropertyFor(objectToSave.getClass());
 
         if (property == null) {
             return;
         }
 
-        MarklogicPersistentEntity<?> entity = mappingContext.getPersistentEntity(objectToSave.getClass());
+        MarklogicPersistentEntity<?> entity = retrievePersistentEntity(objectToSave.getClass());
         PersistentPropertyAccessor accessor = entity.getPropertyAccessor(objectToSave);
 
         if (accessor.getProperty(property) != null) {
@@ -590,12 +625,12 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
             return true;
         }
 
-        MarklogicPersistentEntity<?> entity = mappingContext.getPersistentEntity(objectToSave.getClass());
+        MarklogicPersistentEntity<?> entity = retrievePersistentEntity(objectToSave.getClass());
         return entity.getPropertyAccessor(objectToSave).getProperty(property) == null;
     }
 
     private String retrieveUri(Object objectToSave) {
-        MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(objectToSave.getClass());
+        MarklogicPersistentEntity<?> persistentEntity = retrievePersistentEntity(objectToSave.getClass());
 
         final MarklogicIdentifier identifier = resolveMarklogicIdentifier(objectToSave);
         final String collection = MarklogicUtils.expandCollection(persistentEntity.getDefaultCollection(), new MarklogicUtils.DocumentExpressionContext() {
@@ -643,9 +678,10 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
         LOGGER.trace(sb.toString());
 
-        List<String> uris = invokeAdhocQueryAsList(sb.toString(), String.class, new MarklogicInvokeOperationOptions() {});
+        List<String> uris = invokeAdhocQueryAsList(sb.toString(), String.class, new MarklogicInvokeOperationOptions() {
+        });
 
-        if (! CollectionUtils.isEmpty(uris)) {
+        if (!CollectionUtils.isEmpty(uris)) {
             return uris.get(0);
         } else {
             return persistentEntity.getUri();
@@ -670,11 +706,11 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         }
     }
 
-    private <T> Content toContentObject(String uri, T objectToSave, String collection, MarklogicWriter<T> writer) {
+    private Content toContentObject(String uri, Object objectToSave, @Nullable String collection, MarklogicWriter<Object> writer) {
         Content content;
         boolean supportedClass = Stream.of(SUPPORTED_CONTENT_CLASS).anyMatch(c -> c.isAssignableFrom(objectToSave.getClass()));
 
-        if (! supportedClass) {
+        if (!supportedClass) {
             MarklogicContentHolder holder = new MarklogicContentHolder();
             writer.write(objectToSave, holder);
             content = createSupportedContentObject(uri, holder.getContent());
@@ -684,7 +720,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         }
 
         if (collection != null) {
-            content.getCreateOptions().setCollections(new String[] {collection});
+            content.getCreateOptions().setCollections(new String[]{collection});
         }
 
         return content;
@@ -701,9 +737,8 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     private void assertAutoGenerableIdIfNotSet(Object entity) {
-
-        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entity.getClass());
-        MarklogicPersistentProperty idProperty = persistentEntity == null ? null : persistentEntity.getIdProperty();
+        MarklogicPersistentEntity<?> persistentEntity = retrievePersistentEntity(entity.getClass());
+        MarklogicPersistentProperty idProperty = persistentEntity.getIdProperty();
 
         if (idProperty == null) {
             return;
@@ -743,7 +778,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
             } else if (objectToSave instanceof InputStream) {
                 return ContentFactory.newContent(uri, (InputStream) objectToSave, new ContentCreateOptions()); // How to determine Content Type ?
             }
-        } catch(IOException ioe) {
+        } catch (IOException ioe) {
             throw new MappingException("Unable to access resource!", ioe);
         }
 
@@ -751,55 +786,30 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     private String determineCollectionName(Class<?> entityClass) {
-        if (entityClass == null) {
-            throw new InvalidDataAccessApiUsageException("No class parameter provided, entity can't be determined!");
-        }
-
-        MarklogicPersistentEntity<?> entity = mappingContext.getPersistentEntity(entityClass);
-        if (entity == null) {
-            throw new InvalidDataAccessApiUsageException("No Persistent Entity information found for the class " + entityClass.getName());
-        }
-
-        return entity.getDefaultCollection();
+        return retrievePersistentEntity(entityClass).getDefaultCollection();
     }
 
+    @Nullable
     private MarklogicPersistentProperty getIdPropertyFor(Class<?> type) {
-        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(type);
-        return persistentEntity == null ? null : persistentEntity.getIdProperty();
-    }
-
-    private static MarklogicConverter getDefaultMarklogicConverter() {
-        MarklogicMappingConverter marklogicMappingConverter = new MarklogicMappingConverter(new MarklogicMappingContext());
-        marklogicMappingConverter.afterPropertiesSet();
-        return marklogicMappingConverter;
+        return retrievePersistentEntity(type).getIdProperty();
     }
 
     private Request buildAdhocRequest(String query, MarklogicInvokeOperationOptions options, Session session) {
-        Assert.notNull(query, "A query must be provided!");
-
         Request request = session.newAdhocQuery(query);
-        if (options != null) {
-            request.getOptions().setCacheResult(options.useCacheResult());
-            addVariablesToRequest(options.params(), request);
-        }
+        request.getOptions().setCacheResult(options.useCacheResult());
+        addVariablesToRequest(options.params(), request);
         return request;
     }
 
     private Request buildModuleRequest(String moduleName, MarklogicInvokeOperationOptions options, Session session) {
-        Assert.notNull(moduleName, "A module name must be provided!");
-
         Request request = session.newModuleInvoke(moduleName);
-        if (options != null) {
-            addVariablesToRequest(options.params(), request);
-        }
+        addVariablesToRequest(options.params(), request);
         return request;
     }
 
     private void addVariablesToRequest(Map<Object, Object> params, Request request) {
-        if (params != null) {
-            for (Map.Entry<Object, Object> entry : params.entrySet()) {
-                request.setVariable(buildVariable(entry.getKey(), entry.getValue()));
-            }
+        for (Map.Entry<Object, Object> entry : params.entrySet()) {
+            request.setVariable(buildVariable(entry.getKey(), entry.getValue()));
         }
     }
 
@@ -816,39 +826,36 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         return name instanceof QName;
     }
 
-    private XdmValue buildVariableValue(Object value) {
+
+    private XdmValue buildVariableValue(@Nullable Object value) {
         if (value == null) {
             return ValueFactory.newXSString("");
         }
 
-        return marklogicConverter.getConversionService().convert(value, XdmValue.class);
+        XdmValue converted = marklogicConverter.getConversionService().convert(value, XdmValue.class);
+        return converted == null ? ValueFactory.newXSString("") : converted;
     }
 
-    private <T> List<T> prepareResultList(ResultSequence resultSequence, Class<T> returnType, MarklogicInvokeOperationOptions options) {
-        List<T> resultList = null;
-        if (resultSequence != null && !resultSequence.isEmpty() && returnType != null) {
-            resultList = new ArrayList<>();
-            while (resultSequence.hasNext()) {
-                resultList.add(prepareResultItem(resultSequence.next(), returnType, options));
-            }
+    private <T> List<T> prepareResultList(ResultSequence resultSequence, Class<T> returnType, MarklogicInvokeOperationOptions options, MarklogicReader<Object> reader) {
+        List<T> resultList = new ArrayList<>();
+        while (resultSequence.hasNext()) {
+            resultList.add(prepareResultItem(resultSequence.next(), returnType, options, reader));
         }
         return resultList;
     }
 
-    private <T> T prepareResultItem(ResultItem resultItem, Class<T> returnType, MarklogicInvokeOperationOptions options) {
+    private <T> T prepareResultItem(ResultItem resultItem, Class<T> returnType, MarklogicInvokeOperationOptions options, MarklogicReader<Object> reader) {
         MarklogicContentHolder holder = new MarklogicContentHolder();
         holder.setContent(resultItem);
 
-        T item = marklogicConverter.read(returnType, holder);
-        if (item != null) {
-            AfterRetrieveEvent<T> event = new AfterRetrieveEvent<>(item, resultItem.getDocumentURI());
-            event.setParams(options.params());
-            maybeEmitEvent(event);
-        }
+        T item = reader.read(returnType, holder);
+        AfterRetrieveEvent<T> event = new AfterRetrieveEvent<>(item, resultItem.getDocumentURI());
+        event.setParams(options.params());
+        maybeEmitEvent(event);
         return item;
     }
 
-    private String retrieveTargetCollection(String defaultCollection) {
+    private String retrieveTargetCollection(@Nullable String defaultCollection) {
         if (defaultCollection == null) {
             return "fn:collection()";
         }
@@ -856,7 +863,8 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         return "fn:collection('" + defaultCollection + "')";
     }
 
-    private String retrieveConstraintCollection(String defaultCollection) {
+    @Nullable
+    private String retrieveConstraintCollection(@Nullable String defaultCollection) {
         if (defaultCollection == null) {
             return null;
         }
@@ -865,29 +873,37 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     private MarklogicIdentifier resolveMarklogicIdentifier(Object object) {
-        MarklogicPersistentProperty idProperty = getIdPropertyFor(object.getClass());
+        MarklogicPersistentEntity<?> persistentEntity = retrievePersistentEntity(object.getClass());
+        MarklogicPersistentProperty idProperty = persistentEntity.getIdProperty();
 
         if (idProperty == null)
-            throw new  InvalidDataAccessApiUsageException("Unable to retrieve expected identifier property !");
+            throw new InvalidDataAccessApiUsageException("Unable to retrieve expected identifier property !");
 
-        return resolveMarklogicIdentifier(retrieveIdentifier(object), idProperty);
+        Object id = persistentEntity.getPropertyAccessor(object).getProperty(idProperty);
+
+        if (id == null) {
+            throw new NullPointerException("Id is not expected to be null");
+        }
+
+        return resolveMarklogicIdentifier(id, idProperty);
     }
 
+    @Nullable
     private Object retrieveIdentifier(Object object) {
-        MarklogicPersistentProperty idProperty = getIdPropertyFor(object.getClass());
+        MarklogicPersistentEntity<?> persistentEntity = retrievePersistentEntity(object.getClass());
+        MarklogicPersistentProperty idProperty = persistentEntity.getIdProperty();
 
         if (idProperty == null)
-            throw new  InvalidDataAccessApiUsageException("Unable to retrieve expected identifier property !");
+            throw new InvalidDataAccessApiUsageException("Unable to retrieve expected identifier property !");
 
-        MarklogicPersistentEntity<?> entity = mappingContext.getPersistentEntity(object.getClass());
-        return entity.getPropertyAccessor(object).getProperty(idProperty);
+        return persistentEntity.getPropertyAccessor(object).getProperty(idProperty);
     }
 
     private <T> MarklogicIdentifier resolveMarklogicIdentifier(Object id, Class<T> entityClass) {
         MarklogicPersistentProperty idProperty = getIdPropertyFor(entityClass);
 
         if (idProperty == null)
-            throw new  InvalidDataAccessApiUsageException("Unable to retrieve expected identifier property !");
+            throw new InvalidDataAccessApiUsageException("Unable to retrieve expected identifier property !");
 
         return resolveMarklogicIdentifier(id, idProperty);
     }
@@ -909,25 +925,41 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
         ConversionService conversionService = marklogicConverter.getConversionService();
         if (conversionService.canConvert(idProperty.getType(), MarklogicIdentifier.class)) {
-            return conversionService.convert(id, MarklogicIdentifier.class);
+            MarklogicIdentifier convert = conversionService.convert(id, MarklogicIdentifier.class);
+            if (convert == null) {
+                throw new ConversionFailedException(TypeDescriptor.forObject(id), TypeDescriptor.valueOf(MarklogicIdentifier.class), id, new NullPointerException("Conversion result is not expected to be null"));
+            }
+
+            return convert;
         }
 
         throw new MappingException("Unexpected identifier type " + idProperty.getClass());
     }
 
     private <T> void doPostInsert(String uri, T objectToSave) {
-        MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(objectToSave.getClass());
+        MarklogicPersistentEntity persistentEntity = retrievePersistentEntity(objectToSave.getClass());
         if (persistentEntity.idInPropertyFragment()) {
             MarklogicIdentifier identifier = resolveMarklogicIdentifier(objectToSave);
             invokeAdhocQuery(String.format(
                     "declare namespace _id=\"%s\";\n" +
-                    "xdmp:document-set-property(\"%s\", element _id:%s {\"%s\"})",
+                            "xdmp:document-set-property(\"%s\", element _id:%s {\"%s\"})",
                     identifier.qname().getNamespaceURI(),
                     uri,
                     identifier.qname().getLocalPart(),
                     identifier.value()
-            ), new MarklogicInvokeOperationOptions() {});
+            ), new MarklogicInvokeOperationOptions() {
+            });
         }
+    }
+
+    private MarklogicPersistentEntity<?> retrievePersistentEntity(Class<?> aClass) {
+        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(aClass);
+
+        if (persistentEntity == null) {
+            throw new TypeMismatchDataAccessException(String.format("No Persistent Entity information found for the class %s", aClass));
+        }
+
+        return persistentEntity;
     }
 
 }

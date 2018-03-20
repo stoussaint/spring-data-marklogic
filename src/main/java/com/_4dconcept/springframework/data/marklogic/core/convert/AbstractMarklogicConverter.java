@@ -22,6 +22,7 @@ import org.springframework.core.convert.converter.ConverterFactory;
 import org.springframework.core.convert.converter.GenericConverter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.convert.support.GenericConversionService;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ public abstract class AbstractMarklogicConverter implements MarklogicConverter, 
 
     private List<?> converters = new ArrayList<>();
 
-    AbstractMarklogicConverter(GenericConversionService conversionService) {
+    AbstractMarklogicConverter(@Nullable GenericConversionService conversionService) {
         this.conversionService = conversionService == null ? new DefaultConversionService() : conversionService;
     }
 

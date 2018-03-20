@@ -26,15 +26,19 @@ import com._4dconcept.springframework.data.marklogic.repository.query.MarklogicE
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -45,9 +49,9 @@ import java.util.stream.StreamSupport;
  */
 @Repository
 @Transactional(readOnly = true)
-public class SimpleMarklogicRepository<T, ID extends Serializable> implements MarklogicRepository<T, ID> {
+public class SimpleMarklogicRepository<T, ID> implements MarklogicRepository<T, ID> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleMarklogicRepository.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(MarklogicRepository.class);
 
     protected final MarklogicOperations marklogicOperations;
     protected final MarklogicEntityInformation<T, ID> entityInformation;
@@ -87,8 +91,8 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
     }
 
     @Override
-    public boolean exists(ID id) {
-        return findOne(id) != null;
+    public boolean existsById(ID id) {
+        return findById(id).isPresent();
     }
 
     @Override
@@ -98,23 +102,23 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
     }
 
     @Override
-    public T findOne(ID id) {
+    public Optional<T> findById(ID id) {
         Assert.notNull(id, "The given id must not be null");
-        return marklogicOperations.findById(id, entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation));
+            return Optional.ofNullable(marklogicOperations.findById(id, entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation)));
     }
 
     @Override
-    public <S extends T> S findOne(Example<S> example) {
+    public <S extends T> Optional<S> findOne(Example<S> example) {
         final List<S> results = findAll(example);
         if (CollectionUtils.isEmpty(results)) {
-            return null;
+            return Optional.empty();
         }
 
         if (results.size() > 1) {
             throw new IncorrectResultSizeDataAccessException(1, results.size());
         }
 
-        return results.get(0);
+        return Optional.of(results.get(0));
     }
 
     @Override
@@ -123,8 +127,12 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
     }
 
     @Override
-    public List<T> findAll(Iterable<ID> ids) {
-        return StreamSupport.stream(ids.spliterator(), false).map(this::findOne).collect(Collectors.toList());
+    public List<T> findAllById(Iterable<ID> ids) {
+        return StreamSupport.stream(ids.spliterator(), false)
+                .map(this::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -198,14 +206,14 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
 
     @Override
     @Transactional
-    public <S extends T> List<S> save(Iterable<S> entities) {
+    public <S extends T> List<S> saveAll(Iterable<S> entities) {
         Assert.notNull(entities, "entities must not be null");
         return StreamSupport.stream(entities.spliterator(), false).map(this::save).collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public void delete(ID id) {
+    public void deleteById(ID id) {
         marklogicOperations.remove(id, entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation));
     }
 
@@ -217,7 +225,7 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
 
     @Override
     @Transactional
-    public void delete(Iterable<? extends T> entities) {
+    public void deleteAll(Iterable<? extends T> entities) {
         entities.forEach(this::delete);
     }
 
@@ -228,7 +236,7 @@ public class SimpleMarklogicRepository<T, ID extends Serializable> implements Ma
     }
 
     private QueryBuilder newQueryBuilderInstance() {
-        return new QueryBuilder(marklogicOperations.getConverter().getMappingContext());
+        return new QueryBuilder(marklogicOperations);
     }
 
 }

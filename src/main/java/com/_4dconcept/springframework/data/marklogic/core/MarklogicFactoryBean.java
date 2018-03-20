@@ -42,13 +42,6 @@ public class MarklogicFactoryBean extends AbstractFactoryBean<ContentSource> imp
         this.uri = uri;
     }
 
-    /**
-     * @param exceptionTranslator the exceptionTranslator to set
-     */
-    public void setExceptionTranslator(PersistenceExceptionTranslator exceptionTranslator) {
-        this.exceptionTranslator = exceptionTranslator == null ? DEFAULT_EXCEPTION_TRANSLATOR : exceptionTranslator;
-    }
-
     @Override
     public Class<?> getObjectType() {
         return ContentSource.class;

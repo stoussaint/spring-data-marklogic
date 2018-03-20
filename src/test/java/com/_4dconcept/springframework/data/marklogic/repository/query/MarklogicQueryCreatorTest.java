@@ -70,7 +70,7 @@ public class MarklogicQueryCreatorTest {
     private MarklogicQueryMethod buildMethod(String methodName, Class<?>... paramTypes) throws NoSuchMethodException {
         Method method = Repo.class.getMethod(methodName, paramTypes);
         ProjectionFactory factory = new SpelAwareProxyProjectionFactory();
-        return new MarklogicQueryMethod(method, new DefaultRepositoryMetadata(PartTreeMarklogicQueryTest.Repo.class), factory, mappingContext);
+        return new MarklogicQueryMethod(method, new DefaultRepositoryMetadata(PartTreeMarklogicQueryTest.Repo.class), factory);
     }
 
 

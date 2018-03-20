@@ -17,7 +17,7 @@ package com._4dconcept.springframework.data.marklogic.config;
 
 import com._4dconcept.springframework.data.marklogic.core.MarklogicFactoryBean;
 import com._4dconcept.springframework.data.marklogic.core.MarklogicTemplate;
-import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
+import com._4dconcept.springframework.data.marklogic.core.convert.MappingMarklogicConverter;
 import com._4dconcept.springframework.data.marklogic.core.mapping.Document;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com.marklogic.xcc.ContentSource;
@@ -34,6 +34,7 @@ import org.springframework.data.mapping.context.MappingContextIsNewStrategyFacto
 import org.springframework.data.mapping.context.PersistentEntities;
 import org.springframework.data.support.CachingIsNewStrategyFactory;
 import org.springframework.data.support.IsNewStrategyFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
@@ -58,20 +59,23 @@ public abstract class AbstractMarklogicConfiguration {
 
     protected abstract URI getMarklogicUri();
 
-    protected void beforeMarklogicTemplateCreation(ContentSource contentSource) {}
+    protected void beforeMarklogicTemplateCreation(ContentSource contentSource) {
+    }
 
-    protected void afterMarklogicTemplateCreation(MarklogicTemplate marklogicTemplate) {}
+    protected void afterMarklogicTemplateCreation(MarklogicTemplate marklogicTemplate) {
+    }
 
     @Bean
     public MarklogicFactoryBean marklogicContentSource() {
-        LOGGER.info("Init marklogic connexion at {}:{}", getMarklogicUri().getHost(), getMarklogicUri().getPort());
+        URI marklogicUri = getMarklogicUri();
+        LOGGER.info("Init marklogic connexion at {}:{}", marklogicUri.getHost(), marklogicUri.getPort());
         MarklogicFactoryBean marklogicFactoryBean = new MarklogicFactoryBean();
-        marklogicFactoryBean.setUri(getMarklogicUri());
+        marklogicFactoryBean.setUri(marklogicUri);
         return marklogicFactoryBean;
     }
 
     @Bean
-    public MarklogicTemplate marklogicTemplate(ContentSource contentSource) throws Exception {
+    public MarklogicTemplate marklogicTemplate(ContentSource contentSource) throws ClassNotFoundException {
         beforeMarklogicTemplateCreation(contentSource);
         MarklogicTemplate marklogicTemplate = new MarklogicTemplate(contentSource, mappingMarklogicConverter());
         afterMarklogicTemplateCreation(marklogicTemplate);
@@ -85,8 +89,9 @@ public abstract class AbstractMarklogicConfiguration {
      * overriden to implement alternate behaviour.
      *
      * @return the base package to scan for mapped {@link Document} classes or {@literal null} to not enable scanning for
-     *         entities.
+     * entities.
      */
+    @Nullable
     protected String getMappingBasePackage() {
         Package mappingBasePackage = getClass().getPackage();
         return mappingBasePackage == null ? null : mappingBasePackage.getName();
@@ -95,11 +100,11 @@ public abstract class AbstractMarklogicConfiguration {
     /**
      * Creates a {@link MarklogicMappingContext} equipped with entity classes scanned from the mapping base package.
      *
-     * @see #getMappingBasePackage()
      * @return the initialized Marklogic mapping context
+     * @see #getMappingBasePackage()
      */
     @Bean
-    public MarklogicMappingContext marklogicMappingContext() {
+    public MarklogicMappingContext marklogicMappingContext() throws ClassNotFoundException {
         MarklogicMappingContext marklogicMappingContext = new MarklogicMappingContext();
         marklogicMappingContext.setInitialEntitySet(getInitialEntitySet());
         return marklogicMappingContext;
@@ -109,23 +114,24 @@ public abstract class AbstractMarklogicConfiguration {
      * @return a {@link MappingContextIsNewStrategyFactory} wrapped into a {@link CachingIsNewStrategyFactory}.
      */
     @Bean
-    public IsNewStrategyFactory isNewStrategyFactory() {
+    public IsNewStrategyFactory isNewStrategyFactory() throws ClassNotFoundException {
         PersistentEntities persistentEntities = new PersistentEntities(Collections.singletonList(marklogicMappingContext()));
         return new CachingIsNewStrategyFactory(new MappingContextIsNewStrategyFactory(persistentEntities));
     }
 
     /**
-     * Creates a {@link MarklogicMappingConverter} using the configured {@link #marklogicMappingContext()}.
+     * Creates a {@link MappingMarklogicConverter} using the configured {@link #marklogicMappingContext()}.
+     *
      * @return the prepared marklogic mapping converter
      */
     @Bean
-    public MarklogicMappingConverter mappingMarklogicConverter() {
-        MarklogicMappingConverter converter = new MarklogicMappingConverter(marklogicMappingContext(), conversionService);
+    public MappingMarklogicConverter mappingMarklogicConverter() throws ClassNotFoundException {
+        MappingMarklogicConverter converter = new MappingMarklogicConverter(marklogicMappingContext(), conversionService);
         converter.setConverters(getConverters());
         return converter;
     }
 
-    private Set<Class<?>> getInitialEntitySet() {
+    private Set<Class<?>> getInitialEntitySet() throws ClassNotFoundException {
         String basePackage = getMappingBasePackage();
         Set<Class<?>> initialEntitySet = new HashSet<>();
 
@@ -134,11 +140,9 @@ public abstract class AbstractMarklogicConfiguration {
             componentProvider.addIncludeFilter(new AnnotationTypeFilter(Document.class));
 
             for (BeanDefinition candidate : componentProvider.findCandidateComponents(basePackage)) {
-                try {
-                    initialEntitySet.add(ClassUtils.forName(candidate.getBeanClassName(),
-                            AbstractMarklogicConfiguration.class.getClassLoader()));
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
+                String beanClassName = candidate.getBeanClassName();
+                if (beanClassName != null) {
+                    initialEntitySet.add(ClassUtils.forName(beanClassName, AbstractMarklogicConfiguration.class.getClassLoader()));
                 }
             }
         }

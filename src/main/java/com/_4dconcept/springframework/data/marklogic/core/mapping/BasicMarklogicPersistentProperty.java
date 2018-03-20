@@ -17,14 +17,13 @@ package com._4dconcept.springframework.data.marklogic.core.mapping;
 
 import org.springframework.data.mapping.Association;
 import org.springframework.data.mapping.model.AnnotationBasedPersistentProperty;
+import org.springframework.data.mapping.model.Property;
 import org.springframework.data.mapping.model.SimpleTypeHolder;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlNsForm;
 import javax.xml.bind.annotation.XmlSchema;
 import javax.xml.namespace.QName;
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -42,9 +41,8 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
         SUPPORTED_ID_PROPERTY_NAMES.add("id");
     }
 
-    public BasicMarklogicPersistentProperty(Field field, PropertyDescriptor propertyDescriptor,
-            MarklogicPersistentEntity<?> owner, SimpleTypeHolder simpleTypeHolder) {
-        super(field, propertyDescriptor, owner, simpleTypeHolder);
+    BasicMarklogicPersistentProperty(Property property, MarklogicPersistentEntity<?> owner, SimpleTypeHolder simpleTypeHolder) {
+        super(property, owner, simpleTypeHolder);
     }
 
     /*
@@ -75,7 +73,7 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
             localName = xmlElement.name().equals("##default") ? getName() : xmlElement.name();
         }
 
-        if (namespaceUri == null) {
+        if (namespaceUri == null && this.getField() != null) {
             XmlSchema xmlSchema = this.getField().getDeclaringClass().getPackage().getAnnotation(XmlSchema.class);
             if (xmlSchema != null) {
                 if (xmlSchema.elementFormDefault().equals(XmlNsForm.QUALIFIED)) {

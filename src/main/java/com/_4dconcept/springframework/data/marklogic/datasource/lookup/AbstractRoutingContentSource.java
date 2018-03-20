@@ -19,6 +19,7 @@ import com._4dconcept.springframework.data.marklogic.datasource.AbstractContentS
 import com.marklogic.xcc.ContentSource;
 import com.marklogic.xcc.Session;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import java.util.HashMap;
@@ -131,7 +132,7 @@ public abstract class AbstractRoutingContentSource extends AbstractContentSource
      * @return the resolved ContentSource (never {@code null})
      * @throws IllegalArgumentException in case of an unsupported value type
      */
-    protected ContentSource resolveSpecifiedContentSource(Object contentSource) throws IllegalArgumentException {
+    private ContentSource resolveSpecifiedContentSource(Object contentSource) throws IllegalArgumentException {
         if (contentSource instanceof ContentSource) {
             return (ContentSource) contentSource;
         } else {
@@ -170,7 +171,7 @@ public abstract class AbstractRoutingContentSource extends AbstractContentSource
      * @see #determineCurrentLookupKey()
      * @return the current target ContentSource
      */
-    protected ContentSource determineTargetContentSource() {
+    private ContentSource determineTargetContentSource() {
         Assert.notNull(this.resolvedContentSources, "ContentSource router not initialized");
         Object lookupKey = determineCurrentLookupKey();
         ContentSource contentSource = this.resolvedContentSources.get(lookupKey);
@@ -191,6 +192,7 @@ public abstract class AbstractRoutingContentSource extends AbstractContentSource
      * {@link #resolveSpecifiedLookupKey} method.
      * @return the current lookup key
      */
+    @Nullable
     protected abstract Object determineCurrentLookupKey();
 
 }

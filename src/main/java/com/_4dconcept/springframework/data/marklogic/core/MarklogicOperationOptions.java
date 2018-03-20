@@ -15,6 +15,8 @@
  */
 package com._4dconcept.springframework.data.marklogic.core;
 
+import org.springframework.lang.Nullable;
+
 /**
  * Definition of a generic Marklogic operation options holder
  *
@@ -22,15 +24,17 @@ package com._4dconcept.springframework.data.marklogic.core;
  */
 public interface MarklogicOperationOptions {
 
-    default String defaultCollection() {
-        return null;
-    }
-
     default boolean idInPropertyFragment() {
         return false;
     }
 
-    default Class entityClass() {
+    @Nullable
+    default String defaultCollection() {
+        return null;
+    }
+
+    @Nullable
+    default Class<?> entityClass() {
         return null;
     }
 

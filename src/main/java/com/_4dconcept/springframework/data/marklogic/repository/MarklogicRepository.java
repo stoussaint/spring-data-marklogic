@@ -21,7 +21,6 @@ import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.QueryByExampleExecutor;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -30,14 +29,14 @@ import java.util.List;
  * @author Stéphane Toussaint
  */
 @NoRepositoryBean
-public interface MarklogicRepository<T, ID extends Serializable>
+public interface MarklogicRepository<T, ID>
         extends PagingAndSortingRepository<T, ID>, QueryByExampleExecutor<T> {
 
     /*
 	 * (non-Javadoc)
 	 * @see org.springframework.data.repository.CrudRepository#save(java.lang.Iterable)
 	 */
-    <S extends T> List<S> save(Iterable<S> entites);
+    <S extends T> List<S> saveAll(Iterable<S> entites);
 
     /*
      * (non-Javadoc)
@@ -55,7 +54,7 @@ public interface MarklogicRepository<T, ID extends Serializable>
      * (non-Javadoc)
      * @see org.springframework.data.repository.CrudRepository#findAll(java.lang.Iterable)
      */
-    List<T> findAll(Iterable<ID> ids);
+    List<T> findAllById(Iterable<ID> ids);
 
     /* (non-Javadoc)
          * @see org.springframework.data.repository.query.QueryByExampleExecutor#findAll(org.springframework.data.domain.Example)

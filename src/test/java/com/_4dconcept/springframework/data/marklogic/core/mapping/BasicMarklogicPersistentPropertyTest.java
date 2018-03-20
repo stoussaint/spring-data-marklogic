@@ -19,6 +19,7 @@ import com._4dconcept.springframework.data.marklogic.core.mapping.namespaceaware
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mapping.model.Property;
 import org.springframework.data.mapping.model.SimpleTypeHolder;
 import org.springframework.data.util.ClassTypeInformation;
 import org.springframework.util.ReflectionUtils;
@@ -111,7 +112,7 @@ public class BasicMarklogicPersistentPropertyTest {
 
 
     private MarklogicPersistentProperty getPropertyFor(MarklogicPersistentEntity<?> persistentEntity, Field field) {
-        return new BasicMarklogicPersistentProperty(field, null, persistentEntity, new SimpleTypeHolder());
+        return new BasicMarklogicPersistentProperty(Property.of(persistentEntity.getTypeInformation(), field), persistentEntity, SimpleTypeHolder.DEFAULT);
     }
 
 }

@@ -21,6 +21,7 @@ import com._4dconcept.springframework.data.marklogic.core.query.CriteriaDefiniti
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.TypeMismatchDataAccessException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.mapping.context.PersistentPropertyPath;
@@ -28,6 +29,7 @@ import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.parser.AbstractQueryCreator;
 import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
+import org.springframework.lang.Nullable;
 
 import javax.xml.namespace.QName;
 import java.util.ArrayList;
@@ -58,13 +60,18 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     protected Criteria create(Part part, Iterator<Object> iterator) {
         PersistentPropertyPath<MarklogicPersistentProperty> path = context.getPersistentPropertyPath(part.getProperty());
         MarklogicPersistentProperty property = path.getLeafProperty();
+
+        if (property == null) {
+            throw new TypeMismatchDataAccessException(String.format("No persistent pntity information found for the path %s", path));
+        }
+
         return from(part, property, iterator);
     }
 
     @Override
     protected Criteria and(Part part, Criteria base, Iterator<Object> iterator) {
         Criteria newCriteria = create(part, iterator);
-        if (base.getOperator() == null) {
+        if (! Criteria.Operator.and.equals(base.getOperator())) {
             return new Criteria(Criteria.Operator.and, new ArrayList<>(Arrays.asList(base, newCriteria)));
         }
 
@@ -74,11 +81,16 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
 
     @Override
     protected Criteria or(Criteria base, Criteria criteria) {
-        return null;
+        if (! Criteria.Operator.or.equals(base.getOperator())) {
+            return new Criteria(Criteria.Operator.or, new ArrayList<>(Arrays.asList(base, criteria)));
+        }
+
+        base.add(criteria);
+        return base;
     }
 
     @Override
-    protected Query complete(Criteria criteria, Sort sort) {
+    protected Query complete(@Nullable Criteria criteria, Sort sort) {
         Query query = criteria == null ? new Query() : new Query(criteria);
 
         if (LOGGER.isDebugEnabled()) {

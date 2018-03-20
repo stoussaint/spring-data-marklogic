@@ -21,14 +21,14 @@ import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersi
 import com.marklogic.xcc.ResultItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.data.mapping.context.MappingContext;
+import org.springframework.lang.Nullable;
 
-import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -38,35 +38,34 @@ import java.lang.reflect.Method;
  *
  * @author Stéphane Toussaint
  */
-public class MarklogicMappingConverter extends AbstractMarklogicConverter  {
+public class MappingMarklogicConverter extends AbstractMarklogicConverter  {
 
     protected final MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MarklogicMappingConverter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MappingMarklogicConverter.class);
 
-    public MarklogicMappingConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
+    public MappingMarklogicConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
         this(mappingContext, null);
     }
 
-    @Autowired
-    public MarklogicMappingConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext, GenericConversionService conversionService) {
+    public MappingMarklogicConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext, @Nullable GenericConversionService conversionService) {
         super(conversionService);
         this.mappingContext = mappingContext;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public <R extends Object> R read(Class<R> returnType, MarklogicContentHolder holder) {
+    public <R> R read(Class<R> returnType, MarklogicContentHolder holder) {
         ResultItem resultItem = (ResultItem) holder.getContent();
-        if (returnType.equals(String.class)) {
-            return (R)resultItem.asString();
+        if (String.class.equals(returnType)) {
+            return returnType.cast(resultItem.asString());
         }
 
         R result = null;
         if (returnType.isPrimitive()) {
             try {
-                Method m = MarklogicTypeUtils.primitiveMap.get(returnType).getMethod("valueOf", String.class);
-                result = (R) m.invoke(null, resultItem.asString());
+                Method method = MarklogicTypeUtils.primitiveMap.get(returnType).getMethod("valueOf", String.class);
+                @SuppressWarnings("unchecked") R obj = (R) method.invoke(null, resultItem.asString());
+                result = obj;
             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                 LOGGER.debug("Unable to generate primitive value for type " + returnType.getName());
             }
@@ -79,7 +78,13 @@ public class MarklogicMappingConverter extends AbstractMarklogicConverter  {
         ConversionService conversionService = getConversionService();
 
         if (conversionService.canConvert(resultItem.getClass(), returnType)) {
-            return conversionService.convert(resultItem, returnType);
+            R convert = conversionService.convert(resultItem, returnType);
+
+            if (convert == null) {
+                throw new ConversionFailedException(TypeDescriptor.forObject(resultItem), TypeDescriptor.valueOf(returnType), resultItem, new NullPointerException());
+            }
+
+            return convert;
         } else {
             throw new ConverterNotFoundException(TypeDescriptor.forObject(resultItem), TypeDescriptor.valueOf(returnType));
         }
@@ -87,18 +92,17 @@ public class MarklogicMappingConverter extends AbstractMarklogicConverter  {
 
     @Override
     public void write(Object source, MarklogicContentHolder holder) {
-        if (null == source) {
-            return;
-        }
-
         TypeDescriptor sourceDescriptor = TypeDescriptor.forObject(source);
-        sourceDescriptor.getAnnotations();
-
         TypeDescriptor targetDescriptor = TypeDescriptor.valueOf(String.class);
 
         if (getConversionService().canConvert(sourceDescriptor, targetDescriptor)) {
-            Serializable content = getConversionService().convert(source, String.class);
-            holder.setContent(content);
+            String content = getConversionService().convert(source, String.class);
+
+            if (content == null) {
+                throw new ConversionFailedException(sourceDescriptor, targetDescriptor, source, new NullPointerException("Conversion result is not e"));
+            } else {
+                holder.setContent(content);
+            }
         } else {
             throw new ConverterNotFoundException(sourceDescriptor, targetDescriptor);
         }

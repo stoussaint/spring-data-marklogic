@@ -16,9 +16,11 @@
 package com._4dconcept.springframework.data.marklogic.core.query;
 
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperationOptions;
+import com._4dconcept.springframework.data.marklogic.core.MarklogicOperations;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
+import org.springframework.dao.TypeMismatchDataAccessException;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -30,10 +32,16 @@ import org.springframework.expression.Expression;
 import org.springframework.expression.ParserContext;
 import org.springframework.expression.common.LiteralExpression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.Stack;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -45,22 +53,42 @@ import java.util.stream.StreamSupport;
  */
 public class QueryBuilder {
 
-    private Class<?> type;
-    private Example example;
-    private Sort sort;
-    private Pageable pageable;
-
+    private static final SpelExpressionParser PARSER = new SpelExpressionParser();
+    private @Nullable
+    Class<?> type;
+    private @Nullable
+    Example example;
+    private @Nullable
+    Sort sort;
+    private @Nullable
+    Pageable pageable;
     private MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext = new MarklogicMappingContext();
     private MarklogicOperationOptions options = new MarklogicOperationOptions() {
     };
 
-    private static final SpelExpressionParser PARSER = new SpelExpressionParser();
+    public QueryBuilder() {}
 
-    public QueryBuilder(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
-        this.mappingContext = mappingContext;
+    public QueryBuilder(MarklogicOperations marklogicOperations) {
+        this.mappingContext = marklogicOperations.getConverter().getMappingContext();
     }
 
-    public QueryBuilder() {
+    /**
+     * Returns a SpEL {@link Expression} for the uri pattern expressed if present or {@literal null} otherwise.
+     * Will also return {@literal null} if the uri pattern {@link String} evaluates
+     * to a {@link LiteralExpression} (indicating that no subsequent evaluation is necessary).
+     *
+     * @param urlPattern can be {@literal null}
+     * @return the dynamic Expression if any or {@literal null}
+     */
+    @Nullable
+    private static Expression detectExpression(@Nullable String urlPattern) {
+        if (!StringUtils.hasText(urlPattern)) {
+            return null;
+        }
+
+        Expression expression = PARSER.parseExpression(urlPattern, ParserContext.TEMPLATE_EXPRESSION);
+
+        return expression instanceof LiteralExpression ? null : expression;
     }
 
     public QueryBuilder ofType(Class<?> type) {
@@ -94,18 +122,22 @@ public class QueryBuilder {
         Query query = new Query();
 
 
-        query.setCollection(buildTargetCollection());
+        String collection = buildTargetCollection();
+        if (collection != null) {
+            query.setCollection(collection);
+        }
 
         if (example != null) {
-            query.setCriteria(prepareCriteria(example));
+            Criteria criteria = prepareCriteria(example);
+            if (criteria != null) {
+                query.setCriteria(criteria);
+            }
         }
 
         if (sort != null) {
             query.setSortCriteria(prepareSortCriteria(sort));
         } else if (pageable != null) {
-            if (pageable.getSort() != null) {
-                query.setSortCriteria(prepareSortCriteria(pageable.getSort()));
-            }
+            query.setSortCriteria(prepareSortCriteria(pageable.getSort()));
             query.setSkip(pageable.getOffset());
             query.setLimit(pageable.getPageSize());
         }
@@ -117,15 +149,15 @@ public class QueryBuilder {
         Class<?> targetType = example != null ? example.getProbeType() : options.entityClass();
         Assert.notNull(targetType, "Query needs a explicit type to resolve sort order");
 
-        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(targetType);
-        return buildSortCriteria(sort, persistentEntity);
+        return buildSortCriteria(sort, retrievePersistentEntity(targetType));
     }
 
+    @Nullable
     private Criteria prepareCriteria(Example example) {
-        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(example.getProbeType());
-        return buildCriteria(example.getProbe(), persistentEntity);
+        return buildCriteria(example.getProbe(), retrievePersistentEntity(example.getProbeType()));
     }
 
+    @Nullable
     private Criteria buildCriteria(Object bean, MarklogicPersistentEntity<?> entity) {
         Stack<Criteria> stack = new Stack<>();
         PersistentPropertyAccessor propertyAccessor = entity.getPropertyAccessor(bean);
@@ -142,7 +174,10 @@ public class QueryBuilder {
                         stack.pop();
                         stack.push(andCriteria);
                     } else {
-                        criteria.add(buildCriteria(property, value));
+                        Criteria subCriteria = buildCriteria(property, value);
+                        if (subCriteria != null) {
+                            criteria.add(subCriteria);
+                        }
                     }
                 }
             }
@@ -151,15 +186,16 @@ public class QueryBuilder {
         return stack.empty() ? null : stack.peek();
     }
 
-    private boolean hasContent(Object value) {
+    private boolean hasContent(@Nullable Object value) {
         return value != null && (!(value instanceof Collection) || !((Collection) value).isEmpty());
     }
 
+    @Nullable
     private Criteria buildCriteria(MarklogicPersistentProperty property, Object value) {
-        Optional<? extends TypeInformation<?>> typeInformation = StreamSupport.stream(property.getPersistentEntityType().spliterator(), false).findFirst();
+        Optional<? extends TypeInformation<?>> typeInformation = StreamSupport.stream(property.getPersistentEntityTypes().spliterator(), false).findFirst();
         if (typeInformation.isPresent()) {
             MarklogicPersistentEntity<?> nestedEntity = mappingContext.getPersistentEntity(typeInformation.get());
-            return buildCriteria(value, nestedEntity);
+            return nestedEntity != null ? buildCriteria(value, nestedEntity) : null;
         } else {
             Criteria criteria = new Criteria();
 
@@ -184,8 +220,13 @@ public class QueryBuilder {
 
         for (Sort.Order order : sort) {
             MarklogicPersistentProperty persistentProperty = entity.getPersistentProperty(order.getProperty());
+
+            if (persistentProperty == null) {
+                continue;
+            }
+
             SortCriteria sortCriteria = new SortCriteria(persistentProperty.getQName());
-            if (! order.isAscending()) {
+            if (!order.isAscending()) {
                 sortCriteria.setDescending(true);
             }
             sortCriteriaList.add(sortCriteria);
@@ -194,6 +235,7 @@ public class QueryBuilder {
         return sortCriteriaList;
     }
 
+    @Nullable
     private String buildTargetCollection() {
         final Class targetClass = buildTargetClass();
         final String targetCollection = buildTargetCollection(targetClass);
@@ -216,6 +258,7 @@ public class QueryBuilder {
         });
     }
 
+    @Nullable
     private Class buildTargetClass() {
         if (options.entityClass() != null) {
             return options.entityClass();
@@ -232,18 +275,20 @@ public class QueryBuilder {
         return null;
     }
 
-    private String buildTargetCollection(Class targetClass) {
+    @Nullable
+    private String buildTargetCollection(@Nullable Class targetClass) {
         if (options.defaultCollection() != null) {
             return options.defaultCollection();
         } else if (targetClass != null) {
-            MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(targetClass);
+            MarklogicPersistentEntity<?> persistentEntity = retrievePersistentEntity(targetClass);
             return persistentEntity.getDefaultCollection();
         }
 
         return null;
     }
 
-    private String expandDefaultCollection(String collection, DocumentExpressionContext identifierContext) {
+    @Nullable
+    private String expandDefaultCollection(@Nullable String collection, DocumentExpressionContext identifierContext) {
         Expression expression = detectExpression(collection);
 
         if (expression == null) {
@@ -253,29 +298,26 @@ public class QueryBuilder {
         }
     }
 
-    /**
-     * Returns a SpEL {@link Expression} for the uri pattern expressed if present or {@literal null} otherwise.
-     * Will also return {@literal null} if the uri pattern {@link String} evaluates
-     * to a {@link LiteralExpression} (indicating that no subsequent evaluation is necessary).
-     *
-     * @param urlPattern can be {@literal null}
-     * @return the dynamic Expression if any or {@literal null}
-     */
-    private static Expression detectExpression(String urlPattern) {
-        if (!StringUtils.hasText(urlPattern)) {
-            return null;
+    private MarklogicPersistentEntity<?> retrievePersistentEntity(Class<?> aClass) {
+        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(aClass);
+
+        if (persistentEntity == null) {
+            throw new TypeMismatchDataAccessException(String.format("No Persistent Entity information found for the class %s", aClass));
         }
 
-        Expression expression = PARSER.parseExpression(urlPattern, ParserContext.TEMPLATE_EXPRESSION);
-
-        return expression instanceof LiteralExpression ? null : expression;
+        return persistentEntity;
     }
 
     interface DocumentExpressionContext {
+        @Nullable
         Class<?> getEntityClass();
 
+        @Nullable
         Object getEntity();
 
+        @Nullable
         Object getId();
     }
+
+
 }

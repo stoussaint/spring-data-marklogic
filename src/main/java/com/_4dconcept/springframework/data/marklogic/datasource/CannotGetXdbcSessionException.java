@@ -25,14 +25,14 @@ import org.springframework.dao.DataAccessResourceFailureException;
  * @author Rod Johnson
  */
 @SuppressWarnings("serial")
-public class CannotGetXdbcSessionException extends DataAccessResourceFailureException {
+class CannotGetXdbcSessionException extends DataAccessResourceFailureException {
 
     /**
      * Constructor for CannotGetXdbcSessionException.
      * @param msg the detail message
      * @param ex XccException root cause
      */
-    public CannotGetXdbcSessionException(String msg, XccException ex) {
+    CannotGetXdbcSessionException(String msg, XccException ex) {
         super(msg, ex);
     }
 }

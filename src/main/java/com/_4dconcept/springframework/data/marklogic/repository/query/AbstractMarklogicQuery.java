@@ -39,7 +39,7 @@ public abstract class AbstractMarklogicQuery implements RepositoryQuery {
      * @param method     must not be {@literal null}.
      * @param operations must not be {@literal null}.
      */
-    public AbstractMarklogicQuery(MarklogicQueryMethod method, MarklogicOperations operations) {
+    AbstractMarklogicQuery(MarklogicQueryMethod method, MarklogicOperations operations) {
         Assert.notNull(operations, "MarklogicOperations must not be null!");
         Assert.notNull(method, "MarklogicQueryMethod must not be null!");
 
