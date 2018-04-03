@@ -842,7 +842,9 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         T item = marklogicConverter.read(returnType, holder);
         if (item != null) {
             AfterRetrieveEvent<T> event = new AfterRetrieveEvent<>(item, resultItem.getDocumentURI());
-            event.setParams(options.params());
+            if (options != null) {
+                event.setParams(options.params());
+            }
             maybeEmitEvent(event);
         }
         return item;
