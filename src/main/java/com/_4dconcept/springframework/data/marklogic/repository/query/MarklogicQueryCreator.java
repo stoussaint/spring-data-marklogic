@@ -64,7 +64,7 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     @Override
     protected Criteria and(Part part, Criteria base, Iterator<Object> iterator) {
         Criteria newCriteria = create(part, iterator);
-        if (base.getOperator() == null) {
+        if (! Criteria.Operator.and.equals(base.getOperator())) {
             return new Criteria(Criteria.Operator.and, new ArrayList<>(Arrays.asList(base, newCriteria)));
         }
 
@@ -74,7 +74,12 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
 
     @Override
     protected Criteria or(Criteria base, Criteria criteria) {
-        return null;
+        if (! Criteria.Operator.or.equals(base.getOperator())) {
+            return new Criteria(Criteria.Operator.or, new ArrayList<>(Arrays.asList(base, criteria)));
+        }
+
+        base.add(criteria);
+        return base;
     }
 
     @Override
@@ -82,7 +87,7 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
         Query query = criteria == null ? new Query() : new Query(criteria);
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Created query " + query);
+            LOGGER.debug("Created query {}", query);
         }
 
         return query;
