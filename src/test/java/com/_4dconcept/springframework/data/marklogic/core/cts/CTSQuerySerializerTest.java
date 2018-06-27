@@ -36,14 +36,14 @@ import static org.junit.Assert.assertThat;
 public class CTSQuerySerializerTest {
 
     @Test
-    public void parseEmptyQuery() throws Exception {
+    public void parseEmptyQuery() {
         String ctsQuery = new CTSQuerySerializer(new Query()).asCtsQuery();
 
         assertThat(ctsQuery, is("cts:search(fn:collection(), (), ())"));
     }
 
     @Test
-    public void parsePopulatedQuery() throws Exception {
+    public void parsePopulatedQuery() {
         Query query = new Query();
         query.setCriteria(new Criteria(Criteria.Operator.and, Arrays.asList(
             new Criteria(new QName("name"), "Me"),
@@ -56,7 +56,17 @@ public class CTSQuerySerializerTest {
     }
 
     @Test
-    public void parseQueryWithPagination() throws Exception {
+    public void parseQueryWithNotOperator() {
+        Query query = new Query();
+        query.setCriteria(new Criteria(Criteria.Operator.not, new Criteria(new QName("town"), "Paris")));
+
+        String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
+
+        assertThat(ctsQuery, is("cts:search(fn:collection(), cts:not-query(cts:element-value-query(fn:QName('', 'town'), 'Paris')), ())"));
+    }
+
+    @Test
+    public void parseQueryWithPagination() {
         Query query = new Query();
         query.setCollection("Collection1");
         query.setLimit(10);
@@ -67,7 +77,7 @@ public class CTSQuerySerializerTest {
     }
 
     @Test
-    public void parseQueryWithSortOrders() throws Exception {
+    public void parseQueryWithSortOrders() {
         Query query = new Query();
         query.setCollection("Collection1");
         query.setSortCriteria(Arrays.asList(
@@ -80,7 +90,7 @@ public class CTSQuerySerializerTest {
     }
 
     @Test
-    public void parseQueryWithNonStringValue() throws Exception {
+    public void parseQueryWithNonStringValue() {
         Query query = new Query();
         query.setCriteria(new Criteria(new QName("age"), 38));
 
@@ -90,7 +100,7 @@ public class CTSQuerySerializerTest {
 
     // Issue #6
     @Test
-    public void parseQueryWithStringValueContainingApostropheIsEscaped() throws Exception {
+    public void parseQueryWithStringValueContainingApostropheIsEscaped() {
         Query query = new Query();
         query.setCriteria(new Criteria(new QName("name"), "l'apostrophe"));
 
