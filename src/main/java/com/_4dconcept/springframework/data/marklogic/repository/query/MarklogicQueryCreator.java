@@ -94,7 +94,7 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
         Query query = criteria == null ? new Query() : new Query(criteria);
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Created query " + query);
+            LOGGER.debug("Created query {}", query);
         }
 
         return query;
@@ -138,7 +138,8 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
                 return computeSimpleCriteria(property.getQName(), false);
 //            case NEAR:
 //            case WITHIN:
-//            case NEGATING_SIMPLE_PROPERTY:
+            case NEGATING_SIMPLE_PROPERTY:
+                return computeSimpleCriteria(property.getQName(), parameters.next(), true);
             case SIMPLE_PROPERTY:
                 return computeSimpleCriteria(property.getQName(), parameters.next());
             default:
@@ -147,20 +148,27 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     }
 
     private Criteria computeContainingCriteria(QName qName, Object parameter) {
-        if (parameter instanceof List) {
-            List<?> list = (List<?>) parameter;
-            List<Criteria> criteriaList = list.stream().map(o -> new Criteria(qName, o)).collect(Collectors.toList());
-            return new Criteria(Criteria.Operator.or, criteriaList);
-        } else {
-            return new Criteria(qName, parameter);
-        }
+        return buildSimpleCriteria(qName, parameter, Criteria.Operator.or);
     }
 
     private Criteria computeSimpleCriteria(QName qName, Object parameter) {
+        return computeSimpleCriteria(qName, parameter, false);
+    }
+
+    private Criteria computeSimpleCriteria(QName qName, Object parameter, boolean inverse) {
+        Criteria criteria = buildSimpleCriteria(qName, parameter, Criteria.Operator.and);
+        if (inverse)
+            return new Criteria(Criteria.Operator.not, criteria);
+        else {
+            return criteria;
+        }
+    }
+
+    private Criteria buildSimpleCriteria(QName qName, Object parameter, Criteria.Operator groupOperator) {
         if (parameter instanceof List) {
             List<?> list = (List<?>) parameter;
             List<Criteria> criteriaList = list.stream().map(o -> new Criteria(qName, o)).collect(Collectors.toList());
-            return new Criteria(Criteria.Operator.and, criteriaList);
+            return new Criteria(groupOperator, criteriaList);
         } else {
             return new Criteria(qName, parameter);
         }

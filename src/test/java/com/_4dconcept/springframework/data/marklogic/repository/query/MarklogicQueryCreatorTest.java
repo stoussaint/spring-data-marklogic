@@ -1,6 +1,7 @@
 package com._4dconcept.springframework.data.marklogic.repository.query;
 
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
+import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
 import com._4dconcept.springframework.data.marklogic.repository.MarklogicRepository;
 import com._4dconcept.springframework.data.marklogic.repository.Person;
@@ -59,6 +60,19 @@ public class MarklogicQueryCreatorTest {
         assertThat(list, hasSize(3));
     }
 
+    @Test
+    public void createQueryWithNegativeSingleParameter() throws Exception {
+        final MarklogicQueryMethod method = buildMethod("findByAddressCountryIsNot", String.class);
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "France"), mappingContext);
+        Query query = creator.createQuery();
+
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.not));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(Criteria.class));
+        Criteria innerCriteria = (Criteria) query.getCriteria().getCriteriaObject();
+        assertThat(innerCriteria.getQname().getLocalPart(), is("country"));
+        assertThat(innerCriteria.getCriteriaObject(), is("France"));
+    }
+
     private ParameterAccessor buildAccessor(MarklogicQueryMethod method, Object... parameters) {
         return new ParametersParameterAccessor(method.getParameters(), parameters);
     }
@@ -83,6 +97,8 @@ public class MarklogicQueryCreatorTest {
         Person findByLastnameAndFirstnameAndAge(String lastname, String firstname, Integer age);
 
         Person findByAddressCountry(String country);
+
+        List<Person> findByAddressCountryIsNot(String country);
 
         List<Person> findBySkills(String skill);
 
