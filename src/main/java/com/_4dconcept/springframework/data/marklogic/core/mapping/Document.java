@@ -15,6 +15,7 @@
  */
 package com._4dconcept.springframework.data.marklogic.core.mapping;
 
+import org.springframework.core.annotation.AliasFor;
 import org.springframework.data.annotation.Persistent;
 
 import java.lang.annotation.*;
@@ -28,14 +29,27 @@ import java.lang.annotation.*;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE })
+@Collection
 public @interface Document {
 
     String uri() default "";
 
+    boolean idInPropertyFragment() default false;
+
+    /**
+     * @deprecated This annotation attribute will be removed in future version, replaced by {@link Collection#prefix()}
+     * @return the primary collection prefix
+     */
+    @Deprecated
+    @AliasFor(annotation = Collection.class, attribute = "prefix")
     String defaultCollectionPrefix() default "";
 
+    /**
+     * @deprecated This annotation attribute will be removed in future version, replaced by {@link Collection#value()}
+     * @return the primary collection name
+     */
+    @Deprecated
+    @AliasFor(annotation = Collection.class, attribute = "value")
     String defaultCollection() default "";
-
-    boolean idInPropertyFragment() default false;
 
 }

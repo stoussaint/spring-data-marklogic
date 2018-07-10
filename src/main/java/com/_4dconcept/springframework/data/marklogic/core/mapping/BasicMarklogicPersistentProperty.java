@@ -94,4 +94,9 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
     protected Association<MarklogicPersistentProperty> createAssociation() {
         return new Association<>(this, null);
     }
+
+    @Override
+    public PropertyDescriptor getPropertyDescriptor() {
+        return propertyDescriptor;
+    }
 }
