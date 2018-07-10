@@ -16,6 +16,7 @@
 package com._4dconcept.springframework.data.marklogic.core.query;
 
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperationOptions;
+import com._4dconcept.springframework.data.marklogic.core.mapping.CollectionUtils;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
@@ -33,7 +34,13 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -56,11 +63,11 @@ public class QueryBuilder {
 
     private static final SpelExpressionParser PARSER = new SpelExpressionParser();
 
-    public QueryBuilder(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
-        this.mappingContext = mappingContext;
+    public QueryBuilder() {
     }
 
-    public QueryBuilder() {
+    public QueryBuilder(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
+        this.mappingContext = mappingContext;
     }
 
     public QueryBuilder ofType(Class<?> type) {
@@ -127,28 +134,30 @@ public class QueryBuilder {
     }
 
     private Criteria buildCriteria(Object bean, MarklogicPersistentEntity<?> entity) {
-        Stack<Criteria> stack = new Stack<>();
+        Deque<Criteria> stack = new ArrayDeque<>();
         PersistentPropertyAccessor propertyAccessor = entity.getPropertyAccessor(bean);
 
         entity.doWithProperties((PropertyHandler<MarklogicPersistentProperty>) property -> {
             Object value = propertyAccessor.getProperty(property);
             if (hasContent(value)) {
-                if (stack.empty()) {
+                if (stack.isEmpty()) {
                     stack.push(buildCriteria(property, value));
                 } else {
                     Criteria criteria = stack.peek();
-                    if (criteria.getOperator() == null) {
-                        Criteria andCriteria = new Criteria(Criteria.Operator.and, new ArrayList<>(Arrays.asList(criteria, buildCriteria(property, value))));
-                        stack.pop();
-                        stack.push(andCriteria);
-                    } else {
-                        criteria.add(buildCriteria(property, value));
+                    if (criteria != null) {
+                        if (Criteria.Operator.and != criteria.getOperator()) {
+                            Criteria andCriteria = new Criteria(Criteria.Operator.and, new ArrayList<>(Arrays.asList(criteria, buildCriteria(property, value))));
+                            stack.pop();
+                            stack.push(andCriteria);
+                        } else {
+                            criteria.add(buildCriteria(property, value));
+                        }
                     }
                 }
             }
         });
 
-        return stack.empty() ? null : stack.peek();
+        return stack.isEmpty() ? null : stack.peek();
     }
 
     private boolean hasContent(Object value) {
@@ -171,7 +180,12 @@ public class QueryBuilder {
                         .collect(Collectors.toList())
                 );
             } else {
-                criteria.setQname(property.getQName());
+                if (CollectionUtils.getCollectionAnnotation(property).isPresent()) {
+                    criteria.setOperator(Criteria.Operator.collection);
+                } else {
+                    criteria.setQname(property.getQName());
+                }
+
                 criteria.setCriteriaObject(value);
             }
 
@@ -195,10 +209,10 @@ public class QueryBuilder {
     }
 
     private String buildTargetCollection() {
-        final Class targetClass = buildTargetClass();
-        final String targetCollection = buildTargetCollection(targetClass);
+        final Class targetClass = determineTargetClass();
+        final String targetCollection = determineDefaultCollection(targetClass);
 
-        return expandDefaultCollection(targetCollection, new DocumentExpressionContext() {
+        return expandCollection(targetCollection, new DocumentExpressionContext() {
             @Override
             public Class<?> getEntityClass() {
                 return targetClass;
@@ -216,7 +230,7 @@ public class QueryBuilder {
         });
     }
 
-    private Class buildTargetClass() {
+    private Class determineTargetClass() {
         if (options.entityClass() != null) {
             return options.entityClass();
         }
@@ -232,7 +246,7 @@ public class QueryBuilder {
         return null;
     }
 
-    private String buildTargetCollection(Class targetClass) {
+    private String determineDefaultCollection(Class targetClass) {
         if (options.defaultCollection() != null) {
             return options.defaultCollection();
         } else if (targetClass != null) {
@@ -243,7 +257,7 @@ public class QueryBuilder {
         return null;
     }
 
-    private String expandDefaultCollection(String collection, DocumentExpressionContext identifierContext) {
+    private String expandCollection(String collection, DocumentExpressionContext identifierContext) {
         Expression expression = detectExpression(collection);
 
         if (expression == null) {

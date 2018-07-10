@@ -84,6 +84,8 @@ public class CTSQuerySerializer {
                 return handleSimpleValue(criteria);
             } else if (criteria.getOperator() == Criteria.Operator.not) {
                 return String.format("cts:not-query(%s)", serializeCriteria((Criteria) criteria.getCriteriaObject()));
+            } else if (criteria.getOperator() == Criteria.Operator.collection) {
+                return String.format("cts:collection-query('%s')", criteria.getCriteriaObject());
             } else {
                 List<Criteria> criteriaList = (List<Criteria>) criteria.getCriteriaObject();
                 String ctsQueries = criteriaList.stream().map(this::serializeCriteria).collect(Collectors.joining(", "));

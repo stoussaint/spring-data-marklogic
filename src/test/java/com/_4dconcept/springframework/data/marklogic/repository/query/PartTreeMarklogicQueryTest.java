@@ -41,10 +41,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -56,13 +53,11 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class PartTreeMarklogicQueryTest {
 
-    @Mock
-    MarklogicOperations marklogicOperationsMock;
-
-    MarklogicMappingContext mappingContext;
-
     public @Rule
     ExpectedException exception = ExpectedException.none();
+    @Mock
+    MarklogicOperations marklogicOperationsMock;
+    MarklogicMappingContext mappingContext;
 
     @Before
     public void setUp() {
@@ -84,6 +79,7 @@ public class PartTreeMarklogicQueryTest {
 
         assertCriteria(
                 query.getCriteria(),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "lastname")),
                 is("foo")
         );
@@ -99,12 +95,14 @@ public class PartTreeMarklogicQueryTest {
         List<Criteria> criteriaList = extractListCriteria(query.getCriteria());
         assertCriteria(
                 criteriaList.get(0),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "lastname")),
                 is("foo")
         );
 
         assertCriteria(
                 criteriaList.get(1),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "firstname")),
                 is("bar")
         );
@@ -114,6 +112,7 @@ public class PartTreeMarklogicQueryTest {
     public void deepFieldsShouldBeConsidered() {
         Query query = deriveQueryFromMethod("findByAddressCountry", "France");
         assertCriteria(query.getCriteria(),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "country")),
                 is("France")
         );
@@ -130,12 +129,14 @@ public class PartTreeMarklogicQueryTest {
 
         assertCriteria(
                 criteriaList.get(0),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "lastname")),
                 is("foo")
         );
 
         assertCriteria(
                 criteriaList.get(1),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "country")),
                 is("France")
         );
@@ -147,6 +148,7 @@ public class PartTreeMarklogicQueryTest {
 
         assertCriteria(
                 query.getCriteria(),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "skill")),
                 is("foo")
         );
@@ -167,12 +169,14 @@ public class PartTreeMarklogicQueryTest {
 
         assertCriteria(
                 criteriaList.get(0),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "skill")),
                 is("foo")
         );
 
         assertCriteria(
                 criteriaList.get(1),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "skill")),
                 is("bar")
         );
@@ -193,12 +197,14 @@ public class PartTreeMarklogicQueryTest {
 
         assertCriteria(
                 criteriaList.get(0),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "skill")),
                 is("foo")
         );
 
         assertCriteria(
                 criteriaList.get(1),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "skill")),
                 is("bar")
         );
@@ -209,6 +215,7 @@ public class PartTreeMarklogicQueryTest {
         Query query = deriveQueryFromMethod("findByActiveIsTrue");
         assertCriteria(
                 query.getCriteria(),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "active")),
                 is(true)
         );
@@ -219,14 +226,44 @@ public class PartTreeMarklogicQueryTest {
         Query query = deriveQueryFromMethod("findByActiveIsFalse");
         assertCriteria(
                 query.getCriteria(),
+                nullValue(),
                 is(new QName("http://spring.data.marklogic/test/contact", "active")),
                 is(false)
         );
     }
 
-    private void assertCriteria(Criteria criteria, Matcher<QName> nameMatcher, Matcher<Object> valueMatcher) {
+    @Test
+    public void deriveQueryFromMethod_WithCollectionAnnotation_ShouldAppendCollectionConstraints() {
+        Query query = deriveQueryFromMethod("findByExtraCollections", "foo");
+
+        assertThat(query.getCollection(), is("Person"));
+        assertCriteria(
+                query.getCriteria(),
+                is(Criteria.Operator.collection),
+                nullValue(),
+                is("foo")
+        );
+    }
+
+    @Test
+    public void deriveQueryFromMethod_WithCollectionAnnotationAndNotInExpression_ShouldAppendNegativeCollectionConstraints() {
+        Query query = deriveQueryFromMethod("findByExtraCollectionsIsNot", "foo");
+
+        assertThat(query.getCollection(), is("Person"));
+        assertCriteria(
+                query.getCriteria(),
+                is(Criteria.Operator.not),
+                nullValue(),
+                allOf(
+                        hasProperty("operator", is(Criteria.Operator.collection)),
+                        hasProperty("criteriaObject", is("foo"))
+                )
+        );
+    }
+
+    private void assertCriteria(Criteria criteria, Matcher<Object> operatorMatcher, Matcher<Object> nameMatcher, Matcher<Object> valueMatcher) {
         assertThat(criteria, notNullValue());
-        assertThat(criteria.getOperator(), nullValue());
+        assertThat(criteria.getOperator(), operatorMatcher);
         assertThat(criteria.getQname(), nameMatcher);
         assertThat(criteria.getCriteriaObject(), valueMatcher);
     }
@@ -260,6 +297,11 @@ public class PartTreeMarklogicQueryTest {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private List<Criteria> extractListCriteria(Criteria criteria) {
+        return (List<Criteria>) criteria.getCriteriaObject();
+    }
+
     interface Repo extends MarklogicRepository<Person, Long> {
 
         Person findByLastname(String lastname);
@@ -276,14 +318,13 @@ public class PartTreeMarklogicQueryTest {
 
         List<Person> findBySkillsContaining(ArrayList<String> skills);
 
+        List<Person> findByExtraCollections(String extraCollections);
+
+        List<Person> findByExtraCollectionsIsNot(String extraCollections);
+
         Person findByActiveIsTrue();
 
         Person findByActiveIsFalse();
 
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<Criteria> extractListCriteria(Criteria criteria) {
-        return (List<Criteria>) criteria.getCriteriaObject();
     }
 }
