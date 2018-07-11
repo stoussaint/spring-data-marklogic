@@ -16,7 +16,7 @@
 package com._4dconcept.springframework.data.marklogic.core.query;
 
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperationOptions;
-import com._4dconcept.springframework.data.marklogic.core.mapping.CollectionUtils;
+import com._4dconcept.springframework.data.marklogic.core.mapping.CollectionAnnotationUtils;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
@@ -58,8 +58,9 @@ public class QueryBuilder {
     private Pageable pageable;
 
     private MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext = new MarklogicMappingContext();
-    private MarklogicOperationOptions options = new MarklogicOperationOptions() {
-    };
+    private MarklogicOperationOptions options = new MarklogicOperationOptions() {};
+
+    private CollectionAnnotationUtils collectionAnnotationUtils = new CollectionAnnotationUtils() {};
 
     private static final SpelExpressionParser PARSER = new SpelExpressionParser();
 
@@ -180,7 +181,7 @@ public class QueryBuilder {
                         .collect(Collectors.toList())
                 );
             } else {
-                if (CollectionUtils.getCollectionAnnotation(property).isPresent()) {
+                if (collectionAnnotationUtils.getCollectionAnnotation(property).isPresent()) {
                     criteria.setOperator(Criteria.Operator.collection);
                 } else {
                     criteria.setQname(property.getQName());

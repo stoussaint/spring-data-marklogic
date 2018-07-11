@@ -15,7 +15,7 @@
  */
 package com._4dconcept.springframework.data.marklogic.repository.query;
 
-import com._4dconcept.springframework.data.marklogic.core.mapping.CollectionUtils;
+import com._4dconcept.springframework.data.marklogic.core.mapping.CollectionAnnotationUtils;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
 import com._4dconcept.springframework.data.marklogic.core.query.CriteriaDefinition;
@@ -47,6 +47,8 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     private static final Logger LOGGER = LoggerFactory.getLogger(MarklogicQueryCreator.class);
 
     private MappingContext<?, MarklogicPersistentProperty> context;
+
+    private CollectionAnnotationUtils collectionAnnotationUtils = new CollectionAnnotationUtils() {};
 
     MarklogicQueryCreator(PartTree tree, ParameterAccessor parameters, MappingContext<?, MarklogicPersistentProperty> context) {
         super(tree, parameters);
@@ -168,7 +170,7 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     }
 
     private Criteria buildCriteria(MarklogicPersistentProperty property, Object value) {
-        if (CollectionUtils.getCollectionAnnotation(property).isPresent()) {
+        if (collectionAnnotationUtils.getCollectionAnnotation(property).isPresent()) {
             return new Criteria(Criteria.Operator.collection, value);
         } else {
             return new Criteria(property.getQName(), value);

@@ -7,11 +7,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class CollectionUtils {
+public interface CollectionAnnotationUtils {
 
-    private CollectionUtils() {}
-
-    public static  Optional<Collection> getCollectionAnnotation(MarklogicPersistentProperty property) {
+    default Optional<Collection> getCollectionAnnotation(MarklogicPersistentProperty property) {
         final AnnotatedElement[] elements = {
                 property.getPropertyDescriptor().getReadMethod(),
                 property.getField()

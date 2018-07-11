@@ -22,6 +22,7 @@ import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConve
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicMappingConverter;
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicWriter;
 import com._4dconcept.springframework.data.marklogic.core.cts.CTSQuerySerializer;
+import com._4dconcept.springframework.data.marklogic.core.mapping.CollectionAnnotationUtils;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicIdentifier;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
@@ -59,6 +60,7 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.mapping.PersistentPropertyAccessor;
+import org.springframework.data.mapping.PropertyHandler;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.mapping.model.ConvertingPropertyAccessor;
 import org.springframework.data.mapping.model.MappingException;
@@ -75,6 +77,7 @@ import java.io.RandomAccessFile;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +112,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     private final ContentSource contentSource;
     private final MarklogicConverter marklogicConverter;
     private final MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext;
+    private CollectionAnnotationUtils collectionAnnotationUtils = new CollectionAnnotationUtils() {};
 
     private ApplicationEventPublisher eventPublisher;
 
@@ -674,6 +678,10 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         Content content;
         boolean supportedClass = Stream.of(SUPPORTED_CONTENT_CLASS).anyMatch(c -> c.isAssignableFrom(objectToSave.getClass()));
 
+        ArrayList<String> collections = new ArrayList<>();
+        collections.add(collection);
+        collections.addAll(extractCollections(objectToSave));
+
         if (! supportedClass) {
             MarklogicContentHolder holder = new MarklogicContentHolder();
             writer.write(objectToSave, holder);
@@ -684,10 +692,35 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         }
 
         if (collection != null) {
-            content.getCreateOptions().setCollections(new String[] {collection});
+            content.getCreateOptions().setCollections(collections.toArray(new String[0]));
         }
 
         return content;
+    }
+
+    private <T> List<String> extractCollections(T entity) {
+        ArrayList<String> collections = new ArrayList<>();
+
+        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entity.getClass());
+        PersistentPropertyAccessor propertyAccessor = persistentEntity.getPropertyAccessor(entity);
+
+        persistentEntity.doWithProperties((PropertyHandler<MarklogicPersistentProperty>) property -> {
+            Object value = propertyAccessor.getProperty(property);
+            if (value != null && collectionAnnotationUtils.getCollectionAnnotation(property).isPresent()) {
+                if (value instanceof Collection) {
+                    Collection<?> values = (Collection<?>) value;
+                    for (Object o : values) {
+                        collections.add(o.toString());
+                    }
+                } else {
+                    collections.add(value.toString());
+                }
+
+                propertyAccessor.setProperty(property, null); // Remove the value before it is serialized
+            }
+        });
+
+        return collections;
     }
 
     private void doInsertContent(Content content) {
@@ -932,4 +965,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         }
     }
 
+    public void setCollectionAnnotationUtils(CollectionAnnotationUtils collectionAnnotationUtils) {
+        this.collectionAnnotationUtils = collectionAnnotationUtils;
+    }
 }
