@@ -15,6 +15,7 @@
  */
 package com._4dconcept.springframework.data.marklogic.core;
 
+import com._4dconcept.springframework.data.marklogic.MarklogicCollectionUtils;
 import com._4dconcept.springframework.data.marklogic.core.convert.MappingMarklogicConverter;
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicContentHolder;
 import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConverter;
@@ -50,6 +51,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.xml.namespace.QName;
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -65,24 +67,22 @@ import static org.mockito.Mockito.*;
 public class MarklogicTemplateTest {
 
     @Mock
-    private
-    ContentSource contentSource;
+    private ContentSource contentSource;
 
     @Mock
-    private
-    Session session;
+    private Session session;
 
     @Mock
-    private
-    MarklogicConverter marklogicConverter;
+    private MarklogicConverter marklogicConverter;
 
     @Mock
-    private
-    ConversionService conversionService;
+    private ConversionService conversionService;
 
     @Mock
-    private
-    ResultSequence resultSequence;
+    private ResultSequence resultSequence;
+
+    @Mock
+    private MarklogicCollectionUtils marklogicCollectionUtils;
 
     @Captor
     private
@@ -100,7 +100,14 @@ public class MarklogicTemplateTest {
         when(marklogicConverter.getMappingContext()).thenReturn((MappingContext)marklogicMappingContext);
         when(marklogicConverter.getConversionService()).thenReturn(conversionService);
 
+        when(marklogicCollectionUtils.getCollectionAnnotation(any())).thenReturn(Optional.empty());
+
         when(session.submitRequest(any(Request.class))).thenReturn(resultSequence);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void rejectsNullContentSource() {
+        new MarklogicTemplate(null);
     }
 
     @Test
@@ -122,6 +129,7 @@ public class MarklogicTemplateTest {
         }).when(marklogicConverter).write(Mockito.any(SimpleEntity.class), Mockito.any(MarklogicContentHolder.class));
 
         MarklogicTemplate template = new MarklogicTemplate(contentSource, marklogicConverter);
+        template.setMarklogicCollectionUtils(marklogicCollectionUtils);
         template.insert(new SimpleEntity(null, "entity"));
         verify(session).insertContent(contentArgumentCaptor.capture());
 
@@ -141,7 +149,8 @@ public class MarklogicTemplateTest {
         }).when(marklogicConverter).write(Mockito.any(SimpleEntity.class), Mockito.any(MarklogicContentHolder.class));
 
         MarklogicTemplate template = new MarklogicTemplate(contentSource, marklogicConverter);
-        template.insert(new SimpleEntity(null, "entity"), buildCreateOperationOptions());
+        template.setMarklogicCollectionUtils(marklogicCollectionUtils);
+        template.insert(new SimpleEntity(null, "entity"), buildCreateOperationOptions("/test/entity/1.xml"));
         verify(session).insertContent(contentArgumentCaptor.capture());
 
         assertThat(contentArgumentCaptor.getValue().getUri(), CoreMatchers.equalTo("/test/entity/1.xml"));
@@ -162,6 +171,7 @@ public class MarklogicTemplateTest {
         }).when(marklogicConverter).write(Mockito.any(SimpleEntity.class), Mockito.any(MarklogicContentHolder.class));
 
         MarklogicTemplate template = new MarklogicTemplate(contentSource, marklogicConverter);
+        template.setMarklogicCollectionUtils(marklogicCollectionUtils);
         template.save(new SimpleEntity(null, "entity"));
         verify(session).insertContent(contentArgumentCaptor.capture());
 
@@ -183,6 +193,7 @@ public class MarklogicTemplateTest {
         }).when(marklogicConverter).write(Mockito.any(SimpleEntity.class), Mockito.any(MarklogicContentHolder.class));
 
         MarklogicTemplate template = new MarklogicTemplate(contentSource, marklogicConverter);
+        template.setMarklogicCollectionUtils(marklogicCollectionUtils);
         template.save(new SimpleEntity("1", "entity"));
         verify(session).insertContent(contentArgumentCaptor.capture());
 
@@ -210,7 +221,8 @@ public class MarklogicTemplateTest {
     @Test(expected = ConverterNotFoundException.class)
     public void rejectsInsertionOfNonAnnotatedEntity() {
         MarklogicTemplate template = new MarklogicTemplate(contentSource);
-        template.insert(new NonAnnotatedEntity("1", "entity"), buildCreateOperationOptions());
+        template.setMarklogicCollectionUtils(marklogicCollectionUtils);
+        template.insert(new NonAnnotatedEntity("1", "entity"), buildCreateOperationOptions("/test/entity/1.xml"));
     }
 
     @Test

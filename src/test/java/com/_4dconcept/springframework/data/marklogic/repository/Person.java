@@ -15,6 +15,7 @@
  */
 package com._4dconcept.springframework.data.marklogic.repository;
 
+import com._4dconcept.springframework.data.marklogic.core.mapping.Collection;
 import com._4dconcept.springframework.data.marklogic.core.mapping.Document;
 import org.springframework.lang.Nullable;
 
@@ -28,7 +29,8 @@ import java.util.List;
  *
  * @author Stéphane Toussaint
  */
-@Document(uri = "/contact/person/#{id}.xml", defaultCollection = "#{entityClass.getSimpleName()}")
+@Document(uri = "/contact/person/#{id}.xml")
+@Collection("#{entityClass.getSimpleName()}")
 @XmlRootElement
 public class Person {
 
@@ -38,6 +40,11 @@ public class Person {
     private Integer age;
     private List<String> skills;
     private Boolean active;
+
+    @Collection
+    private String type;
+
+    private List<String> extraCollections;
 
     private Address address;
 
@@ -53,106 +60,81 @@ public class Person {
         address.setCountry(country);
     }
 
-    /**
-     * @return the id
-     */
-    @XmlElement
+    @XmlElement()
     @Nullable
     public String getId() {
         return id;
     }
 
-    /**
-     * @param id the id to set
-     */
     public void setId(String id) {
         this.id = id;
     }
 
-    /**
-     * @return the firstname
-     */
     public String getFirstname() {
         return firstname;
     }
 
-    /**
-     * @param firstname the firstname to set
-     */
     public void setFirstname(String firstname) {
         this.firstname = firstname;
     }
 
-    /**
-     * @return the lastname
-     */
     public String getLastname() {
         return lastname;
     }
 
-    /**
-     * @param lastname the lastname to set
-     */
     public void setLastname(String lastname) {
         this.lastname = lastname;
     }
 
-    /**
-     * @return the age
-     */
     public Integer getAge() {
         return age;
     }
 
-    /**
-     * @param age the age to set
-     */
     public void setAge(Integer age) {
         this.age = age;
     }
 
-    /**
-     * @return the address
-     */
     public Address getAddress() {
         return address;
     }
 
-    /**
-     * @param address the address to set
-     */
     public void setAddress(Address address) {
         this.address = address;
     }
 
-    /**
-     * @return the active
-     */
     public Boolean getActive() {
         return active;
     }
 
-    /**
-     * @param active the active to set
-     */
     public void setActive(Boolean active) {
         this.active = active;
     }
 
-    /**
-     * @return the skills
-     */
     @XmlElementWrapper(name = "skills")
     @XmlElement(name = "skill")
     public List<String> getSkills() {
         return skills;
     }
 
-    /**
-     * @param skills the skills to set
-     */
     public void setSkills(List<String> skills) {
         this.skills = skills;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    @Collection(prefix = "extra")
+    public List<String> getExtraCollections() {
+        return extraCollections;
+    }
+
+    public void setExtraCollections(List<String> extraCollections) {
+        this.extraCollections = extraCollections;
     }
 
     /* (non-Javadoc)

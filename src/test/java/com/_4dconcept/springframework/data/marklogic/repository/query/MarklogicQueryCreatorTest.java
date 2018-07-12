@@ -42,7 +42,7 @@ public class MarklogicQueryCreatorTest {
         MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "name", "country"), mappingContext);
         Query query = creator.createQuery();
 
-        assertThat(query.getCriteria().getOperator().name(), is("and"));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
         List<?> list = (List<?>) query.getCriteria().getCriteriaObject();
         assertThat(list, hasSize(2));
@@ -54,7 +54,7 @@ public class MarklogicQueryCreatorTest {
         MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "lastname", "firstname", 38), mappingContext);
         Query query = creator.createQuery();
 
-        assertThat(query.getCriteria().getOperator().name(), is("and"));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
         List<?> list = (List<?>) query.getCriteria().getCriteriaObject();
         assertThat(list, hasSize(3));
@@ -66,7 +66,7 @@ public class MarklogicQueryCreatorTest {
         MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "France"), mappingContext);
         Query query = creator.createQuery();
 
-        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.not));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.NOT));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(Criteria.class));
         Criteria innerCriteria = (Criteria) query.getCriteria().getCriteriaObject();
         assertThat(innerCriteria.getQname().getLocalPart(), is("country"));
@@ -77,7 +77,7 @@ public class MarklogicQueryCreatorTest {
         return new ParametersParameterAccessor(method.getParameters(), parameters);
     }
 
-    private PartTree buildTree(MarklogicQueryMethod method) throws Exception {
+    private PartTree buildTree(MarklogicQueryMethod method) {
         return new PartTree(method.getName(), method.getResultProcessor().getReturnedType().getDomainType());
     }
 

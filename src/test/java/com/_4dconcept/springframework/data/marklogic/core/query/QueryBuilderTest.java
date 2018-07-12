@@ -72,14 +72,12 @@ public class QueryBuilderTest {
         expectedException.expect(SpelEvaluationException.class);
         expectedException.expectMessage("Attempted to call method getSimpleName() on null context object");
 
-        Query build = new QueryBuilder().options(new MarklogicOperationOptions() {
+        new QueryBuilder().options(new MarklogicOperationOptions() {
             @Override
             public String defaultCollection() {
                 return "#{entityClass.getSimpleName()}";
             }
         }).build();
-
-        assertThat(build, notNullValue());
     }
 
     @Test
@@ -109,7 +107,36 @@ public class QueryBuilderTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
+    public void buildQueryFromExampleWithExtraCollections() {
+        Person person = new Person();
+        person.setExtraCollections(Arrays.asList("collection1", "collection2"));
+        person.setType("neighbour");
+        Query query = new QueryBuilder().alike(Example.of(person)).build();
+
+        assertThat(query.getCollection(), is("Person"));
+        assertThat(query.getCriteria(), notNullValue());
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
+
+        @SuppressWarnings("unchecked")
+        List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();
+
+        assertThat(criteriaList, hasSize(2));
+        assertThat(criteriaList.get(0).getCriteriaObject(), is("neighbour"));
+        assertThat(criteriaList.get(1).getOperator(), is(Criteria.Operator.OR));
+
+        assertThat(criteriaList.get(1).getCriteriaObject(), instanceOf(List.class));
+        @SuppressWarnings("unchecked")
+        List<Criteria> subCriteriaList = (List<Criteria>) criteriaList.get(1).getCriteriaObject();
+
+        assertThat(subCriteriaList, hasSize(2));
+        assertThat(subCriteriaList.get(0).getOperator(), is(Criteria.Operator.COLLECTION));
+        assertThat(subCriteriaList.get(0).getCriteriaObject(), is("collection1"));
+        assertThat(subCriteriaList.get(1).getOperator(), is(Criteria.Operator.COLLECTION));
+        assertThat(subCriteriaList.get(1).getCriteriaObject(), is("collection2"));
+    }
+
+    @Test
     public void buildQueryFromFilledExample() {
         Person person = new Person();
         person.setFirstname("Me");
@@ -125,15 +152,16 @@ public class QueryBuilderTest {
         assertThat(query, notNullValue());
         assertThat(query.getCollection(), is("Person"));
         assertThat(query.getCriteria(), notNullValue());
-        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.and));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
 
+        @SuppressWarnings("unchecked")
         List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();
-        assertThat(criteriaList, notNullValue());
+
         assertThat(criteriaList, hasSize(3));
         assertThat(criteriaList.get(0).getCriteriaObject(), is("Me"));
         assertThat(criteriaList.get(1).getCriteriaObject(), is(38));
-        assertThat(criteriaList.get(2).getOperator(), is(Criteria.Operator.and));
+        assertThat(criteriaList.get(2).getOperator(), is(Criteria.Operator.AND));
     }
 
     @Test
@@ -148,7 +176,7 @@ public class QueryBuilderTest {
         assertThat(query, notNullValue());
         assertThat(query.getCollection(), is("Person"));
         assertThat(query.getCriteria(), notNullValue());
-        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.and));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
 
         List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();

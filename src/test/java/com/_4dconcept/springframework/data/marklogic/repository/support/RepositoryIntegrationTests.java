@@ -185,16 +185,20 @@ public class RepositoryIntegrationTests {
     }
 
     @Test
-    public void updatePerson() {
+    public void updatePerson_WithExtraCollection() {
         Person person = repository.findById(sahbiId).orElseThrow(() -> new IllegalArgumentException("unexpected id"));
         person.setAge(425);
         person.setFirstname("Duncan");
         person.setLastname("MacLeod");
+        person.setType("immortal");
         repository.save(person);
-        assertThat(person.getId(), is(sahbiId));
 
+        Person immortal = new Person();
+        immortal.setType("immortal");
 
-        repository.findById(sahbiId).ifPresent(p -> assertThat(p.getAge(), is(425)));
+        List<Person> immortals = repository.findAll(Example.of(immortal));
+        assertThat(immortals, hasSize(1));
+        assertThat(immortals.get(0).getAge(), is(425));
     }
 
     @Test

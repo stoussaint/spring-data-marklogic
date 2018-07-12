@@ -15,6 +15,7 @@
  */
 package com._4dconcept.springframework.data.marklogic.repository.query;
 
+import com._4dconcept.springframework.data.marklogic.MarklogicCollectionUtils;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
 import com._4dconcept.springframework.data.marklogic.core.query.CriteriaDefinition;
@@ -31,7 +32,6 @@ import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
 import org.springframework.lang.Nullable;
 
-import javax.xml.namespace.QName;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -49,6 +49,8 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     private static final Logger LOGGER = LoggerFactory.getLogger(MarklogicQueryCreator.class);
 
     private MappingContext<?, MarklogicPersistentProperty> context;
+
+    private MarklogicCollectionUtils marklogicCollectionUtils = new MarklogicCollectionUtils() {};
 
     MarklogicQueryCreator(PartTree tree, ParameterAccessor parameters, MappingContext<?, MarklogicPersistentProperty> context) {
         super(tree, parameters);
@@ -71,8 +73,8 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     @Override
     protected Criteria and(Part part, Criteria base, Iterator<Object> iterator) {
         Criteria newCriteria = create(part, iterator);
-        if (! Criteria.Operator.and.equals(base.getOperator())) {
-            return new Criteria(Criteria.Operator.and, new ArrayList<>(Arrays.asList(base, newCriteria)));
+        if (! Criteria.Operator.AND.equals(base.getOperator())) {
+            return new Criteria(Criteria.Operator.AND, new ArrayList<>(Arrays.asList(base, newCriteria)));
         }
 
         base.add(newCriteria);
@@ -81,8 +83,8 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
 
     @Override
     protected Criteria or(Criteria base, Criteria criteria) {
-        if (! Criteria.Operator.or.equals(base.getOperator())) {
-            return new Criteria(Criteria.Operator.or, new ArrayList<>(Arrays.asList(base, criteria)));
+        if (! Criteria.Operator.OR.equals(base.getOperator())) {
+            return new Criteria(Criteria.Operator.OR, new ArrayList<>(Arrays.asList(base, criteria)));
         }
 
         base.add(criteria);
@@ -128,49 +130,57 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
 //            case ENDING_WITH:
             case IN:
             case CONTAINING:
-                return computeContainingCriteria(property.getQName(), parameters.next());
+                return computeContainingCriteria(property, parameters.next());
 //            case NOT_CONTAINING:
 //            case REGEX:
 //            case EXISTS:
             case TRUE:
-                return computeSimpleCriteria(property.getQName(), true);
+                return computeSimpleCriteria(property, true);
             case FALSE:
-                return computeSimpleCriteria(property.getQName(), false);
+                return computeSimpleCriteria(property, false);
 //            case NEAR:
 //            case WITHIN:
             case NEGATING_SIMPLE_PROPERTY:
-                return computeSimpleCriteria(property.getQName(), parameters.next(), true);
+                return computeSimpleCriteria(property, parameters.next(), true);
             case SIMPLE_PROPERTY:
-                return computeSimpleCriteria(property.getQName(), parameters.next());
+                return computeSimpleCriteria(property, parameters.next());
             default:
                 throw new IllegalArgumentException("Unsupported keyword : " + type);
         }
     }
 
-    private Criteria computeContainingCriteria(QName qName, Object parameter) {
-        return buildSimpleCriteria(qName, parameter, Criteria.Operator.or);
+    private Criteria computeContainingCriteria(MarklogicPersistentProperty property, Object parameter) {
+        return buildSimpleCriteria(property, parameter, Criteria.Operator.OR);
     }
 
-    private Criteria computeSimpleCriteria(QName qName, Object parameter) {
-        return computeSimpleCriteria(qName, parameter, false);
+    private Criteria computeSimpleCriteria(MarklogicPersistentProperty property, Object parameter) {
+        return computeSimpleCriteria(property, parameter, false);
     }
 
-    private Criteria computeSimpleCriteria(QName qName, Object parameter, boolean inverse) {
-        Criteria criteria = buildSimpleCriteria(qName, parameter, Criteria.Operator.and);
+    private Criteria computeSimpleCriteria(MarklogicPersistentProperty property, Object parameter, boolean inverse) {
+        Criteria criteria = buildSimpleCriteria(property, parameter, Criteria.Operator.AND);
         if (inverse)
-            return new Criteria(Criteria.Operator.not, criteria);
+            return new Criteria(Criteria.Operator.NOT, criteria);
         else {
             return criteria;
         }
     }
 
-    private Criteria buildSimpleCriteria(QName qName, Object parameter, Criteria.Operator groupOperator) {
+    private Criteria buildSimpleCriteria(MarklogicPersistentProperty property, Object parameter, Criteria.Operator groupOperator) {
         if (parameter instanceof List) {
             List<?> list = (List<?>) parameter;
-            List<Criteria> criteriaList = list.stream().map(o -> new Criteria(qName, o)).collect(Collectors.toList());
+            List<Criteria> criteriaList = list.stream().map(o -> buildCriteria(property, o)).collect(Collectors.toList());
             return new Criteria(groupOperator, criteriaList);
         } else {
-            return new Criteria(qName, parameter);
+            return buildCriteria(property, parameter);
+        }
+    }
+
+    private Criteria buildCriteria(MarklogicPersistentProperty property, Object value) {
+        if (marklogicCollectionUtils.getCollectionAnnotation(property).isPresent()) {
+            return new Criteria(Criteria.Operator.COLLECTION, value);
+        } else {
+            return new Criteria(property.getQName(), value);
         }
     }
 

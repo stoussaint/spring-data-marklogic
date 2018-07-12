@@ -15,6 +15,11 @@
  */
 package com._4dconcept.springframework.data.marklogic;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,23 +31,44 @@ import java.util.Map;
  */
 public class MarklogicTypeUtils {
 
-    public static final Map<Class<?>,Class<?>> primitiveMap = new HashMap<Class<?>, Class<?>>() {{
-        put(boolean.class, Boolean.class);
-        put(byte.class, Byte.class);
-        put(char.class, Character.class);
-        put(short.class, Short.class);
-        put(int.class, Integer.class);
-        put(long.class, Long.class);
-        put(float.class, Float.class);
-        put(double.class, Double.class);
-    }};
+    private static final Logger LOGGER = LoggerFactory.getLogger(MarklogicTypeUtils.class);
+
+    private static final Map<Class<?>,Class<?>> PRIMITIVE_MAP = new HashMap<>();
+
+    static {
+        PRIMITIVE_MAP.put(boolean.class, Boolean.class);
+        PRIMITIVE_MAP.put(byte.class, Byte.class);
+        PRIMITIVE_MAP.put(char.class, Character.class);
+        PRIMITIVE_MAP.put(short.class, Short.class);
+        PRIMITIVE_MAP.put(int.class, Integer.class);
+        PRIMITIVE_MAP.put(long.class, Long.class);
+        PRIMITIVE_MAP.put(float.class, Float.class);
+        PRIMITIVE_MAP.put(double.class, Double.class);
+    }
+
+    private MarklogicTypeUtils() {}
 
     public static boolean isSimpleType(Class<?> type) {
         return type.isPrimitive() || type.equals(String.class) || isBoxingType(type);
     }
 
-    private static boolean isBoxingType(Class<?> type) {
-        return MarklogicTypeUtils.primitiveMap.values().contains(type);
+    public static <T> T convertStringToPrimitive(Class<T> returnType, String value) {
+        try {
+            Method m = PRIMITIVE_MAP.get(returnType).getMethod("valueOf", String.class);
+            @SuppressWarnings("unchecked") // Trust the valueOf method of the boxing type
+            T result = (T) m.invoke(null, value);
+            return result;
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            LOGGER.debug("Unable to generate primitive value for type {}", returnType.getName());
+            return null;
+        }
     }
 
+    public static boolean isSupportedType(Class<?> aClass) {
+        return MarklogicSupportedType.fromClass(aClass).isPresent();
+    }
+
+    private static boolean isBoxingType(Class<?> type) {
+        return MarklogicTypeUtils.PRIMITIVE_MAP.values().contains(type);
+    }
 }
