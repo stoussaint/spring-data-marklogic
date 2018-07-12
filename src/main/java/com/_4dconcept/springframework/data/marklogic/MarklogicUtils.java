@@ -3,6 +3,7 @@ package com._4dconcept.springframework.data.marklogic;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.dao.TypeMismatchDataAccessException;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ParserContext;
@@ -34,7 +35,8 @@ public final class MarklogicUtils {
      * @param entityType the entityType used as context
      * @return the expanded expression. If the given expression is a literal or null, it is return as it.
      */
-    public static String expandsExpression(String expression, Class<?> entityType) {
+    @Nullable
+    public static String expandsExpression(@Nullable String expression, @Nullable Class<?> entityType) {
         return expandsExpression(expression, entityType, null, null);
     }
 
@@ -47,7 +49,7 @@ public final class MarklogicUtils {
      * @return the expanded expression. If the given expression is a literal or null, it is return as it.
      */
     @Nullable
-    public static String expandsExpression(@Nullable String expression, Class<?> entityType, @Nullable Object entity, @Nullable Object id) {
+    public static String expandsExpression(@Nullable String expression, @Nullable Class<?> entityType, @Nullable Object entity, @Nullable Object id) {
         return expandsExpression(expression, new DocumentExpressionContext() {
             @Override
             public Class<?> getEntityClass() {
@@ -66,6 +68,7 @@ public final class MarklogicUtils {
         });
     }
 
+    @Nullable
     public static Object retrieveIdentifier(Object object, MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
         MarklogicPersistentProperty idProperty = getIdPropertyFor(object.getClass(), mappingContext);
 
@@ -74,9 +77,15 @@ public final class MarklogicUtils {
         }
 
         MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(object.getClass());
+
+        if (persistentEntity == null) {
+            throw new TypeMismatchDataAccessException(String.format("No Persistent Entity information found for the class %s", object.getClass()));
+        }
+
         return persistentEntity.getPropertyAccessor(object).getProperty(idProperty);
     }
 
+    @Nullable
     public static MarklogicPersistentProperty getIdPropertyFor(Class<?> entityType, MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
         MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityType);
         return persistentEntity == null ? null : persistentEntity.getIdProperty();

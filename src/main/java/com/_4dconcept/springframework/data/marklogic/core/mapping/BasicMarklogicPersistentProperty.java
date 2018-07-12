@@ -19,13 +19,14 @@ import org.springframework.data.mapping.Association;
 import org.springframework.data.mapping.model.AnnotationBasedPersistentProperty;
 import org.springframework.data.mapping.model.Property;
 import org.springframework.data.mapping.model.SimpleTypeHolder;
-import org.springframework.util.Assert;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlNsForm;
 import javax.xml.bind.annotation.XmlSchema;
 import javax.xml.namespace.QName;
+import java.lang.reflect.Method;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -84,8 +85,6 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
         if (namespaceUri == null) namespaceUri = "";
         if (localName == null) localName = getName();
 
-        Assert.notNull(localName, "The local name could not be null");
-
         return new QName(namespaceUri, localName);
     }
 
@@ -95,7 +94,7 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
     }
 
     @Override
-    public PropertyDescriptor getPropertyDescriptor() {
-        return propertyDescriptor;
+    public Optional<Method> getReadMethod() {
+        return getProperty().getGetter();
     }
 }

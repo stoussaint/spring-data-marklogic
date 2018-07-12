@@ -25,6 +25,7 @@ import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.data.mapping.context.MappingContext;
+import org.springframework.lang.Nullable;
 
 /**
  * {@link MarklogicConverter} that uses a {@link MappingContext} to compute extra
@@ -40,13 +41,12 @@ public class MappingMarklogicConverter extends AbstractMarklogicConverter  {
         this(mappingContext, null);
     }
 
-    public MappingMarklogicConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext, GenericConversionService conversionService) {
+    public MappingMarklogicConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext, @Nullable GenericConversionService conversionService) {
         super(conversionService);
         this.mappingContext = mappingContext;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <R> R read(Class<R> returnType, MarklogicContentHolder holder) {
         ResultItem resultItem = (ResultItem) holder.getContent();
         if (String.class.equals(returnType)) {

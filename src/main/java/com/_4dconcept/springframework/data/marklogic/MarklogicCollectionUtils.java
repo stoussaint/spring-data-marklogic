@@ -14,9 +14,7 @@ public interface MarklogicCollectionUtils {
     default Optional<Collection> getCollectionAnnotation(MarklogicPersistentProperty property) {
         ArrayList<AnnotatedElement> annotatedElements = new ArrayList<>();
 
-        if (property.getPropertyDescriptor() != null && property.getPropertyDescriptor().getReadMethod() != null) {
-            annotatedElements.add(property.getPropertyDescriptor().getReadMethod());
-        }
+        property.getReadMethod().ifPresent(annotatedElements::add);
 
         if (property.getField() != null) {
             annotatedElements.add(property.getField());

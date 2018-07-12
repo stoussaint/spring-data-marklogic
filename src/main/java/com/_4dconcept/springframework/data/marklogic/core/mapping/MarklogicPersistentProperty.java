@@ -19,7 +19,8 @@ import org.springframework.data.mapping.PersistentEntity;
 import org.springframework.data.mapping.PersistentProperty;
 
 import javax.xml.namespace.QName;
-import java.beans.PropertyDescriptor;
+import java.lang.reflect.Method;
+import java.util.Optional;
 
 /**
  * Marklogic specific {@link org.springframework.data.mapping.PersistentProperty} extension.
@@ -38,6 +39,6 @@ public interface MarklogicPersistentProperty extends PersistentProperty<Marklogi
      */
     QName getQName();
 
-    PropertyDescriptor getPropertyDescriptor();
+    Optional<Method> getReadMethod();
 
 }

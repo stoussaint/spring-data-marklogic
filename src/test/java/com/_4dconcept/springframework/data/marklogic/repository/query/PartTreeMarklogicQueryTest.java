@@ -35,6 +35,7 @@ import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
 import org.springframework.data.repository.core.support.DefaultRepositoryMetadata;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
+import org.springframework.lang.Nullable;
 
 import javax.xml.namespace.QName;
 import java.lang.reflect.Method;
@@ -263,7 +264,7 @@ public class PartTreeMarklogicQueryTest {
         );
     }
 
-    private void assertCriteria(Criteria criteria, Matcher<Object> operatorMatcher, Matcher<Object> nameMatcher, Matcher<Object> valueMatcher) {
+    private void assertCriteria(@Nullable Criteria criteria, Matcher<Object> operatorMatcher, Matcher<Object> nameMatcher, Matcher<Object> valueMatcher) {
         assertThat(criteria, notNullValue());
         assertThat(criteria.getOperator(), operatorMatcher);
         assertThat(criteria.getQname(), nameMatcher);

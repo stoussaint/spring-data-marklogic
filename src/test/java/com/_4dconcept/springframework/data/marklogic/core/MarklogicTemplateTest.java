@@ -105,11 +105,6 @@ public class MarklogicTemplateTest {
         when(session.submitRequest(any(Request.class))).thenReturn(resultSequence);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void rejectsNullContentSource() {
-        new MarklogicTemplate(null);
-    }
-
     @Test
     public void defaultsConverterToMappingMarklogicConverter() {
         MarklogicTemplate template = new MarklogicTemplate(contentSource);
@@ -150,7 +145,7 @@ public class MarklogicTemplateTest {
 
         MarklogicTemplate template = new MarklogicTemplate(contentSource, marklogicConverter);
         template.setMarklogicCollectionUtils(marklogicCollectionUtils);
-        template.insert(new SimpleEntity(null, "entity"), buildCreateOperationOptions("/test/entity/1.xml"));
+        template.insert(new SimpleEntity(null, "entity"), buildCreateOperationOptions());
         verify(session).insertContent(contentArgumentCaptor.capture());
 
         assertThat(contentArgumentCaptor.getValue().getUri(), CoreMatchers.equalTo("/test/entity/1.xml"));
@@ -222,7 +217,7 @@ public class MarklogicTemplateTest {
     public void rejectsInsertionOfNonAnnotatedEntity() {
         MarklogicTemplate template = new MarklogicTemplate(contentSource);
         template.setMarklogicCollectionUtils(marklogicCollectionUtils);
-        template.insert(new NonAnnotatedEntity("1", "entity"), buildCreateOperationOptions("/test/entity/1.xml"));
+        template.insert(new NonAnnotatedEntity("1", "entity"), buildCreateOperationOptions());
     }
 
     @Test
@@ -254,6 +249,7 @@ public class MarklogicTemplateTest {
         /**
          * @return the id
          */
+        @Nullable
         public String getId() {
             return id;
         }

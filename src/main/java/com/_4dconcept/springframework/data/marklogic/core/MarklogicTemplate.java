@@ -503,9 +503,11 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         });
     }
 
-    private <T> void doInsert(T objectToSave, MarklogicCreateOperationOptions options, MarklogicWriter<T> writer) {
+    private void doInsert(Object objectToSave, MarklogicCreateOperationOptions options, MarklogicWriter<Object> writer) {
         String uri =  MarklogicUtils.expandsExpression(options.uri(), objectToSave.getClass(), objectToSave, MarklogicUtils.retrieveIdentifier(objectToSave, mappingContext));
         String collection = MarklogicUtils.expandsExpression(options.defaultCollection(), objectToSave.getClass(), objectToSave, MarklogicUtils.retrieveIdentifier(objectToSave, mappingContext));
+
+        Assert.notNull(uri, "A uri should be computable for entity insertion");
 
         LOGGER.debug("Insert entity '{}' at '{}' within '{}' default collection", objectToSave, uri, collection);
 
@@ -534,7 +536,6 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
      * @param objectToSave The object currently saved
      */
     private void generateIdIfNecessary(Object objectToSave) {
-
         MarklogicPersistentProperty property = MarklogicUtils.getIdPropertyFor(objectToSave.getClass(), mappingContext);
 
         if (property == null) {
@@ -625,7 +626,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         }
     }
 
-    private <T> Content toContentObject(String uri, T entity, @Nullable String collection, MarklogicWriter<T> writer) {
+    private Content toContentObject(String uri, Object entity, @Nullable String collection, MarklogicWriter<Object> writer) {
         Content content;
         boolean supportedClass = MarklogicTypeUtils.isSupportedType(entity.getClass());
 
@@ -663,7 +664,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     private <T> List<String> extractCollections(T entity) {
         ArrayList<String> collections = new ArrayList<>();
 
-        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entity.getClass());
+        MarklogicPersistentEntity<?> persistentEntity = retrievePersistentEntity(entity.getClass());
         PersistentPropertyAccessor propertyAccessor = persistentEntity.getPropertyAccessor(entity);
 
         persistentEntity.doWithProperties((PropertyHandler<MarklogicPersistentProperty>) property -> {
@@ -714,12 +715,6 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     private String determineCollectionName(Class<?> entityClass) {
         return retrievePersistentEntity(entityClass).getDefaultCollection();
-    }
-
-    private static MarklogicConverter getDefaultMarklogicConverter() {
-        MarklogicMappingConverter marklogicMappingConverter = new MarklogicMappingConverter(new MarklogicMappingContext());
-        marklogicMappingConverter.afterPropertiesSet();
-        return marklogicMappingConverter;
     }
 
     private Request buildAdhocRequest(String query, MarklogicInvokeOperationOptions options, Session session) {
@@ -806,7 +801,13 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         if (idProperty == null)
             throw new InvalidDataAccessApiUsageException("Unable to retrieve expected identifier property !");
 
-        return resolveMarklogicIdentifier(MarklogicUtils.retrieveIdentifier(object, mappingContext), idProperty);
+        Object id = MarklogicUtils.retrieveIdentifier(object, mappingContext);
+
+        if (id == null) {
+            throw new NullPointerException("Id is not expected to be null");
+        }
+
+        return resolveMarklogicIdentifier(id, idProperty);
     }
 
     private <T> MarklogicIdentifier resolveMarklogicIdentifier(Object id, Class<T> entityClass) {
