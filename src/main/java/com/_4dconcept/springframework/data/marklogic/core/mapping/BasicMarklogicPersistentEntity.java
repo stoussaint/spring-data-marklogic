@@ -35,11 +35,11 @@ public class BasicMarklogicPersistentEntity<T> extends BasicPersistentEntity<T, 
     private final String defaultCollection;
     private final boolean idInPropertyFragment;
 
-    public BasicMarklogicPersistentEntity(TypeInformation<T> information) {
+    BasicMarklogicPersistentEntity(TypeInformation<T> information) {
         this(information, null);
     }
 
-    public BasicMarklogicPersistentEntity(TypeInformation<T> information, Comparator<MarklogicPersistentProperty> comparator) {
+    private BasicMarklogicPersistentEntity(TypeInformation<T> information, Comparator<MarklogicPersistentProperty> comparator) {
         super(information, comparator);
 
         Class<T> rawType = getTypeInformation().getType();

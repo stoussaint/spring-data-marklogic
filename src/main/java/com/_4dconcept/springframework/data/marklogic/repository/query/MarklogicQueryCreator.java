@@ -15,7 +15,7 @@
  */
 package com._4dconcept.springframework.data.marklogic.repository.query;
 
-import com._4dconcept.springframework.data.marklogic.core.mapping.CollectionAnnotationUtils;
+import com._4dconcept.springframework.data.marklogic.MarklogicCollectionUtils;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
 import com._4dconcept.springframework.data.marklogic.core.query.CriteriaDefinition;
@@ -48,7 +48,7 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
 
     private MappingContext<?, MarklogicPersistentProperty> context;
 
-    private CollectionAnnotationUtils collectionAnnotationUtils = new CollectionAnnotationUtils() {};
+    private MarklogicCollectionUtils marklogicCollectionUtils = new MarklogicCollectionUtils() {};
 
     MarklogicQueryCreator(PartTree tree, ParameterAccessor parameters, MappingContext<?, MarklogicPersistentProperty> context) {
         super(tree, parameters);
@@ -66,8 +66,8 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     @Override
     protected Criteria and(Part part, Criteria base, Iterator<Object> iterator) {
         Criteria newCriteria = create(part, iterator);
-        if (! Criteria.Operator.and.equals(base.getOperator())) {
-            return new Criteria(Criteria.Operator.and, new ArrayList<>(Arrays.asList(base, newCriteria)));
+        if (! Criteria.Operator.AND.equals(base.getOperator())) {
+            return new Criteria(Criteria.Operator.AND, new ArrayList<>(Arrays.asList(base, newCriteria)));
         }
 
         base.add(newCriteria);
@@ -76,8 +76,8 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
 
     @Override
     protected Criteria or(Criteria base, Criteria criteria) {
-        if (! Criteria.Operator.or.equals(base.getOperator())) {
-            return new Criteria(Criteria.Operator.or, new ArrayList<>(Arrays.asList(base, criteria)));
+        if (! Criteria.Operator.OR.equals(base.getOperator())) {
+            return new Criteria(Criteria.Operator.OR, new ArrayList<>(Arrays.asList(base, criteria)));
         }
 
         base.add(criteria);
@@ -143,7 +143,7 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     }
 
     private Criteria computeContainingCriteria(MarklogicPersistentProperty property, Object parameter) {
-        return buildSimpleCriteria(property, parameter, Criteria.Operator.or);
+        return buildSimpleCriteria(property, parameter, Criteria.Operator.OR);
     }
 
     private Criteria computeSimpleCriteria(MarklogicPersistentProperty property, Object parameter) {
@@ -151,9 +151,9 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     }
 
     private Criteria computeSimpleCriteria(MarklogicPersistentProperty property, Object parameter, boolean inverse) {
-        Criteria criteria = buildSimpleCriteria(property, parameter, Criteria.Operator.and);
+        Criteria criteria = buildSimpleCriteria(property, parameter, Criteria.Operator.AND);
         if (inverse)
-            return new Criteria(Criteria.Operator.not, criteria);
+            return new Criteria(Criteria.Operator.NOT, criteria);
         else {
             return criteria;
         }
@@ -170,8 +170,8 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     }
 
     private Criteria buildCriteria(MarklogicPersistentProperty property, Object value) {
-        if (collectionAnnotationUtils.getCollectionAnnotation(property).isPresent()) {
-            return new Criteria(Criteria.Operator.collection, value);
+        if (marklogicCollectionUtils.getCollectionAnnotation(property).isPresent()) {
+            return new Criteria(Criteria.Operator.COLLECTION, value);
         } else {
             return new Criteria(property.getQName(), value);
         }

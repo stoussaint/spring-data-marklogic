@@ -27,7 +27,9 @@ import java.util.Collection;
  */
 public class Criteria implements CriteriaDefinition {
 
-    public enum Operator {and, or, not, collection}
+    public enum Operator {
+        AND, OR, NOT, COLLECTION
+    }
 
     private QName qname;
     private Object criteriaObject;

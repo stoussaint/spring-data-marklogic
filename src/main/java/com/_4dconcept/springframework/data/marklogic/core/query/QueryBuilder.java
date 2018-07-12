@@ -15,8 +15,9 @@
  */
 package com._4dconcept.springframework.data.marklogic.core.query;
 
+import com._4dconcept.springframework.data.marklogic.MarklogicCollectionUtils;
+import com._4dconcept.springframework.data.marklogic.MarklogicUtils;
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperationOptions;
-import com._4dconcept.springframework.data.marklogic.core.mapping.CollectionAnnotationUtils;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
@@ -27,12 +28,7 @@ import org.springframework.data.mapping.PersistentPropertyAccessor;
 import org.springframework.data.mapping.PropertyHandler;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.util.TypeInformation;
-import org.springframework.expression.Expression;
-import org.springframework.expression.ParserContext;
-import org.springframework.expression.common.LiteralExpression;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -57,14 +53,15 @@ public class QueryBuilder {
     private Sort sort;
     private Pageable pageable;
 
-    private MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext = new MarklogicMappingContext();
+    private MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext;
+
     private MarklogicOperationOptions options = new MarklogicOperationOptions() {};
 
-    private CollectionAnnotationUtils collectionAnnotationUtils = new CollectionAnnotationUtils() {};
+    private MarklogicCollectionUtils marklogicCollectionUtils = new MarklogicCollectionUtils() {};
 
-    private static final SpelExpressionParser PARSER = new SpelExpressionParser();
-
+    @SuppressWarnings("WeakerAccess") // Authorize client to use a default mapping context
     public QueryBuilder() {
+        this.mappingContext = new MarklogicMappingContext();
     }
 
     public QueryBuilder(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
@@ -101,11 +98,10 @@ public class QueryBuilder {
     public Query build() {
         Query query = new Query();
 
-
-        query.setCollection(buildTargetCollection());
+        query.setCollection(MarklogicUtils.expandsExpression(determinePrincipalCollection(), determineTargetClass()));
 
         if (example != null) {
-            query.setCriteria(prepareCriteria(example));
+            query.setCriteria(buildCriteriaFromEntityProperties(example.getProbe()));
         }
 
         if (sort != null) {
@@ -121,68 +117,48 @@ public class QueryBuilder {
         return query;
     }
 
-    private List<SortCriteria> prepareSortCriteria(Sort sort) {
-        Class<?> targetType = example != null ? example.getProbeType() : options.entityClass();
-        Assert.notNull(targetType, "Query needs a explicit type to resolve sort order");
-
-        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(targetType);
-        return buildSortCriteria(sort, persistentEntity);
+    private String determinePrincipalCollection() {
+        if (options.defaultCollection() != null) {
+            return options.defaultCollection();
+        } else {
+            Class<?> targetClass = determineTargetClass();
+            return targetClass != null ? mappingContext.getPersistentEntity(targetClass).getDefaultCollection() : null;
+        }
     }
 
-    private Criteria prepareCriteria(Example example) {
-        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(example.getProbeType());
-        return buildCriteria(example.getProbe(), persistentEntity);
-    }
-
-    private Criteria buildCriteria(Object bean, MarklogicPersistentEntity<?> entity) {
+    private Criteria buildCriteriaFromEntityProperties(Object bean) {
         Deque<Criteria> stack = new ArrayDeque<>();
+
+        MarklogicPersistentEntity<?> entity = mappingContext.getPersistentEntity(bean.getClass());
         PersistentPropertyAccessor propertyAccessor = entity.getPropertyAccessor(bean);
 
         entity.doWithProperties((PropertyHandler<MarklogicPersistentProperty>) property -> {
             Object value = propertyAccessor.getProperty(property);
             if (hasContent(value)) {
-                if (stack.isEmpty()) {
-                    stack.push(buildCriteria(property, value));
-                } else {
-                    Criteria criteria = stack.peek();
-                    if (criteria != null) {
-                        if (Criteria.Operator.and != criteria.getOperator()) {
-                            Criteria andCriteria = new Criteria(Criteria.Operator.and, new ArrayList<>(Arrays.asList(criteria, buildCriteria(property, value))));
-                            stack.pop();
-                            stack.push(andCriteria);
-                        } else {
-                            criteria.add(buildCriteria(property, value));
-                        }
-                    }
-                }
+                stackNewCriteria(stack, buildCriteriaFromProperty(property, value));
             }
         });
 
         return stack.isEmpty() ? null : stack.peek();
     }
 
-    private boolean hasContent(Object value) {
-        return value != null && (!(value instanceof Collection) || !((Collection) value).isEmpty());
-    }
-
-    private Criteria buildCriteria(MarklogicPersistentProperty property, Object value) {
+    private Criteria buildCriteriaFromProperty(MarklogicPersistentProperty property, Object value) {
         Optional<? extends TypeInformation<?>> typeInformation = StreamSupport.stream(property.getPersistentEntityType().spliterator(), false).findFirst();
         if (typeInformation.isPresent()) {
-            MarklogicPersistentEntity<?> nestedEntity = mappingContext.getPersistentEntity(typeInformation.get());
-            return buildCriteria(value, nestedEntity);
+            return buildCriteriaFromEntityProperties(value);
         } else {
             Criteria criteria = new Criteria();
 
             if (value instanceof Collection) {
-                criteria.setOperator(Criteria.Operator.or);
+                criteria.setOperator(Criteria.Operator.OR);
                 Collection<?> collection = (Collection<?>) value;
                 criteria.setCriteriaObject(collection.stream()
-                        .map(o -> buildCriteria(property, o))
+                        .map(o -> buildCriteriaFromProperty(property, o))
                         .collect(Collectors.toList())
                 );
             } else {
-                if (collectionAnnotationUtils.getCollectionAnnotation(property).isPresent()) {
-                    criteria.setOperator(Criteria.Operator.collection);
+                if (marklogicCollectionUtils.getCollectionAnnotation(property).isPresent()) {
+                    criteria.setOperator(Criteria.Operator.COLLECTION);
                 } else {
                     criteria.setQname(property.getQName());
                 }
@@ -192,6 +168,37 @@ public class QueryBuilder {
 
             return criteria;
         }
+    }
+
+    private void stackNewCriteria(Deque<Criteria> stack, Criteria newCriteria) {
+        Criteria criteria = stack.peek();
+        if (criteria != null) {
+            if (Criteria.Operator.AND == criteria.getOperator()) {
+                criteria.add(newCriteria);
+            } else {
+                wrapInAndCriteria(stack, newCriteria, criteria);
+            }
+        } else {
+            stack.push(newCriteria);
+        }
+    }
+
+    private void wrapInAndCriteria(Deque<Criteria> stack, Criteria newCriteria, Criteria criteria) {
+        Criteria andCriteria = new Criteria(Criteria.Operator.AND, new ArrayList<>(Arrays.asList(criteria, newCriteria)));
+        stack.pop();
+        stack.push(andCriteria);
+    }
+
+    private boolean hasContent(Object value) {
+        return value != null && (!(value instanceof Collection) || !((Collection) value).isEmpty());
+    }
+
+    private List<SortCriteria> prepareSortCriteria(Sort sort) {
+        Class<?> targetType = example != null ? example.getProbeType() : options.entityClass();
+        Assert.notNull(targetType, "Query needs a explicit type to resolve sort order");
+
+        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(targetType);
+        return buildSortCriteria(sort, persistentEntity);
     }
 
     private List<SortCriteria> buildSortCriteria(Sort sort, MarklogicPersistentEntity<?> entity) {
@@ -209,29 +216,7 @@ public class QueryBuilder {
         return sortCriteriaList;
     }
 
-    private String buildTargetCollection() {
-        final Class targetClass = determineTargetClass();
-        final String targetCollection = determineDefaultCollection(targetClass);
-
-        return expandCollection(targetCollection, new DocumentExpressionContext() {
-            @Override
-            public Class<?> getEntityClass() {
-                return targetClass;
-            }
-
-            @Override
-            public Object getEntity() {
-                return null;
-            }
-
-            @Override
-            public Object getId() {
-                return null;
-            }
-        });
-    }
-
-    private Class determineTargetClass() {
+    private Class<?> determineTargetClass() {
         if (options.entityClass() != null) {
             return options.entityClass();
         }
@@ -245,52 +230,5 @@ public class QueryBuilder {
         }
 
         return null;
-    }
-
-    private String determineDefaultCollection(Class targetClass) {
-        if (options.defaultCollection() != null) {
-            return options.defaultCollection();
-        } else if (targetClass != null) {
-            MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(targetClass);
-            return persistentEntity.getDefaultCollection();
-        }
-
-        return null;
-    }
-
-    private String expandCollection(String collection, DocumentExpressionContext identifierContext) {
-        Expression expression = detectExpression(collection);
-
-        if (expression == null) {
-            return collection;
-        } else {
-            return expression.getValue(identifierContext, String.class);
-        }
-    }
-
-    /**
-     * Returns a SpEL {@link Expression} for the uri pattern expressed if present or {@literal null} otherwise.
-     * Will also return {@literal null} if the uri pattern {@link String} evaluates
-     * to a {@link LiteralExpression} (indicating that no subsequent evaluation is necessary).
-     *
-     * @param urlPattern can be {@literal null}
-     * @return the dynamic Expression if any or {@literal null}
-     */
-    private static Expression detectExpression(String urlPattern) {
-        if (!StringUtils.hasText(urlPattern)) {
-            return null;
-        }
-
-        Expression expression = PARSER.parseExpression(urlPattern, ParserContext.TEMPLATE_EXPRESSION);
-
-        return expression instanceof LiteralExpression ? null : expression;
-    }
-
-    interface DocumentExpressionContext {
-        Class<?> getEntityClass();
-
-        Object getEntity();
-
-        Object getId();
     }
 }

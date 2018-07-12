@@ -55,9 +55,11 @@ public class PartTreeMarklogicQueryTest {
 
     public @Rule
     ExpectedException exception = ExpectedException.none();
+
     @Mock
-    MarklogicOperations marklogicOperationsMock;
-    MarklogicMappingContext mappingContext;
+    private MarklogicOperations marklogicOperationsMock;
+
+    private MarklogicMappingContext mappingContext;
 
     @Before
     public void setUp() {
@@ -89,7 +91,7 @@ public class PartTreeMarklogicQueryTest {
     public void multipleFieldsShouldBeConsidered() {
         Query query = deriveQueryFromMethod("findByLastnameAndFirstname", "foo", "bar");
 
-        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.and));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
 
         List<Criteria> criteriaList = extractListCriteria(query.getCriteria());
@@ -122,7 +124,7 @@ public class PartTreeMarklogicQueryTest {
     public void differentFieldsLevelShouldBeConsidered() {
         Query query = deriveQueryFromMethod("findByLastnameAndAddressCountry", "foo", "France");
 
-        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.and));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
 
         List<Criteria> criteriaList = extractListCriteria(query.getCriteria());
@@ -162,7 +164,7 @@ public class PartTreeMarklogicQueryTest {
 
         Query query = deriveQueryFromMethod("findBySkills", skills);
 
-        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.and));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
 
         List<Criteria> criteriaList = extractListCriteria(query.getCriteria());
@@ -190,7 +192,7 @@ public class PartTreeMarklogicQueryTest {
 
         Query query = deriveQueryFromMethod("findBySkillsContaining", skills);
 
-        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.or));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.OR));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
 
         List<Criteria> criteriaList = extractListCriteria(query.getCriteria());
@@ -239,7 +241,7 @@ public class PartTreeMarklogicQueryTest {
         assertThat(query.getCollection(), is("Person"));
         assertCriteria(
                 query.getCriteria(),
-                is(Criteria.Operator.collection),
+                is(Criteria.Operator.COLLECTION),
                 nullValue(),
                 is("foo")
         );
@@ -252,10 +254,10 @@ public class PartTreeMarklogicQueryTest {
         assertThat(query.getCollection(), is("Person"));
         assertCriteria(
                 query.getCriteria(),
-                is(Criteria.Operator.not),
+                is(Criteria.Operator.NOT),
                 nullValue(),
                 allOf(
-                        hasProperty("operator", is(Criteria.Operator.collection)),
+                        hasProperty("operator", is(Criteria.Operator.COLLECTION)),
                         hasProperty("criteriaObject", is("foo"))
                 )
         );

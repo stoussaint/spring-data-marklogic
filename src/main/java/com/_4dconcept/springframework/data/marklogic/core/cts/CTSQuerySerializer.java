@@ -82,17 +82,17 @@ public class CTSQuerySerializer {
         if (criteria != null) {
             if (criteria.getOperator() == null) {
                 return handleSimpleValue(criteria);
-            } else if (criteria.getOperator() == Criteria.Operator.not) {
+            } else if (criteria.getOperator() == Criteria.Operator.NOT) {
                 return String.format("cts:not-query(%s)", serializeCriteria((Criteria) criteria.getCriteriaObject()));
-            } else if (criteria.getOperator() == Criteria.Operator.collection) {
+            } else if (criteria.getOperator() == Criteria.Operator.COLLECTION) {
                 return String.format("cts:collection-query('%s')", criteria.getCriteriaObject());
             } else {
                 List<Criteria> criteriaList = (List<Criteria>) criteria.getCriteriaObject();
                 String ctsQueries = criteriaList.stream().map(this::serializeCriteria).collect(Collectors.joining(", "));
 
-                if (criteria.getOperator() == Criteria.Operator.and) {
+                if (criteria.getOperator() == Criteria.Operator.AND) {
                     return String.format("cts:and-query((%s))", ctsQueries);
-                } else if (criteria.getOperator() == Criteria.Operator.or) {
+                } else if (criteria.getOperator() == Criteria.Operator.OR) {
                     return String.format("cts:or-query((%s))", ctsQueries);
                 }
             }

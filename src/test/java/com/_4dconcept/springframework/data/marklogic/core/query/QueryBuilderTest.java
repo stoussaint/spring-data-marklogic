@@ -114,7 +114,7 @@ public class QueryBuilderTest {
 
         assertThat(query.getCollection(), is("Person"));
         assertThat(query.getCriteria(), notNullValue());
-        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.and));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
 
         @SuppressWarnings("unchecked")
@@ -122,16 +122,16 @@ public class QueryBuilderTest {
 
         assertThat(criteriaList, hasSize(2));
         assertThat(criteriaList.get(0).getCriteriaObject(), is("neighbour"));
-        assertThat(criteriaList.get(1).getOperator(), is(Criteria.Operator.or));
+        assertThat(criteriaList.get(1).getOperator(), is(Criteria.Operator.OR));
 
         assertThat(criteriaList.get(1).getCriteriaObject(), instanceOf(List.class));
         @SuppressWarnings("unchecked")
         List<Criteria> subCriteriaList = (List<Criteria>) criteriaList.get(1).getCriteriaObject();
 
         assertThat(subCriteriaList, hasSize(2));
-        assertThat(subCriteriaList.get(0).getOperator(), is(Criteria.Operator.collection));
+        assertThat(subCriteriaList.get(0).getOperator(), is(Criteria.Operator.COLLECTION));
         assertThat(subCriteriaList.get(0).getCriteriaObject(), is("collection1"));
-        assertThat(subCriteriaList.get(1).getOperator(), is(Criteria.Operator.collection));
+        assertThat(subCriteriaList.get(1).getOperator(), is(Criteria.Operator.COLLECTION));
         assertThat(subCriteriaList.get(1).getCriteriaObject(), is("collection2"));
     }
 
@@ -151,7 +151,7 @@ public class QueryBuilderTest {
         assertThat(query, notNullValue());
         assertThat(query.getCollection(), is("Person"));
         assertThat(query.getCriteria(), notNullValue());
-        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.and));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
 
         @SuppressWarnings("unchecked")
@@ -160,7 +160,7 @@ public class QueryBuilderTest {
         assertThat(criteriaList, hasSize(3));
         assertThat(criteriaList.get(0).getCriteriaObject(), is("Me"));
         assertThat(criteriaList.get(1).getCriteriaObject(), is(38));
-        assertThat(criteriaList.get(2).getOperator(), is(Criteria.Operator.and));
+        assertThat(criteriaList.get(2).getOperator(), is(Criteria.Operator.AND));
     }
 
     @Test
@@ -175,7 +175,7 @@ public class QueryBuilderTest {
         assertThat(query, notNullValue());
         assertThat(query.getCollection(), is("Person"));
         assertThat(query.getCriteria(), notNullValue());
-        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.and));
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
         assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
 
         List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();

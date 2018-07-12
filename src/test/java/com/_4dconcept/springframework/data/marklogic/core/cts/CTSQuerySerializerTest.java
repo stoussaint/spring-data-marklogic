@@ -55,7 +55,7 @@ public class CTSQuerySerializerTest {
     public void parseQueryWithMultipleCollections() {
         Query query = new Query();
         query.setCollection("collection1");
-        query.setCriteria(new Criteria(Criteria.Operator.collection, "collection2"));
+        query.setCriteria(new Criteria(Criteria.Operator.COLLECTION, "collection2"));
         String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
 
         assertThat(ctsQuery, is("cts:search(fn:collection('collection1'), cts:collection-query('collection2'), ())"));
@@ -64,7 +64,7 @@ public class CTSQuerySerializerTest {
     @Test
     public void parsePopulatedQuery() {
         Query query = new Query();
-        query.setCriteria(new Criteria(Criteria.Operator.and, Arrays.asList(
+        query.setCriteria(new Criteria(Criteria.Operator.AND, Arrays.asList(
             new Criteria(new QName("name"), "Me"),
             new Criteria(new QName("town"), "Paris")
         )));
@@ -77,7 +77,7 @@ public class CTSQuerySerializerTest {
     @Test
     public void parseQueryWithNotOperator() {
         Query query = new Query();
-        query.setCriteria(new Criteria(Criteria.Operator.not, new Criteria(new QName("town"), "Paris")));
+        query.setCriteria(new Criteria(Criteria.Operator.NOT, new Criteria(new QName("town"), "Paris")));
 
         String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
 
