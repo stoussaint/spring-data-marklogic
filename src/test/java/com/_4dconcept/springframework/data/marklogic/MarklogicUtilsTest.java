@@ -4,53 +4,24 @@ import com._4dconcept.springframework.data.marklogic.repository.Person;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 public class MarklogicUtilsTest {
 
     @Test
-    public void checkCollectionExpansion() throws Exception {
-        assertThat(MarklogicUtils.expandCollection("myCollection", (Class<?>) null), is("myCollection"));
-        assertThat(MarklogicUtils.expandCollection("#{entityClass.getSimpleName()}", Person.class), is("Person"));
-        assertThat(MarklogicUtils.expandCollection("#{id}", new MarklogicUtils.DocumentExpressionContext() {
-            @Override
-            public Class<?> getEntityClass() {
-                return null;
-            }
-
-            @Override
-            public Object getEntity() {
-                return null;
-            }
-
-            @Override
-            public Object getId() {
-                return "12";
-            }
-        }), is("12"));
+    public void checkCollectionExpansion() {
+        assertThat(MarklogicUtils.expandsExpression("myCollection", null), is("myCollection"));
+        assertThat(MarklogicUtils.expandsExpression("#{entityClass.getSimpleName()}", Person.class), is("Person"));
+        assertThat(MarklogicUtils.expandsExpression("#{id}", null, null, "12"), is("12"));
     }
 
     @Test
-    public void checkUriExpansion() throws Exception {
-        assertThat(MarklogicUtils.expandUri("/content/test.xml", null), is("/content/test.xml"));
-        assertThat(MarklogicUtils.expandUri("/content/#{entityClass.getSimpleName()}/#{entity.lastname}/#{id}.xml", new MarklogicUtils.DocumentExpressionContext() {
-            @Override
-            public Class<?> getEntityClass() {
-                return Person.class;
-            }
+    public void checkUriExpansion() {
+        assertThat(MarklogicUtils.expandsExpression("/content/test.xml", null), is("/content/test.xml"));
 
-            @Override
-            public Object getEntity() {
-                Person person = new Person();
-                person.setLastname("Test");
-                return person;
-            }
-
-            @Override
-            public Object getId() {
-                return "1";
-            }
-        }), is("/content/Person/Test/1.xml"));
+        Person person = new Person();
+        person.setLastname("Test");
+        assertThat(MarklogicUtils.expandsExpression("/content/#{entityClass.getSimpleName()}/#{entity.lastname}/#{id}.xml", Person.class, person, "1"), is("/content/Person/Test/1.xml"));
     }
 
 }

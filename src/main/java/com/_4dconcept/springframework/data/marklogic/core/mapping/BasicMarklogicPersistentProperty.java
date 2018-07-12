@@ -18,6 +18,7 @@ package com._4dconcept.springframework.data.marklogic.core.mapping;
 import org.springframework.data.mapping.Association;
 import org.springframework.data.mapping.model.AnnotationBasedPersistentProperty;
 import org.springframework.data.mapping.model.SimpleTypeHolder;
+import org.springframework.util.Assert;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlNsForm;
@@ -42,15 +43,15 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
         SUPPORTED_ID_PROPERTY_NAMES.add("id");
     }
 
-    public BasicMarklogicPersistentProperty(Field field, PropertyDescriptor propertyDescriptor,
-            MarklogicPersistentEntity<?> owner, SimpleTypeHolder simpleTypeHolder) {
+    BasicMarklogicPersistentProperty(Field field, PropertyDescriptor propertyDescriptor,
+                                     MarklogicPersistentEntity<?> owner, SimpleTypeHolder simpleTypeHolder) {
         super(field, propertyDescriptor, owner, simpleTypeHolder);
     }
 
     /*
-	 * (non-Javadoc)
-	 * @see org.springframework.data.mapping.PersistentProperty#isIdProperty()
-	 */
+     * (non-Javadoc)
+     * @see org.springframework.data.mapping.PersistentProperty#isIdProperty()
+     */
     @Override
     public boolean isIdProperty() {
         return super.isIdProperty() || SUPPORTED_ID_PROPERTY_NAMES.contains(getName());
@@ -68,7 +69,7 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
 
         XmlElement xmlElement = this.findAnnotation(XmlElement.class);
         if (xmlElement != null) {
-            if (! xmlElement.namespace().equals("##default")) {
+            if (!xmlElement.namespace().equals("##default")) {
                 namespaceUri = xmlElement.namespace();
             }
 
@@ -77,15 +78,15 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
 
         if (namespaceUri == null) {
             XmlSchema xmlSchema = this.getField().getDeclaringClass().getPackage().getAnnotation(XmlSchema.class);
-            if (xmlSchema != null) {
-                if (xmlSchema.elementFormDefault().equals(XmlNsForm.QUALIFIED)) {
-                    namespaceUri = xmlSchema.namespace();
-                }
+            if (xmlSchema != null && xmlSchema.elementFormDefault().equals(XmlNsForm.QUALIFIED)) {
+                namespaceUri = xmlSchema.namespace();
             }
         }
 
         if (namespaceUri == null) namespaceUri = "";
         if (localName == null) localName = getName();
+
+        Assert.notNull(localName, "The local name could not be null");
 
         return new QName(namespaceUri, localName);
     }
@@ -93,5 +94,10 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
     @Override
     protected Association<MarklogicPersistentProperty> createAssociation() {
         return new Association<>(this, null);
+    }
+
+    @Override
+    public PropertyDescriptor getPropertyDescriptor() {
+        return propertyDescriptor;
     }
 }

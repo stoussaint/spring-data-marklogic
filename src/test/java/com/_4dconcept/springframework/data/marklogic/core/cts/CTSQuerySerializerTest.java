@@ -43,9 +43,28 @@ public class CTSQuerySerializerTest {
     }
 
     @Test
+    public void parseQueryWithSingleCollection() {
+        Query query = new Query();
+        query.setCollection("collection1");
+        String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
+
+        assertThat(ctsQuery, is("cts:search(fn:collection('collection1'), (), ())"));
+    }
+
+    @Test
+    public void parseQueryWithMultipleCollections() {
+        Query query = new Query();
+        query.setCollection("collection1");
+        query.setCriteria(new Criteria(Criteria.Operator.COLLECTION, "collection2"));
+        String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
+
+        assertThat(ctsQuery, is("cts:search(fn:collection('collection1'), cts:collection-query('collection2'), ())"));
+    }
+
+    @Test
     public void parsePopulatedQuery() {
         Query query = new Query();
-        query.setCriteria(new Criteria(Criteria.Operator.and, Arrays.asList(
+        query.setCriteria(new Criteria(Criteria.Operator.AND, Arrays.asList(
             new Criteria(new QName("name"), "Me"),
             new Criteria(new QName("town"), "Paris")
         )));
@@ -58,7 +77,7 @@ public class CTSQuerySerializerTest {
     @Test
     public void parseQueryWithNotOperator() {
         Query query = new Query();
-        query.setCriteria(new Criteria(Criteria.Operator.not, new Criteria(new QName("town"), "Paris")));
+        query.setCriteria(new Criteria(Criteria.Operator.NOT, new Criteria(new QName("town"), "Paris")));
 
         String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
 
@@ -95,7 +114,7 @@ public class CTSQuerySerializerTest {
         query.setCriteria(new Criteria(new QName("age"), 38));
 
         String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
-        System.out.println(ctsQuery);
+        assertThat(ctsQuery, is("cts:search(fn:collection(), cts:element-value-query(fn:QName('', 'age'), '38'), ())"));
     }
 
     // Issue #6
@@ -105,7 +124,6 @@ public class CTSQuerySerializerTest {
         query.setCriteria(new Criteria(new QName("name"), "l'apostrophe"));
 
         String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
-        System.out.println(ctsQuery);
         assertThat(ctsQuery, Matchers.containsString("l''apostrophe"));
     }
 }

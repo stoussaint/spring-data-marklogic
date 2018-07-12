@@ -1,5 +1,9 @@
 package com._4dconcept.springframework.data.marklogic;
 
+import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
+import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ParserContext;
 import org.springframework.expression.common.LiteralExpression;
@@ -23,26 +27,26 @@ public final class MarklogicUtils {
     private MarklogicUtils() {}
 
     /**
-     * Expands the given uri using the provided extension context
+     * Expands the given expression using the provided type as context.
      *
-     * @param uri the uri to expands
-     * @param expressionContext the expression context
-     * @return the expanded uri. If the given uri is not an expression, it is return as it.
+     * @param expression the expression to expand
+     * @param entityType the entityType used as context
+     * @return the expanded expression. If the given expression is a literal or null, it is return as it.
      */
-    public static String expandUri(String uri, DocumentExpressionContext expressionContext) {
-        Expression expression = detectExpression(uri);
-        return expression == null ? uri : expression.getValue(expressionContext, String.class);
+    public static String expandsExpression(String expression, Class<?> entityType) {
+        return expandsExpression(expression, entityType, null, null);
     }
 
     /**
-     * Expands the given collection using the provided type.
+     * Expands the given expression using the provided type, entity and id as context.
      *
-     * @param collection the collection to expand
+     * @param expression the expression to expand
      * @param entityType the entityType used as context
-     * @return the expanded collection. If the given collection is not an expression, it is return as it.
+     * @param entity the entity to use as context
+     * @return the expanded expression. If the given expression is a literal or null, it is return as it.
      */
-    public static String expandCollection(String collection, Class<?> entityType) {
-        return expandCollection(collection, new DocumentExpressionContext() {
+    public static String expandsExpression(String expression, Class<?> entityType, Object entity, Object id) {
+        return expandsExpression(expression, new DocumentExpressionContext() {
             @Override
             public Class<?> getEntityClass() {
                 return entityType;
@@ -50,26 +54,42 @@ public final class MarklogicUtils {
 
             @Override
             public Object getEntity() {
-                return null;
+                return entity;
             }
 
             @Override
             public Object getId() {
-                return null;
+                return id;
             }
         });
     }
 
+    public static Object retrieveIdentifier(Object object, MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
+        MarklogicPersistentProperty idProperty = getIdPropertyFor(object.getClass(), mappingContext);
+
+        if (idProperty == null) {
+            throw new InvalidDataAccessApiUsageException("Unable to retrieve expected identifier property !");
+        }
+
+        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(object.getClass());
+        return persistentEntity.getPropertyAccessor(object).getProperty(idProperty);
+    }
+
+    public static MarklogicPersistentProperty getIdPropertyFor(Class<?> entityType, MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
+        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entityType);
+        return persistentEntity == null ? null : persistentEntity.getIdProperty();
+    }
+
     /**
-     * Expands the given collection using the provided type.
+     * Expands the given expression using the provided context.
      *
-     * @param collection the collection to expand
-     * @param expressionContext the entityType used as context
-     * @return the expanded collection. If the given collection is not an expression, it is return as it.
+     * @param expression the collection to expand
+     * @param context the context to use during resolution
+     * @return the expanded expression. If the given expression is a literal or null, it is return as it.
      */
-    public static String expandCollection(String collection, DocumentExpressionContext expressionContext) {
-        Expression expression = detectExpression(collection);
-        return expression == null ? collection : expression.getValue(expressionContext, String.class);
+    private static String expandsExpression(String expression, Object context) {
+        Expression spelExpression = detectExpression(expression);
+        return spelExpression == null ? expression : spelExpression.getValue(context, String.class);
     }
 
     /**
@@ -90,7 +110,7 @@ public final class MarklogicUtils {
         return expression instanceof LiteralExpression ? null : expression;
     }
 
-    public interface DocumentExpressionContext {
+    private interface DocumentExpressionContext {
         Class<?> getEntityClass();
 
         Object getEntity();

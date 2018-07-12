@@ -35,37 +35,42 @@ public class BasicMarklogicPersistentEntity<T> extends BasicPersistentEntity<T, 
     private final String defaultCollection;
     private final boolean idInPropertyFragment;
 
-    public BasicMarklogicPersistentEntity(TypeInformation<T> information) {
+    BasicMarklogicPersistentEntity(TypeInformation<T> information) {
         this(information, null);
     }
 
-    public BasicMarklogicPersistentEntity(TypeInformation<T> information, Comparator<MarklogicPersistentProperty> comparator) {
+    private BasicMarklogicPersistentEntity(TypeInformation<T> information, Comparator<MarklogicPersistentProperty> comparator) {
         super(information, comparator);
 
         Class<T> rawType = getTypeInformation().getType();
         String fallback = MarklogicUrlUtils.getPreferredUrlPattern(rawType);
 
         Document document = this.findAnnotation(Document.class);
+        Collection collection = this.findAnnotation(Collection.class);
 
         if (document != null) {
             this.uri = StringUtils.hasText(document.uri()) ? document.uri() : fallback;
-            this.defaultCollection = buildDefaultCollection(document);
             this.idInPropertyFragment = document.idInPropertyFragment();
         } else {
             this.uri = fallback;
-            this.defaultCollection = null;
             this.idInPropertyFragment = false;
+        }
+
+        if (collection != null) {
+            this.defaultCollection = buildDefaultCollection(collection);
+        } else {
+            this.defaultCollection = null;
         }
     }
 
-    private String buildDefaultCollection(Document document) {
+    private String buildDefaultCollection(Collection collection) {
         StringBuilder sb = new StringBuilder();
-        if (StringUtils.hasText(document.defaultCollectionPrefix())) {
-            sb.append(document.defaultCollectionPrefix());
+        if (StringUtils.hasText(collection.prefix())) {
+            sb.append(collection.prefix());
             sb.append(":");
         }
-        if (StringUtils.hasText(document.defaultCollection())) {
-            sb.append(document.defaultCollection());
+        if (StringUtils.hasText(collection.value())) {
+            sb.append(collection.value());
         }
         return sb.length() > 0 ? sb.toString() : null;
     }

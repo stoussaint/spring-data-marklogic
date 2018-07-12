@@ -50,11 +50,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -189,15 +185,20 @@ public class RepositoryIntegrationTests {
     }
 
     @Test
-    public void updatePerson() {
+    public void updatePerson_WithExtraCollection() {
         Person person = repository.findOne(sahbi.getId());
         person.setAge(425);
         person.setFirstname("Duncan");
         person.setLastname("MacLeod");
+        person.setType("immortal");
         repository.save(person);
-        assertThat(person.getId(), is(sahbi.getId()));
 
-        assertThat(repository.findOne(sahbi.getId()).getAge(), is(425));
+        Person immortal = new Person();
+        immortal.setType("immortal");
+
+        List<Person> immortals = repository.findAll(Example.of(immortal));
+        assertThat(immortals, hasSize(1));
+        assertThat(immortals.get(0).getAge(), is(425));
     }
 
     @Test

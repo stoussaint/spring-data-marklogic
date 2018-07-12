@@ -27,7 +27,9 @@ import java.util.Collection;
  */
 public class Criteria implements CriteriaDefinition {
 
-    public enum Operator {and, or, not}
+    public enum Operator {
+        AND, OR, NOT, COLLECTION
+    }
 
     private QName qname;
     private Object criteriaObject;
@@ -93,5 +95,14 @@ public class Criteria implements CriteriaDefinition {
         if (criteriaObject instanceof Collection<?>) {
             ((Collection<Criteria>)criteriaObject).add(criteria);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "Criteria{" +
+                "qname=" + qname +
+                ", criteriaObject=" + criteriaObject +
+                ", operator=" + operator +
+                '}';
     }
 }
