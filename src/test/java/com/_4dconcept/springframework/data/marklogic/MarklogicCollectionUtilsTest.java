@@ -16,15 +16,12 @@ public class MarklogicCollectionUtilsTest {
         assertThat(marklogicCollectionUtils.extractCollections(new SampleEntity("test1", "test2"), new MarklogicMappingContext()), containsInAnyOrder("test1", "field:test2", "computed:TEST1"));
     }
 
-    private class SampleEntity {
+    private class SampleEntity extends BaseSampleEntity {
 
         SampleEntity(String field1, String field2) {
-            this.field1 = field1;
+            super(field1);
             this.field2 = field2;
         }
-
-        @Collection
-        private String field1;
 
         private String field2;
 
@@ -32,6 +29,17 @@ public class MarklogicCollectionUtilsTest {
         @SuppressWarnings("unused") // Used by reflexion for test
         public String getField2() {
             return field2;
+        }
+
+    }
+
+    private class BaseSampleEntity {
+
+        @Collection
+        private String field1;
+
+        BaseSampleEntity(String field1) {
+            this.field1 = field1;
         }
 
         @Collection(prefix = "computed")

@@ -37,7 +37,7 @@ public interface MarklogicCollectionUtils {
             }
         });
 
-        for (Method method : entity.getClass().getDeclaredMethods()) {
+        for (Method method : entity.getClass().getMethods()) {
             if (method.getParameterCount() > 0) {
                 continue;
             }
