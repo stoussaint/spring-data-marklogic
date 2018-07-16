@@ -62,7 +62,6 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.dao.TypeMismatchDataAccessException;
 import org.springframework.data.mapping.MappingException;
 import org.springframework.data.mapping.PersistentPropertyAccessor;
-import org.springframework.data.mapping.PropertyHandler;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.mapping.model.ConvertingPropertyAccessor;
 import org.springframework.lang.Nullable;
@@ -72,7 +71,6 @@ import org.springframework.util.CollectionUtils;
 import javax.xml.namespace.QName;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -662,28 +660,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     private <T> List<String> extractCollections(T entity) {
-        ArrayList<String> collections = new ArrayList<>();
-
-        MarklogicPersistentEntity<?> persistentEntity = retrievePersistentEntity(entity.getClass());
-        PersistentPropertyAccessor propertyAccessor = persistentEntity.getPropertyAccessor(entity);
-
-        persistentEntity.doWithProperties((PropertyHandler<MarklogicPersistentProperty>) property -> {
-            Object value = propertyAccessor.getProperty(property);
-            if (value != null && marklogicCollectionUtils.getCollectionAnnotation(property).isPresent()) {
-                if (value instanceof Collection) {
-                    Collection<?> values = (Collection<?>) value;
-                    for (Object o : values) {
-                        collections.add(o.toString());
-                    }
-                } else {
-                    collections.add(value.toString());
-                }
-
-                propertyAccessor.setProperty(property, null); // Remove the value before it is serialized
-            }
-        });
-
-        return collections;
+        return marklogicCollectionUtils.extractCollections(entity, mappingContext);
     }
 
     private void doInsertContent(Content content) {
