@@ -50,7 +50,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.xml.namespace.QName;
 import java.io.InputStream;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.UUID;
 
@@ -98,9 +97,6 @@ public class MarklogicTemplateTest {
         MappingContext<BasicMarklogicPersistentEntity<?>, MarklogicPersistentProperty> marklogicMappingContext = new MarklogicMappingContext();
         when(marklogicConverter.getMappingContext()).thenReturn((MappingContext)marklogicMappingContext);
         when(marklogicConverter.getConversionService()).thenReturn(conversionService);
-
-        when(marklogicCollectionUtils.getCollectionAnnotation(any())).thenReturn(Optional.empty());
-
         when(session.submitRequest(any(Request.class))).thenReturn(resultSequence);
     }
 
