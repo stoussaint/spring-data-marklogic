@@ -12,6 +12,8 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
+import java.util.function.Supplier;
+
 /**
  * Helper class featuring helper methods for working with Marklogic specific elements.
  * Mainly intended for internal use within the framework.
@@ -49,7 +51,7 @@ public final class MarklogicUtils {
      * @return the expanded expression. If the given expression is a literal or null, it is return as it.
      */
     @Nullable
-    public static String expandsExpression(@Nullable String expression, @Nullable Class<?> entityType, @Nullable Object entity, @Nullable Object id) {
+    public static String expandsExpression(@Nullable String expression, @Nullable Class<?> entityType, @Nullable Object entity, @Nullable Supplier<Object> idSupplier) {
         return expandsExpression(expression, new DocumentExpressionContext() {
             @Override
             public Class<?> getEntityClass() {
@@ -63,7 +65,7 @@ public final class MarklogicUtils {
 
             @Override
             public Object getId() {
-                return id;
+                return idSupplier != null ? idSupplier.get() : null;
             }
         });
     }
