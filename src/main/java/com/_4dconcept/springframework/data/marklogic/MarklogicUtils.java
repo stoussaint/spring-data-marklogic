@@ -10,6 +10,8 @@ import org.springframework.expression.common.LiteralExpression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.util.StringUtils;
 
+import java.util.function.Supplier;
+
 /**
  * Helper class featuring helper methods for working with Marklogic specific elements.
  * Mainly intended for internal use within the framework.
@@ -45,7 +47,7 @@ public final class MarklogicUtils {
      * @param entity the entity to use as context
      * @return the expanded expression. If the given expression is a literal or null, it is return as it.
      */
-    public static String expandsExpression(String expression, Class<?> entityType, Object entity, Object id) {
+    public static String expandsExpression(String expression, Class<?> entityType, Object entity, Supplier<Object> idSupplier) {
         return expandsExpression(expression, new DocumentExpressionContext() {
             @Override
             public Class<?> getEntityClass() {
@@ -59,7 +61,7 @@ public final class MarklogicUtils {
 
             @Override
             public Object getId() {
-                return id;
+                return idSupplier != null ? idSupplier.get() : null;
             }
         });
     }

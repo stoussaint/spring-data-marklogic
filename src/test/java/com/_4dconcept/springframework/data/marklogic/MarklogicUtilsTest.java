@@ -12,7 +12,7 @@ public class MarklogicUtilsTest {
     public void checkCollectionExpansion() {
         assertThat(MarklogicUtils.expandsExpression("myCollection", null), is("myCollection"));
         assertThat(MarklogicUtils.expandsExpression("#{entityClass.getSimpleName()}", Person.class), is("Person"));
-        assertThat(MarklogicUtils.expandsExpression("#{id}", null, null, "12"), is("12"));
+        assertThat(MarklogicUtils.expandsExpression("#{id}", null, null, () -> "12"), is("12"));
     }
 
     @Test
@@ -21,7 +21,7 @@ public class MarklogicUtilsTest {
 
         Person person = new Person();
         person.setLastname("Test");
-        assertThat(MarklogicUtils.expandsExpression("/content/#{entityClass.getSimpleName()}/#{entity.lastname}/#{id}.xml", Person.class, person, "1"), is("/content/Person/Test/1.xml"));
+        assertThat(MarklogicUtils.expandsExpression("/content/#{entityClass.getSimpleName()}/#{entity.lastname}/#{id}.xml", Person.class, person, () -> "1"), is("/content/Person/Test/1.xml"));
     }
 
 }

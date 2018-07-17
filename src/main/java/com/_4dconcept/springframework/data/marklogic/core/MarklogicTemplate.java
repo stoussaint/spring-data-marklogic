@@ -278,7 +278,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         final Class<T> targetEntityClass = options.entityClass() == null ? entityClass : (Class<T>) options.entityClass();
         MarklogicIdentifier identifier = resolveMarklogicIdentifier(id, targetEntityClass);
 
-        final String targetCollection = retrieveTargetCollection(MarklogicUtils.expandsExpression(options.defaultCollection(), targetEntityClass, null, id));
+        final String targetCollection = retrieveTargetCollection(MarklogicUtils.expandsExpression(options.defaultCollection(), targetEntityClass, null, () -> id));
 
         final boolean isIdInPropertyFragment = options.idInPropertyFragment();
 
@@ -433,7 +433,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     public <T> String resolveDefaultCollection(T entity, MarklogicOperationOptions options) {
         MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(entity.getClass());
         String defaultCollection = options.defaultCollection() == null ? persistentEntity.getDefaultCollection() : options.defaultCollection();
-        return MarklogicUtils.expandsExpression(defaultCollection, entity.getClass(), entity, resolveMarklogicIdentifier(entity));
+        return MarklogicUtils.expandsExpression(defaultCollection, entity.getClass(), entity, () -> resolveMarklogicIdentifier(entity));
     }
 
     @Override
@@ -467,8 +467,8 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     }
 
     private <T> void doInsert(T objectToSave, MarklogicCreateOperationOptions options, MarklogicWriter<T> writer) {
-        String uri =  MarklogicUtils.expandsExpression(options.uri(), objectToSave.getClass(), objectToSave, MarklogicUtils.retrieveIdentifier(objectToSave, mappingContext));
-        String collection = MarklogicUtils.expandsExpression(options.defaultCollection(), objectToSave.getClass(), objectToSave, MarklogicUtils.retrieveIdentifier(objectToSave, mappingContext));
+        String uri =  MarklogicUtils.expandsExpression(options.uri(), objectToSave.getClass(), objectToSave, () -> MarklogicUtils.retrieveIdentifier(objectToSave, mappingContext));
+        String collection = MarklogicUtils.expandsExpression(options.defaultCollection(), objectToSave.getClass(), objectToSave, () -> MarklogicUtils.retrieveIdentifier(objectToSave, mappingContext));
 
         LOGGER.debug("Insert entity '{}' at '{}' within '{}' default collection", objectToSave, uri, collection);
 
@@ -529,7 +529,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(objectToSave.getClass());
 
         final MarklogicIdentifier identifier = resolveMarklogicIdentifier(objectToSave);
-        final String collection = MarklogicUtils.expandsExpression(persistentEntity.getDefaultCollection(), objectToSave.getClass(), null, MarklogicUtils.retrieveIdentifier(objectToSave, mappingContext));
+        final String collection = MarklogicUtils.expandsExpression(persistentEntity.getDefaultCollection(), objectToSave.getClass(), null, () -> MarklogicUtils.retrieveIdentifier(objectToSave, mappingContext));
 
         String collectionConstraints = retrieveConstraintCollection(collection);
 
