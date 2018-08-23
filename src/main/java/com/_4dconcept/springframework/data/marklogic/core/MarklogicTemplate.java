@@ -433,7 +433,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     public <T> String resolveDefaultCollection(T entity, MarklogicOperationOptions options) {
         MarklogicPersistentEntity persistentEntity = mappingContext.getPersistentEntity(entity.getClass());
         String defaultCollection = options.defaultCollection() == null ? persistentEntity.getDefaultCollection() : options.defaultCollection();
-        return MarklogicUtils.expandsExpression(defaultCollection, entity.getClass(), entity, () -> resolveMarklogicIdentifier(entity));
+        return MarklogicUtils.expandsExpression(defaultCollection, entity.getClass(), entity, () ->  MarklogicUtils.retrieveIdentifier(entity, mappingContext));
     }
 
     @Override
