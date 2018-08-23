@@ -480,7 +480,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
             @Override
             public Object getId() {
-                return resolveMarklogicIdentifier(entity);
+                return retrieveIdentifier(entity);
             }
         });
     }
