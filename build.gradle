@@ -34,7 +34,6 @@ ext {
 repositories {
     jcenter()
     maven { url "http://developer.marklogic.com/maven2" }
-    maven { url "https://repo.spring.io/libs-milestone"}
 }
 
 dependencyManagement {
