@@ -16,7 +16,6 @@
 package com._4dconcept.springframework.data.marklogic.core.mapping;
 
 import com._4dconcept.springframework.data.marklogic.core.mapping.namespaceaware.SuperType;
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mapping.model.SimpleTypeHolder;
@@ -25,9 +24,11 @@ import org.springframework.util.ReflectionUtils;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.namespace.QName;
 import java.lang.reflect.Field;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -38,40 +39,19 @@ import static org.junit.Assert.assertThat;
 public class BasicMarklogicPersistentPropertyTest {
 
     @Test
-    public void personIdIsExplicitIdProperty() {
-        MarklogicPersistentProperty property = getPropertyFor(Person.class, "id");
-        assertThat(property.isIdProperty(), CoreMatchers.is(true));
-        assertThat(property.isExplicitIdProperty(), CoreMatchers.is(true));
+    public void checkIdPropertyInformation() {
+        checkPropertyId(Person.class, "id", true);
+        checkPropertyId(Company.class, "id", false);
+        checkPropertyId(Identifier.class, "id", false);
+        checkPropertyId(Identifier.class, "uuid", true);
     }
 
     @Test
-    public void companyIdIsImplicitIdProperty() {
-        MarklogicPersistentProperty property = getPropertyFor(Company.class, "id");
-        assertThat(property.isIdProperty(), CoreMatchers.is(true));
-        assertThat(property.isExplicitIdProperty(), CoreMatchers.is(false));
-    }
-    @Test
-    public void identifierAsOneExplicitAndOneImplicitId() {
-        MarklogicPersistentProperty property = getPropertyFor(Identifier.class, "id");
-        assertThat(property.isIdProperty(), CoreMatchers.is(true));
-        assertThat(property.isExplicitIdProperty(), CoreMatchers.is(false));
-
-        MarklogicPersistentProperty property2 = getPropertyFor(Identifier.class, "uuid");
-        assertThat(property2.isIdProperty(), CoreMatchers.is(true));
-        assertThat(property2.isExplicitIdProperty(), CoreMatchers.is(true));
-    }
-
-    @Test
-    public void resolveQName() throws Exception {
-        MarklogicPersistentProperty property = getPropertyFor(ImplType.class, "id");
-        QName qName = property.getQName();
-        assertThat(qName.getNamespaceURI(), CoreMatchers.is("/super/type"));
-        assertThat(qName.getLocalPart(), CoreMatchers.is("id"));
-
-        MarklogicPersistentProperty property2 = getPropertyFor(ImplType.class, "name");
-        QName qName2 = property2.getQName();
-        assertThat(qName2.getNamespaceURI(), CoreMatchers.is("/test/type"));
-        assertThat(qName2.getLocalPart(), CoreMatchers.is("name"));
+    public void resolveQName() {
+        checkPropertyQName("id", "/super/type");
+        checkPropertyQName("name", "/test/type");
+        checkPropertyQName("sample", "/test/classtype");
+        checkPropertyQName("surname", "/test/classtype");
     }
 
     class Person {
@@ -93,12 +73,30 @@ public class BasicMarklogicPersistentPropertyTest {
         String id;
     }
 
-    class AbstractType extends SuperType {}
+    @XmlTransient
+    class AbstractType extends SuperType {
+        String sample;
+    }
 
-    @XmlRootElement
+    @XmlRootElement(namespace = "/test/classtype")
     class ImplType extends AbstractType {
         @XmlElement(namespace = "/test/type")
         String name;
+
+        String surname;
+    }
+
+    private void checkPropertyId(Class<?> type, String uuid, boolean isExplicit) {
+        MarklogicPersistentProperty property = getPropertyFor(type, uuid);
+        assertThat(property.isIdProperty(), is(true));
+        assertThat(property.isExplicitIdProperty(), is(isExplicit));
+    }
+
+    private void checkPropertyQName(String name, String expectedUri) {
+        MarklogicPersistentProperty property2 = getPropertyFor(ImplType.class, name);
+        QName qName2 = property2.getQName();
+        assertThat(qName2.getNamespaceURI(), is(expectedUri));
+        assertThat(qName2.getLocalPart(), is(name));
     }
 
     private <T> MarklogicPersistentProperty getPropertyFor(Class<T> type, String fieldname) {
