@@ -386,7 +386,10 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     public void invokeModule(String moduleName, MarklogicInvokeOperationOptions options) {
         doInSession(session -> {
             try {
-                session.submitRequest(buildModuleRequest(moduleName, options, session));
+                ResultSequence resultSequence = session.submitRequest(buildModuleRequest(moduleName, options, session));
+                if (! resultSequence.isClosed()) {
+                    resultSequence.close();
+                }
             } catch (RequestException re) {
                 throw new DataRetrievalFailureException(SUBMISSION_ERROR_MSG, re);
             }
@@ -422,7 +425,10 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
     public void invokeAdhocQuery(String query, MarklogicInvokeOperationOptions options) {
         doInSession(session -> {
             try {
-                session.submitRequest(buildAdhocRequest(query, options, session));
+                ResultSequence resultSequence = session.submitRequest(buildAdhocRequest(query, options, session));
+                if (! resultSequence.isClosed()) {
+                    resultSequence.close();
+                }
             } catch (RequestException re) {
                 throw new DataRetrievalFailureException(SUBMISSION_ERROR_MSG, re);
             }
@@ -459,7 +465,10 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         doInSession(session -> {
             Request request = session.newAdhocQuery(query);
             try {
-                session.submitRequest(request);
+                ResultSequence resultSequence = session.submitRequest(request);
+                if (! resultSequence.isClosed()) {
+                    resultSequence.close();
+                }
             } catch (RequestException re) {
                 throw new DataRetrievalFailureException("Unable to query uri", re);
             }
@@ -724,10 +733,16 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     private <T> List<T> prepareResultList(ResultSequence resultSequence, Class<T> returnType, MarklogicInvokeOperationOptions options) {
         List<T> resultList = null;
-        if (resultSequence != null && !resultSequence.isEmpty() && returnType != null) {
-            resultList = new ArrayList<>();
-            while (resultSequence.hasNext()) {
-                resultList.add(prepareResultItem(resultSequence.next(), returnType, options));
+        try {
+            if (resultSequence != null && !resultSequence.isEmpty() && returnType != null) {
+                resultList = new ArrayList<>();
+                while (resultSequence.hasNext()) {
+                    resultList.add(prepareResultItem(resultSequence.next(), returnType, options));
+                }
+            }
+        } finally {
+            if (resultSequence != null && !resultSequence.isClosed()) {
+                resultSequence.close();
             }
         }
         return resultList;
