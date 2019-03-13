@@ -57,6 +57,12 @@ public class CTSQuerySerializer {
         return String.format("cts:search(%s, %s, %s)%s", collection, serializeCriteria(query.getCriteria()), buildOptions(), limitPredicate);
     }
 
+    public String asCtsUris() {
+        String collectionQuery = retrieveCollectionQuery();
+
+        return String.format("cts:uris((), %s, cts:and-query((%s, %s)))", buildOptions(), collectionQuery, serializeCriteria(query.getCriteria()));
+    }
+
     private String buildOptions() {
         String sortOptions = serializeSortCriteriaList(query.getSortCriteria());
         return String.format("(%s)", sortOptions);
@@ -68,6 +74,14 @@ public class CTSQuerySerializer {
         }
 
         return String.format("fn:collection('%s')", query.getCollection());
+    }
+
+    private String retrieveCollectionQuery() {
+        if (query.getCollection() == null) {
+            return "cts:collection-query(())";
+        }
+
+        return String.format("cts:collection-query('%s')", query.getCollection());
     }
 
     private String handleSimpleValue(Criteria criteria) {
@@ -93,6 +107,8 @@ public class CTSQuerySerializer {
                 return String.format("cts:not-query(%s)", serializeCriteria((Criteria) criteria.getCriteriaObject()));
             } else if (criteria.getOperator() == Criteria.Operator.COLLECTION) {
                 return String.format("cts:collection-query('%s')", criteria.getCriteriaObject());
+            } else if (criteria.getOperator() == Criteria.Operator.PROPERTIES) {
+                return String.format("cts:properties-fragment-query(%s)", serializeCriteria((Criteria) criteria.getCriteriaObject()));
             } else {
                 List<Criteria> criteriaList = retrieveCriteriaList(criteria);
                 String ctsQueries = criteriaList.stream().map(this::serializeCriteria).collect(Collectors.joining(", "));

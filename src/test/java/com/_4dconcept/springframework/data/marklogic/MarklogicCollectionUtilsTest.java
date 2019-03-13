@@ -14,6 +14,7 @@ public class MarklogicCollectionUtilsTest {
     @Test
     public void extractCollections() {
         assertThat(marklogicCollectionUtils.extractCollections(new SampleEntity("test1", "test2"), new MarklogicMappingContext()), containsInAnyOrder("test1", "field:test2", "computed:TEST1"));
+        assertThat(marklogicCollectionUtils.extractCollections(new ComposedSampleEntity(new SampleEntity("test1", "test2")), new MarklogicMappingContext()), containsInAnyOrder("test1", "field:test2", "computed:TEST1"));
     }
 
     private class SampleEntity extends BaseSampleEntity {
@@ -46,6 +47,19 @@ public class MarklogicCollectionUtilsTest {
         @SuppressWarnings("unused") // Used by reflexion for test
         public String field1ToUpperCase() {
             return field1.toUpperCase();
+        }
+    }
+
+    private class ComposedSampleEntity {
+
+        private BaseSampleEntity sample;
+
+        ComposedSampleEntity(BaseSampleEntity sample) {
+            this.sample = sample;
+        }
+
+        public BaseSampleEntity getSample() {
+            return sample;
         }
     }
 }

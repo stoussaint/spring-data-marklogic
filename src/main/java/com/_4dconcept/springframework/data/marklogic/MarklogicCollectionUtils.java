@@ -4,7 +4,6 @@ import com._4dconcept.springframework.data.marklogic.core.mapping.Collection;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.data.mapping.PersistentPropertyAccessor;
 import org.springframework.data.mapping.PropertyHandler;
 import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.util.StringUtils;
@@ -18,43 +17,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public interface MarklogicCollectionUtils {
 
     default <T> List<String> extractCollections(T entity, MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
         ArrayList<String> collections = new ArrayList<>();
 
-        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entity.getClass());
-        PersistentPropertyAccessor propertyAccessor = persistentEntity.getPropertyAccessor(entity);
-
-        persistentEntity.doWithProperties((PropertyHandler<MarklogicPersistentProperty>) property -> {
-            Optional<Collection> collectionAnnotation = getCollectionAnnotation(property);
-            if (collectionAnnotation.isPresent()) {
-                Object value = propertyAccessor.getProperty(property);
-                if (value != null) {
-                    collections.addAll(doWithCollectionValue(value, collectionAnnotation.get()));
-                }
-            }
-        });
-
-        for (Method method : entity.getClass().getMethods()) {
-            if (method.getParameterCount() > 0) {
-                continue;
-            }
-
-            try {
-                Optional<Collection> collectionAnnotation = getCollectionAnnotation(method);
-                if (collectionAnnotation.isPresent()) {
-                    Object value = method.invoke(entity);
-                    if (value != null) {
-                        collections.addAll(doWithCollectionValue(value, collectionAnnotation.get()));
-                    }
-                }
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new UnsupportedOperationException(String.format("Unable to read value from %s", method), e);
-            }
-
-        }
+        collections.addAll(extractCollectionsFromProperties(entity, mappingContext));
+        collections.addAll(extractCollectionsFromMethods(entity));
 
         return collections.stream().distinct().collect(Collectors.toList());
     }
@@ -97,5 +68,53 @@ public interface MarklogicCollectionUtils {
         }
     }
 
+    default <T> List<String> extractCollectionsFromProperties(T entity, MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
+        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(entity.getClass());
+
+        if (persistentEntity == null) {
+            return Collections.emptyList();
+        }
+
+        List<String> collections = new ArrayList<>();
+        persistentEntity.doWithProperties((PropertyHandler<MarklogicPersistentProperty>) property -> {
+            Object value = persistentEntity.getPropertyAccessor(entity).getProperty(property);
+            if (value != null) {
+                Optional<Collection> collectionAnnotation = getCollectionAnnotation(property);
+                if (collectionAnnotation.isPresent()) {
+                    collections.addAll(doWithCollectionValue(value, collectionAnnotation.get()));
+                } else {
+                    StreamSupport.stream(property.getPersistentEntityTypes().spliterator(), false)
+                            .findFirst()
+                            .ifPresent(ti -> collections.addAll(extractCollections(value, mappingContext)));
+                }
+            }
+        });
+
+        return collections;
+    }
+
+    default <T> List<String> extractCollectionsFromMethods(T entity) {
+        List<String> collections = new ArrayList<>();
+
+        for (Method method : entity.getClass().getMethods()) {
+            if (method.getParameterCount() > 0) {
+                continue;
+            }
+
+            try {
+                Optional<Collection> collectionAnnotation = getCollectionAnnotation(method);
+                if (collectionAnnotation.isPresent()) {
+                    Object value = method.invoke(entity);
+                    if (value != null) {
+                        collections.addAll(doWithCollectionValue(value, collectionAnnotation.get()));
+                    }
+                }
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new UnsupportedOperationException(String.format("Unable to read value from %s", method), e);
+            }
+        }
+
+        return collections;
+    }
 
 }

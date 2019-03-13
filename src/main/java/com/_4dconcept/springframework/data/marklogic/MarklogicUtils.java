@@ -93,6 +93,16 @@ public final class MarklogicUtils {
         return persistentEntity == null ? null : persistentEntity.getIdProperty();
     }
 
+    public static <E extends MarklogicPersistentEntity<?>> E retrievePersistentEntity(Class<?> aClass, MappingContext<E, MarklogicPersistentProperty> mappingContext) {
+        E persistentEntity = mappingContext.getPersistentEntity(aClass);
+
+        if (persistentEntity == null) {
+            throw new TypeMismatchDataAccessException(String.format("No Persistent Entity information found for the class %s", aClass));
+        }
+
+        return persistentEntity;
+    }
+
     /**
      * Expands the given expression using the provided context.
      *

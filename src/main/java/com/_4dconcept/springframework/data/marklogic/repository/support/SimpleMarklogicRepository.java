@@ -104,7 +104,7 @@ public class SimpleMarklogicRepository<T, ID> implements MarklogicRepository<T, 
     @Override
     public Optional<T> findById(ID id) {
         Assert.notNull(id, "The given id must not be null");
-            return Optional.ofNullable(marklogicOperations.findById(id, entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation)));
+        return Optional.ofNullable(marklogicOperations.findById(id, entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation)));
     }
 
     @Override

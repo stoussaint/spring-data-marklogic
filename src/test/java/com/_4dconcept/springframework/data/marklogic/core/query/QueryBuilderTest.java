@@ -16,6 +16,10 @@
 package com._4dconcept.springframework.data.marklogic.core.query;
 
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperationOptions;
+import com._4dconcept.springframework.data.marklogic.core.cts.CTSQuerySerializer;
+import com._4dconcept.springframework.data.marklogic.core.mapping.Collection;
+import com._4dconcept.springframework.data.marklogic.core.mapping.Document;
+import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicIdentifier;
 import com._4dconcept.springframework.data.marklogic.repository.Address;
 import com._4dconcept.springframework.data.marklogic.repository.Person;
 import org.junit.Rule;
@@ -24,6 +28,7 @@ import org.junit.rules.ExpectedException;
 import org.springframework.data.domain.Example;
 import org.springframework.expression.spel.SpelEvaluationException;
 
+import javax.xml.namespace.QName;
 import java.util.Arrays;
 import java.util.List;
 
@@ -131,9 +136,9 @@ public class QueryBuilderTest {
 
         assertThat(subCriteriaList, hasSize(2));
         assertThat(subCriteriaList.get(0).getOperator(), is(Criteria.Operator.COLLECTION));
-        assertThat(subCriteriaList.get(0).getCriteriaObject(), is("collection1"));
+        assertThat(subCriteriaList.get(0).getCriteriaObject(), is("extra:collection1"));
         assertThat(subCriteriaList.get(1).getOperator(), is(Criteria.Operator.COLLECTION));
-        assertThat(subCriteriaList.get(1).getCriteriaObject(), is("collection2"));
+        assertThat(subCriteriaList.get(1).getCriteriaObject(), is("extra:collection2"));
     }
 
     @Test
@@ -197,4 +202,189 @@ public class QueryBuilderTest {
 
         assertThat(query.getCollection(), is("contact"));
     }
+
+    @Test
+    public void buildQuery_ForSimpleEntityIdentifierBy() {
+        Query query = new QueryBuilder().ofType(SimpleIdentifiedEntity.class).identifiedBy(new MarklogicIdentifier() {
+            @Override
+            public QName qname() {
+                return new QName("test", "id");
+            }
+
+            @Override
+            public Object value() {
+                return "1";
+            }
+        }).build();
+
+        assertThat(query, notNullValue());
+        assertThat(query.getCollection(), is("SimpleIdentifiedEntity"));
+        assertThat(query.getCriteria(), notNullValue());
+        assertThat(query.getCriteria().getOperator(), nullValue());
+        assertThat(query.getCriteria().getQname(), notNullValue());
+        assertThat(query.getCriteria().getQname().getNamespaceURI(), is("test"));
+        assertThat(query.getCriteria().getQname().getLocalPart(), is("id"));
+        assertThat(query.getCriteria().getCriteriaObject(), is("1"));
+    }
+
+    @Test
+    public void buildQuery_ForCompositeEntityIdentifierBy() {
+        Query query = new QueryBuilder().ofType(CompositeIdentifiedEntity.class).identifiedBy(new MarklogicIdentifier() {
+            @Override
+            public QName qname() {
+                return new QName("test", "id");
+            }
+
+            @Override
+            public Object value() {
+                return new CompositeId("aaa", "111");
+            }
+        }).build();
+
+        assertThat(query, notNullValue());
+        assertThat(query.getCollection(), is("CompositeIdentifiedEntity"));
+        assertThat(query.getCriteria(), notNullValue());
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
+
+        @SuppressWarnings("unchecked")
+        List<Criteria> subCriteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();
+
+        assertThat(subCriteriaList, hasSize(2));
+
+        Criteria criteria1 = subCriteriaList.get(0);
+        assertThat(criteria1.getQname(), notNullValue());
+        assertThat(criteria1.getQname().getLocalPart(), is("idPart1"));
+        assertThat(criteria1.getCriteriaObject(), is("aaa"));
+
+        Criteria criteria2 = subCriteriaList.get(1);
+        assertThat(criteria2.getQname(), notNullValue());
+        assertThat(criteria2.getQname().getLocalPart(), is("idPart2"));
+        assertThat(criteria2.getCriteriaObject(), is("111"));
+    }
+
+    @Test
+    public void buildQuery_ForSimpleEntityIdentifierByInProperties() {
+        Query query = new QueryBuilder().ofType(SimpleIdentifiedEntity.class).identifiedBy(new MarklogicIdentifier() {
+            @Override
+            public QName qname() {
+                return new QName("test", "id");
+            }
+
+            @Override
+            public Object value() {
+                return "1";
+            }
+        }).options(new MarklogicOperationOptions() {
+            @Override
+            public boolean idInPropertyFragment() {
+                return true;
+            }
+        }).build();
+
+        assertThat(query, notNullValue());
+        assertThat(query.getCollection(), is("SimpleIdentifiedEntity"));
+        assertThat(query.getCriteria(), notNullValue());
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.PROPERTIES));
+
+        Criteria criteriaObject = (Criteria) query.getCriteria().getCriteriaObject();
+        assertThat(criteriaObject, notNullValue());
+        assertThat(criteriaObject.getQname(), notNullValue());
+        assertThat(criteriaObject.getQname().getNamespaceURI(), is("test"));
+        assertThat(criteriaObject.getQname().getLocalPart(), is("id"));
+        assertThat(criteriaObject.getCriteriaObject(), is("1"));
+    }
+
+    @Test
+    public void buildQuery_ForCompositeEntityIdentifierByInProperties() {
+        Query query = new QueryBuilder().ofType(CompositeIdentifiedEntity.class).identifiedBy(new MarklogicIdentifier() {
+            @Override
+            public QName qname() {
+                return new QName("test", "id");
+            }
+
+            @Override
+            public Object value() {
+                return new CompositeId("aaa", "111");
+            }
+        }).options(new MarklogicOperationOptions() {
+            @Override
+            public boolean idInPropertyFragment() {
+                return true;
+            }
+        }).build();
+
+        assertThat(query, notNullValue());
+        assertThat(query.getCollection(), is("CompositeIdentifiedEntity"));
+        assertThat(query.getCriteria(), notNullValue());
+
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.PROPERTIES));
+        Criteria criteriaObject = (Criteria) query.getCriteria().getCriteriaObject();
+
+        assertThat(criteriaObject, notNullValue());
+        assertThat(criteriaObject.getOperator(), is(Criteria.Operator.AND));
+        assertThat(criteriaObject.getCriteriaObject(), instanceOf(List.class));
+
+        @SuppressWarnings("unchecked")
+        List<Criteria> subCriteriaList = (List<Criteria>) criteriaObject.getCriteriaObject();
+
+        assertThat(subCriteriaList, hasSize(2));
+
+        Criteria criteria1 = subCriteriaList.get(0);
+        assertThat(criteria1.getQname(), notNullValue());
+        assertThat(criteria1.getQname().getLocalPart(), is("idPart1"));
+        assertThat(criteria1.getCriteriaObject(), is("aaa"));
+
+        Criteria criteria2 = subCriteriaList.get(1);
+        assertThat(criteria2.getQname(), notNullValue());
+        assertThat(criteria2.getQname().getLocalPart(), is("idPart2"));
+        assertThat(criteria2.getCriteriaObject(), is("111"));
+    }
+
+    @Document
+    @Collection("#{entityClass.getSimpleName()}")
+    private static class SimpleIdentifiedEntity {
+        private String id;
+
+        public SimpleIdentifiedEntity(String id) {
+            this.id = id;
+        }
+
+        public String getId() {
+            return id;
+        }
+    }
+
+    @Document
+    @Collection("#{entityClass.getSimpleName()}")
+    private static class CompositeIdentifiedEntity {
+        private CompositeId id;
+
+        public CompositeIdentifiedEntity(CompositeId id) {
+            this.id = id;
+        }
+
+        public CompositeId getId() {
+            return id;
+        }
+    }
+
+    private static class CompositeId {
+        private String idPart1;
+        private String idPart2;
+
+        public CompositeId(String idPart1, String idPart2) {
+            this.idPart1 = idPart1;
+            this.idPart2 = idPart2;
+        }
+
+        public String getIdPart1() {
+            return idPart1;
+        }
+
+        public String getIdPart2() {
+            return idPart2;
+        }
+    }
+
 }

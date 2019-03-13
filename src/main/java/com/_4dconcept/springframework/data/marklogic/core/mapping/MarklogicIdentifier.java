@@ -26,6 +26,6 @@ public interface MarklogicIdentifier {
 
     QName qname();
 
-    String value();
+    Object value();
 
 }

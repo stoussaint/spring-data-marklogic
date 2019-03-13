@@ -126,4 +126,35 @@ public class CTSQuerySerializerTest {
         String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
         assertThat(ctsQuery, Matchers.containsString("l''apostrophe"));
     }
+
+    @Test
+    public void parsePopulatedQueryAsProperties() {
+        Query query = new Query();
+        query.setCriteria(new Criteria(Criteria.Operator.PROPERTIES, new Criteria(Criteria.Operator.AND, Arrays.asList(
+                new Criteria(new QName("name"), "Me"),
+                new Criteria(new QName("town"), "Paris")
+        ))));
+
+        String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
+
+        assertThat(ctsQuery, is("cts:search(fn:collection(), cts:properties-fragment-query(cts:and-query((cts:element-value-query(fn:QName('', 'name'), 'Me'), cts:element-value-query(fn:QName('', 'town'), 'Paris')))), ())"));
+    }
+
+    @Test
+    public void parseEmptyQueryAsCtsUri() {
+        String ctsQuery = new CTSQuerySerializer(new Query()).asCtsUris();
+
+        assertThat(ctsQuery, is("cts:uris((), (), cts:and-query((cts:collection-query(()), ())))"));
+    }
+
+    @Test
+    public void parseQueryAsCtsUri() {
+        Query query = new Query();
+        query.setCollection("test");
+        query.setCriteria(new Criteria(Criteria.Operator.NOT, new Criteria(new QName("town"), "Paris")));
+
+        String ctsQuery = new CTSQuerySerializer(query).asCtsUris();
+
+        assertThat(ctsQuery, is("cts:uris((), (), cts:and-query((cts:collection-query('test'), cts:not-query(cts:element-value-query(fn:QName('', 'town'), 'Paris')))))"));
+    }
 }

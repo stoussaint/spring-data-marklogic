@@ -175,7 +175,7 @@ public class MarklogicTemplateTest {
     public void saveWithSpecificIdFallbackToInsert() throws Exception {
         final String SAMPLE_CONTENT = "<simpleEntity><id>1</id><name>entity</name></simpleEntity>";
 
-        when(session.newAdhocQuery(eq("cts:uris((), (), cts:and-query((cts:element-value-query(fn:QName(\"\", \"id\"), \"1\"))))"))).thenReturn(new AdhocImpl(session, null, new RequestOptions()));
+        when(session.newAdhocQuery(eq("cts:uris((), (), cts:and-query((cts:collection-query(()), cts:element-value-query(fn:QName('', 'id'), '1'))))"))).thenReturn(new AdhocImpl(session, null, new RequestOptions()));
 
         doAnswer(invocationOnMock -> {
             MarklogicContentHolder holder = invocationOnMock.getArgument(1);

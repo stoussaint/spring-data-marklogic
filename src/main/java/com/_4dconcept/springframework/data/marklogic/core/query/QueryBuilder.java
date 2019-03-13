@@ -16,13 +16,15 @@
 package com._4dconcept.springframework.data.marklogic.core.query;
 
 import com._4dconcept.springframework.data.marklogic.MarklogicCollectionUtils;
+import com._4dconcept.springframework.data.marklogic.MarklogicTypeUtils;
 import com._4dconcept.springframework.data.marklogic.MarklogicUtils;
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperationOptions;
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperations;
+import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicIdentifier;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
-import org.springframework.dao.TypeMismatchDataAccessException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -58,6 +60,9 @@ public class QueryBuilder {
     private Example example;
 
     @Nullable
+    private MarklogicIdentifier identifier;
+
+    @Nullable
     private Sort sort;
 
     @Nullable
@@ -90,6 +95,11 @@ public class QueryBuilder {
         return this;
     }
 
+    public QueryBuilder identifiedBy(MarklogicIdentifier identifier) {
+        this.identifier = identifier;
+        return this;
+    }
+
     public QueryBuilder with(Sort sort) {
         this.sort = sort;
         return this;
@@ -108,27 +118,62 @@ public class QueryBuilder {
     public Query build() {
         Query query = new Query();
 
-        String collection = MarklogicUtils.expandsExpression(determinePrincipalCollection(), determineTargetClass());
-        if (collection != null) {
-            query.setCollection(collection);
-        }
+        setCollectionIfDefined(query);
 
         if (example != null) {
-            Criteria criteria = buildCriteriaFromEntityProperties(example.getProbe());
-            if (criteria != null) {
-                query.setCriteria(criteria);
-            }
+            setCriteriaFromExample(query, example);
+        } else if (identifier != null) {
+            setCriteriaFromIdentifier(query, identifier);
         }
 
         if (sort != null) {
             query.setSortCriteria(prepareSortCriteria(sort));
         } else if (pageable != null) {
-            query.setSortCriteria(prepareSortCriteria(pageable.getSort()));
-            query.setSkip(pageable.getOffset());
-            query.setLimit(pageable.getPageSize());
+            setPagination(query, pageable);
         }
 
         return query;
+    }
+
+    private void setCollectionIfDefined(Query query) {
+        String collection = MarklogicUtils.expandsExpression(determinePrincipalCollection(), determineTargetClass());
+        if (collection != null) {
+            query.setCollection(collection);
+        }
+    }
+
+    private void setCriteriaFromExample(Query query, Example example) {
+        Criteria criteria = buildCriteriaFromEntityProperties(example.getProbe());
+        if (criteria != null) {
+            query.setCriteria(criteria);
+        }
+    }
+
+    private void setCriteriaFromIdentifier(Query query, MarklogicIdentifier identifier) {
+        Criteria criteria;
+        if (MarklogicTypeUtils.isSimpleType(identifier.value().getClass())) {
+            criteria = new Criteria();
+            criteria.setQname(identifier.qname());
+            criteria.setCriteriaObject(identifier.value());
+        } else {
+            criteria = buildCriteriaFromEntityProperties(identifier.value());
+
+            if (criteria == null) {
+                throw new InvalidDataAccessApiUsageException("Unable to compile identifier criteria");
+            }
+        }
+
+        if (options.idInPropertyFragment()) {
+            query.setCriteria(new Criteria(Criteria.Operator.PROPERTIES, criteria));
+        } else {
+            query.setCriteria(criteria);
+        }
+    }
+
+    private void setPagination(Query query, Pageable pageable) {
+        query.setSortCriteria(prepareSortCriteria(pageable.getSort()));
+        query.setSkip(pageable.getOffset());
+        query.setLimit(pageable.getPageSize());
     }
 
     @Nullable
@@ -137,7 +182,7 @@ public class QueryBuilder {
             return options.defaultCollection();
         } else {
             Class<?> targetClass = determineTargetClass();
-            return targetClass != null ? retrievePersistentEntity(targetClass).getDefaultCollection() : null;
+            return targetClass != null ? MarklogicUtils.retrievePersistentEntity(targetClass, mappingContext).getDefaultCollection() : null;
         }
     }
 
@@ -145,7 +190,7 @@ public class QueryBuilder {
     private Criteria buildCriteriaFromEntityProperties(Object bean) {
         Deque<Criteria> stack = new ArrayDeque<>();
 
-        MarklogicPersistentEntity<?> entity = retrievePersistentEntity(bean.getClass());
+        MarklogicPersistentEntity<?> entity = MarklogicUtils.retrievePersistentEntity(bean.getClass(), mappingContext);
         PersistentPropertyAccessor propertyAccessor = entity.getPropertyAccessor(bean);
 
         entity.doWithProperties((PropertyHandler<MarklogicPersistentProperty>) property -> {
@@ -177,13 +222,14 @@ public class QueryBuilder {
                         .collect(Collectors.toList())
                 );
             } else {
-                if (marklogicCollectionUtils.getCollectionAnnotation(property).isPresent()) {
+                Optional<com._4dconcept.springframework.data.marklogic.core.mapping.Collection> collection = marklogicCollectionUtils.getCollectionAnnotation(property);
+                if (collection.isPresent()) {
                     criteria.setOperator(Criteria.Operator.COLLECTION);
+                    criteria.setCriteriaObject(marklogicCollectionUtils.doWithCollectionValue(value, collection.get()).get(0));
                 } else {
                     criteria.setQname(property.getQName());
+                    criteria.setCriteriaObject(value);
                 }
-
-                criteria.setCriteriaObject(value);
             }
 
             return criteria;
@@ -217,7 +263,7 @@ public class QueryBuilder {
         Class<?> targetType = example != null ? example.getProbeType() : options.entityClass();
         Assert.notNull(targetType, "Query needs a explicit type to resolve sort order");
 
-        MarklogicPersistentEntity<?> persistentEntity = retrievePersistentEntity(targetType);
+        MarklogicPersistentEntity<?> persistentEntity = MarklogicUtils.retrievePersistentEntity(targetType, mappingContext);
         return buildSortCriteria(sort, persistentEntity);
     }
 
@@ -239,16 +285,6 @@ public class QueryBuilder {
         }
 
         return sortCriteriaList;
-    }
-
-    private MarklogicPersistentEntity<?> retrievePersistentEntity(Class<?> aClass) {
-        MarklogicPersistentEntity<?> persistentEntity = mappingContext.getPersistentEntity(aClass);
-
-        if (persistentEntity == null) {
-            throw new TypeMismatchDataAccessException(String.format("No Persistent Entity information found for the class %s", aClass));
-        }
-
-        return persistentEntity;
     }
 
     @Nullable

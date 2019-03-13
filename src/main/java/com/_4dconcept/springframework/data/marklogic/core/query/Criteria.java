@@ -30,7 +30,7 @@ import java.util.Collection;
 public class Criteria implements CriteriaDefinition {
 
     public enum Operator {
-        AND, OR, NOT, COLLECTION
+        AND, OR, NOT, COLLECTION, PROPERTIES
     }
 
     private @Nullable QName qname;
