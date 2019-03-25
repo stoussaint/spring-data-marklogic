@@ -155,6 +155,22 @@ public class RepositoryIntegrationTests {
     }
 
     @Test
+    public void findAllInOrder() {
+        List<Person> result = repository.findAllByOrderByLastname();
+        assertThat(result.get(0).getFirstname(), is("Sahbi"));
+        assertThat(result.get(1).getFirstname(), is("Another"));
+        assertThat(result.get(2).getFirstname(), is("Stéphane"));
+    }
+
+    @Test
+    public void findAllInDescendingOrder() {
+        List<Person> result = repository.findAllByOrderByLastnameDesc();
+        assertThat(result.get(0).getFirstname(), is("Stéphane"));
+        assertThat(result.get(1).getFirstname(), is("Another"));
+        assertThat(result.get(2).getFirstname(), is("Sahbi"));
+    }
+
+    @Test
     public void findAllById() {
         List<Person> result = repository.findAllById(Arrays.asList(sahbiId, stephId));
         assertThat(result, hasSize(2));

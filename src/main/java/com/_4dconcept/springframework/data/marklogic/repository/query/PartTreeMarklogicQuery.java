@@ -15,12 +15,9 @@
  */
 package com._4dconcept.springframework.data.marklogic.repository.query;
 
-import com._4dconcept.springframework.data.marklogic.MarklogicUtils;
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperations;
-import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
-import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
+import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
-import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.PartTree;
@@ -33,24 +30,19 @@ import org.springframework.data.repository.query.parser.PartTree;
 public class PartTreeMarklogicQuery extends AbstractMarklogicQuery {
 
     private final PartTree tree;
-    private final MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> context;
+    private final MarklogicMappingContext context;
 
     public PartTreeMarklogicQuery(MarklogicQueryMethod method, MarklogicOperations marklogicOperations) {
         super(method, marklogicOperations);
 
         this.tree = new PartTree(method.getName(), method.getResultProcessor().getReturnedType().getDomainType());
-        this.context = marklogicOperations.getConverter().getMappingContext();
+        this.context = (MarklogicMappingContext) marklogicOperations.getConverter().getMappingContext();
     }
 
     @Override
     protected Query createQuery(ParameterAccessor accessor) {
-        MarklogicQueryCreator creator = new MarklogicQueryCreator(tree, accessor, context);
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(tree, accessor, context, getQueryMethod().getReturnedObjectType());
         Query query = creator.createQuery();
-
-        Class<?> domainType = getQueryMethod().getReturnedObjectType();
-
-        String defaultCollection = context.getPersistentEntity(domainType).getDefaultCollection();
-        query.setCollection(MarklogicUtils.expandsExpression(defaultCollection, domainType));
 
         if (tree.isLimiting()) {
             query.setLimit(tree.getMaxResults() == null ? 0 : tree.getMaxResults());

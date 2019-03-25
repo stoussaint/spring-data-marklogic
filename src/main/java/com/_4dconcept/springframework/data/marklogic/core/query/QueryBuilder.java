@@ -53,6 +53,8 @@ import java.util.stream.StreamSupport;
  */
 public class QueryBuilder {
 
+    private Criteria criteria;
+
     @Nullable
     private Class<?> type;
 
@@ -83,6 +85,10 @@ public class QueryBuilder {
         this.mappingContext = marklogicOperations.getConverter().getMappingContext();
     }
 
+    public QueryBuilder(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
+        this.mappingContext = mappingContext;
+    }
+
     public QueryBuilder ofType(Class<?> type) {
         Assert.isNull(example, "Query by example or by type are mutually exclusive");
         this.type = type;
@@ -92,6 +98,11 @@ public class QueryBuilder {
     public QueryBuilder alike(Example example) {
         Assert.isNull(type, "Query by example or by type are mutually exclusive");
         this.example = example;
+        return this;
+    }
+
+    public QueryBuilder with(@Nullable Criteria criteria) {
+        this.criteria = criteria;
         return this;
     }
 
@@ -126,6 +137,8 @@ public class QueryBuilder {
             setCriteriaFromIdentifier(query, identifier);
         }
 
+        addCriteria(query, criteria);
+
         if (sort != null) {
             query.setSortCriteria(prepareSortCriteria(sort));
         } else if (pageable != null) {
@@ -133,6 +146,21 @@ public class QueryBuilder {
         }
 
         return query;
+    }
+
+    private void addCriteria(Query query, @Nullable Criteria criteria) {
+        if (criteria == null) {
+            return;
+        }
+
+        Criteria lastCriteria = query.getCriteria();
+
+        if (lastCriteria != null) {
+            Criteria andCriteria = new Criteria(Criteria.Operator.AND, new ArrayList<>(Arrays.asList(lastCriteria, criteria)));
+            query.setCriteria(andCriteria);
+        } else {
+            query.setCriteria(criteria);
+        }
     }
 
     private void setCollectionIfDefined(Query query) {
@@ -143,30 +171,30 @@ public class QueryBuilder {
     }
 
     private void setCriteriaFromExample(Query query, Example example) {
-        Criteria criteria = buildCriteriaFromEntityProperties(example.getProbe());
-        if (criteria != null) {
-            query.setCriteria(criteria);
+        Criteria exampleCriteria = buildCriteriaFromEntityProperties(example.getProbe());
+        if (exampleCriteria != null) {
+            query.setCriteria(exampleCriteria);
         }
     }
 
     private void setCriteriaFromIdentifier(Query query, MarklogicIdentifier identifier) {
-        Criteria criteria;
+        Criteria identifierCriteria;
         if (MarklogicTypeUtils.isSimpleType(identifier.value().getClass())) {
-            criteria = new Criteria();
-            criteria.setQname(identifier.qname());
-            criteria.setCriteriaObject(identifier.value());
+            identifierCriteria = new Criteria();
+            identifierCriteria.setQname(identifier.qname());
+            identifierCriteria.setCriteriaObject(identifier.value());
         } else {
-            criteria = buildCriteriaFromEntityProperties(identifier.value());
+            identifierCriteria = buildCriteriaFromEntityProperties(identifier.value());
 
-            if (criteria == null) {
+            if (identifierCriteria == null) {
                 throw new InvalidDataAccessApiUsageException("Unable to compile identifier criteria");
             }
         }
 
         if (options.idInPropertyFragment()) {
-            query.setCriteria(new Criteria(Criteria.Operator.PROPERTIES, criteria));
+            query.setCriteria(new Criteria(Criteria.Operator.PROPERTIES, identifierCriteria));
         } else {
-            query.setCriteria(criteria);
+            query.setCriteria(identifierCriteria);
         }
     }
 
@@ -212,37 +240,37 @@ public class QueryBuilder {
         if (typeInformation.isPresent()) {
             return buildCriteriaFromEntityProperties(value);
         } else {
-            Criteria criteria = new Criteria();
+            Criteria propertyCriteria = new Criteria();
 
             if (value instanceof Collection) {
-                criteria.setOperator(Criteria.Operator.OR);
+                propertyCriteria.setOperator(Criteria.Operator.OR);
                 Collection<?> collection = (Collection<?>) value;
-                criteria.setCriteriaObject(collection.stream()
+                propertyCriteria.setCriteriaObject(collection.stream()
                         .map(o -> buildCriteriaFromProperty(property, o))
                         .collect(Collectors.toList())
                 );
             } else {
                 Optional<com._4dconcept.springframework.data.marklogic.core.mapping.Collection> collection = marklogicCollectionUtils.getCollectionAnnotation(property);
                 if (collection.isPresent()) {
-                    criteria.setOperator(Criteria.Operator.COLLECTION);
-                    criteria.setCriteriaObject(marklogicCollectionUtils.doWithCollectionValue(value, collection.get()).get(0));
+                    propertyCriteria.setOperator(Criteria.Operator.COLLECTION);
+                    propertyCriteria.setCriteriaObject(marklogicCollectionUtils.doWithCollectionValue(value, collection.get()).get(0));
                 } else {
-                    criteria.setQname(property.getQName());
-                    criteria.setCriteriaObject(value);
+                    propertyCriteria.setQname(property.getQName());
+                    propertyCriteria.setCriteriaObject(value);
                 }
             }
 
-            return criteria;
+            return propertyCriteria;
         }
     }
 
     private void stackNewCriteria(Deque<Criteria> stack, Criteria newCriteria) {
-        Criteria criteria = stack.peek();
-        if (criteria != null) {
-            if (Criteria.Operator.AND == criteria.getOperator()) {
-                criteria.add(newCriteria);
+        Criteria lastCriteria = stack.peek();
+        if (lastCriteria != null) {
+            if (Criteria.Operator.AND == lastCriteria.getOperator()) {
+                lastCriteria.add(newCriteria);
             } else {
-                wrapInAndCriteria(stack, newCriteria, criteria);
+                wrapInAndCriteria(stack, newCriteria, lastCriteria);
             }
         } else {
             stack.push(newCriteria);
@@ -260,7 +288,7 @@ public class QueryBuilder {
     }
 
     private List<SortCriteria> prepareSortCriteria(Sort sort) {
-        Class<?> targetType = example != null ? example.getProbeType() : options.entityClass();
+        Class<?> targetType = determineTargetClass();
         Assert.notNull(targetType, "Query needs a explicit type to resolve sort order");
 
         MarklogicPersistentEntity<?> persistentEntity = MarklogicUtils.retrievePersistentEntity(targetType, mappingContext);

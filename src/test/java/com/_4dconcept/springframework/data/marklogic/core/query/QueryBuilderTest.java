@@ -16,7 +16,6 @@
 package com._4dconcept.springframework.data.marklogic.core.query;
 
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperationOptions;
-import com._4dconcept.springframework.data.marklogic.core.cts.CTSQuerySerializer;
 import com._4dconcept.springframework.data.marklogic.core.mapping.Collection;
 import com._4dconcept.springframework.data.marklogic.core.mapping.Document;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicIdentifier;
@@ -32,9 +31,7 @@ import javax.xml.namespace.QName;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;

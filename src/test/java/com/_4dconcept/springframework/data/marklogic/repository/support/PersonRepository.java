@@ -4,6 +4,8 @@ import com._4dconcept.springframework.data.marklogic.repository.MarklogicReposit
 import com._4dconcept.springframework.data.marklogic.repository.Person;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 /**
  * Test repository based on {@link Person} entity.
  *
@@ -12,4 +14,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 interface PersonRepository extends MarklogicRepository<Person, String> {
+
+    List<Person> findAllByOrderByLastname();
+    List<Person> findAllByOrderByLastnameDesc();
 }
