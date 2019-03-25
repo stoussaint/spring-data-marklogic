@@ -29,7 +29,7 @@ public class MarklogicQueryCreatorTest {
     @Test
     public void createQueryWithSingleParameter() throws Exception {
         final MarklogicQueryMethod method = buildMethod("findByLastname", String.class);
-        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "name"), mappingContext);
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "name"), mappingContext, Person.class);
         Query query = creator.createQuery();
 
         assertThat(query.getCriteria().getQname().getLocalPart(), is("lastname"));
@@ -39,7 +39,7 @@ public class MarklogicQueryCreatorTest {
     @Test
     public void createQueryWithTwoParameters() throws Exception {
         final MarklogicQueryMethod method = buildMethod("findByLastnameAndAddressCountry", String.class, String.class);
-        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "name", "country"), mappingContext);
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "name", "country"), mappingContext, Person.class);
         Query query = creator.createQuery();
 
         assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
@@ -51,7 +51,7 @@ public class MarklogicQueryCreatorTest {
     @Test
     public void createQueryWithThreeParameters() throws Exception {
         final MarklogicQueryMethod method = buildMethod("findByLastnameAndFirstnameAndAge", String.class, String.class, Integer.class);
-        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "lastname", "firstname", 38), mappingContext);
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "lastname", "firstname", 38), mappingContext, Person.class);
         Query query = creator.createQuery();
 
         assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
@@ -63,7 +63,7 @@ public class MarklogicQueryCreatorTest {
     @Test
     public void createQueryWithNegativeSingleParameter() throws Exception {
         final MarklogicQueryMethod method = buildMethod("findByAddressCountryIsNot", String.class);
-        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "France"), mappingContext);
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, "France"), mappingContext, Person.class);
         Query query = creator.createQuery();
 
         assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.NOT));

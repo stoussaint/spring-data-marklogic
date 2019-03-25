@@ -16,15 +16,16 @@
 package com._4dconcept.springframework.data.marklogic.repository.query;
 
 import com._4dconcept.springframework.data.marklogic.MarklogicCollectionUtils;
+import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
 import com._4dconcept.springframework.data.marklogic.core.query.CriteriaDefinition;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
+import com._4dconcept.springframework.data.marklogic.core.query.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.TypeMismatchDataAccessException;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mapping.context.MappingContext;
 import org.springframework.data.mapping.context.PersistentPropertyPath;
 import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.parser.AbstractQueryCreator;
@@ -48,14 +49,17 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MarklogicQueryCreator.class);
 
-    private MappingContext<?, MarklogicPersistentProperty> context;
+    private MarklogicMappingContext context;
+
+    private Class<?> returnedType;
 
     private MarklogicCollectionUtils marklogicCollectionUtils = new MarklogicCollectionUtils() {};
 
-    MarklogicQueryCreator(PartTree tree, ParameterAccessor parameters, MappingContext<?, MarklogicPersistentProperty> context) {
+    MarklogicQueryCreator(PartTree tree, ParameterAccessor parameters, MarklogicMappingContext context, Class<?> returnedType) {
         super(tree, parameters);
 
         this.context = context;
+        this.returnedType = returnedType;
     }
 
     @Override
@@ -93,7 +97,9 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
 
     @Override
     protected Query complete(@Nullable Criteria criteria, Sort sort) {
-        Query query = criteria == null ? new Query() : new Query(criteria);
+        QueryBuilder queryBuilder = new QueryBuilder(context);
+
+        Query query = queryBuilder.ofType(returnedType).with(criteria).with(sort).build();
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Created query {}", query);

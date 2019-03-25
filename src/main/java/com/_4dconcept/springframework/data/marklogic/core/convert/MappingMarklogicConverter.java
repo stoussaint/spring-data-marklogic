@@ -16,8 +16,7 @@
 package com._4dconcept.springframework.data.marklogic.core.convert;
 
 import com._4dconcept.springframework.data.marklogic.MarklogicTypeUtils;
-import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
-import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
+import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com.marklogic.xcc.ResultItem;
 import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.ConversionService;
@@ -35,13 +34,13 @@ import org.springframework.lang.Nullable;
  */
 public class MappingMarklogicConverter extends AbstractMarklogicConverter  {
 
-    protected final MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext;
+    protected final MarklogicMappingContext mappingContext;
 
-    public MappingMarklogicConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
+    public MappingMarklogicConverter(MarklogicMappingContext mappingContext) {
         this(mappingContext, null);
     }
 
-    public MappingMarklogicConverter(MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext, @Nullable GenericConversionService conversionService) {
+    public MappingMarklogicConverter(MarklogicMappingContext mappingContext, @Nullable GenericConversionService conversionService) {
         super(conversionService);
         this.mappingContext = mappingContext;
     }
@@ -99,7 +98,7 @@ public class MappingMarklogicConverter extends AbstractMarklogicConverter  {
 	 * (non-Javadoc)
 	 * @see org.springframework.data.convert.EntityConverter#getMappingContext()
 	 */
-    public MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> getMappingContext() {
+    public MarklogicMappingContext getMappingContext() {
         return mappingContext;
     }
 }
