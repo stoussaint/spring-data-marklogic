@@ -83,9 +83,11 @@ public interface MarklogicCollectionUtils {
                 if (collectionAnnotation.isPresent()) {
                     collections.addAll(doWithCollectionValue(value, collectionAnnotation.get()));
                 } else {
-                    StreamSupport.stream(property.getPersistentEntityTypes().spliterator(), false)
-                            .findFirst()
-                            .ifPresent(ti -> collections.addAll(extractCollections(value, mappingContext)));
+                    if (property.getReadMethod().isPresent()) {
+                        StreamSupport.stream(property.getPersistentEntityTypes().spliterator(), false)
+                                .findFirst()
+                                .ifPresent(ti -> collections.addAll(extractCollections(value, mappingContext)));
+                    }
                 }
             }
         });
