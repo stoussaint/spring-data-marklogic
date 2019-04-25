@@ -126,4 +126,13 @@ public class CTSQuerySerializerTest {
         String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
         assertThat(ctsQuery, Matchers.containsString("l''apostrophe"));
     }
+
+    @Test
+    public void parseQueryWithStringValueContainingAmpersandIsEscaped() {
+        Query query = new Query();
+        query.setCriteria(new Criteria(new QName("name"), "Tom & Jerry"));
+
+        String ctsQuery = new CTSQuerySerializer(query).asCtsQuery();
+        assertThat(ctsQuery, Matchers.containsString("'Tom &amp; Jerry'"));
+    }
 }

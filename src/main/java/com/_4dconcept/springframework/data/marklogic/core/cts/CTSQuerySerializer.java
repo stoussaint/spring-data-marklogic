@@ -68,7 +68,7 @@ public class CTSQuerySerializer {
 
     private String handleSimpleValue(Criteria criteria) {
         if (criteria.getCriteriaObject() instanceof String) {
-            String escapedValue = criteria.getCriteriaObject().toString().replaceAll("'", "''");
+            String escapedValue = criteria.getCriteriaObject().toString().replaceAll("'", "''").replaceAll("&","&amp;");
             return String.format("cts:element-value-query(%s, '%s')", serializeQName(criteria.getQname()), escapedValue);
         } else if (criteria.getCriteriaObject() != null) {
             return String.format("cts:element-value-query(%s, '%s')", serializeQName(criteria.getQname()), criteria.getCriteriaObject());
