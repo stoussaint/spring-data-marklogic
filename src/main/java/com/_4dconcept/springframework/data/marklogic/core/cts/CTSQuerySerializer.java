@@ -92,7 +92,7 @@ public class CTSQuerySerializer {
         Assert.notNull(criteriaObject, "A criteria value is expected");
 
         if (criteriaObject instanceof String) {
-            String escapedValue = ((String) criteriaObject).replaceAll("'", "''");
+            String escapedValue = ((String) criteriaObject).replaceAll("'", "''").replaceAll("&","&amp;");
             return String.format("cts:element-value-query(%s, '%s')", serializeQName(qname), escapedValue);
         } else {
             return String.format("cts:element-value-query(%s, '%s')", serializeQName(qname), criteriaObject);
