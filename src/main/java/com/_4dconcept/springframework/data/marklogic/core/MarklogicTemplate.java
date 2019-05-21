@@ -30,10 +30,7 @@ import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappi
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicSimpleTypes;
-import com._4dconcept.springframework.data.marklogic.core.mapping.event.AfterRetrieveEvent;
-import com._4dconcept.springframework.data.marklogic.core.mapping.event.AfterSaveEvent;
-import com._4dconcept.springframework.data.marklogic.core.mapping.event.BeforeConvertEvent;
-import com._4dconcept.springframework.data.marklogic.core.mapping.event.BeforeSaveEvent;
+import com._4dconcept.springframework.data.marklogic.core.mapping.event.*;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
 import com._4dconcept.springframework.data.marklogic.core.query.QueryBuilder;
 import com._4dconcept.springframework.data.marklogic.datasource.ContentSourceUtils;
@@ -230,14 +227,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
 
     @Override
     public void remove(Object entity) {
-        String uri = retrieveUri(entity);
-        LOGGER.debug("Remove '{}' from '{}'", entity, uri);
-        invokeAdhocQuery("xdmp:document-delete('" + uri + "')", new MarklogicInvokeOperationOptions() {
-            @Override
-            public boolean useCacheResult() {
-                return false;
-            }
-        });
+        doRemove(entity);
     }
 
     @Override
@@ -255,7 +245,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         T entity = findById(id, entityClass, options);
 
         if (entity != null) {
-            remove(entity);
+            doRemove(entity);
         }
     }
 
@@ -494,6 +484,22 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
                 throw new DataRetrievalFailureException("Unable to query uri", re);
             }
         });
+    }
+
+    private void doRemove(Object entity) {
+        String uri = retrieveUri(entity);
+        LOGGER.debug("Remove '{}' from '{}'", entity, uri);
+
+        Object id = resolveMarklogicIdentifier(entity).value();
+
+        maybeEmitEvent(new BeforeDeleteEvent<>(entity, id, uri));
+        invokeAdhocQuery("xdmp:document-delete('" + uri + "')", new MarklogicInvokeOperationOptions() {
+            @Override
+            public boolean useCacheResult() {
+                return false;
+            }
+        });
+        maybeEmitEvent(new AfterDeleteEvent<>(entity, id, uri));
     }
 
     private void doInsert(Object objectToSave, MarklogicCreateOperationOptions options, MarklogicWriter<Object> writer) {

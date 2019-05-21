@@ -22,15 +22,12 @@ import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConve
 import com._4dconcept.springframework.data.marklogic.core.mapping.BasicMarklogicPersistentEntity;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicPersistentProperty;
+import com._4dconcept.springframework.data.marklogic.core.mapping.event.AfterDeleteEvent;
+import com._4dconcept.springframework.data.marklogic.core.mapping.event.AfterRetrieveEvent;
+import com._4dconcept.springframework.data.marklogic.core.mapping.event.BeforeDeleteEvent;
 import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
-import com.marklogic.xcc.Content;
-import com.marklogic.xcc.ContentSource;
-import com.marklogic.xcc.DocumentFormat;
-import com.marklogic.xcc.Request;
-import com.marklogic.xcc.RequestOptions;
-import com.marklogic.xcc.ResultSequence;
-import com.marklogic.xcc.Session;
+import com.marklogic.xcc.*;
 import com.marklogic.xcc.impl.AdhocImpl;
 import com.marklogic.xcc.impl.ResultItemImpl;
 import com.marklogic.xcc.types.impl.XsStringImpl;
@@ -43,6 +40,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.data.mapping.context.MappingContext;
@@ -51,9 +50,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.xml.namespace.QName;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -82,6 +83,9 @@ public class MarklogicTemplateTest {
 
     @Mock
     private MarklogicCollectionUtils marklogicCollectionUtils;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @Captor
     private
@@ -197,6 +201,8 @@ public class MarklogicTemplateTest {
     public void removeEntity() {
         final String contentUri = "/test/entity/1.xml";
 
+        reset(eventPublisher);
+
         AdhocImpl request = new AdhocImpl(session, null, new RequestOptions());
         when(session.newAdhocQuery(any(String.class))).thenReturn(request);
         when(resultSequence.hasNext()).thenReturn(true, false, true, false);
@@ -205,8 +211,23 @@ public class MarklogicTemplateTest {
         when(marklogicConverter.read(eq(String.class), any(MarklogicContentHolder.class))).thenReturn(contentUri);
 
         MarklogicTemplate template = new MarklogicTemplate(contentSource, marklogicConverter);
+        template.setApplicationEventPublisher(eventPublisher);
         template.remove("1", SimpleEntity.class);
 
+        ArgumentCaptor<ApplicationEvent> eventCaptor = ArgumentCaptor.forClass(ApplicationEvent.class);
+
+        verify(eventPublisher, times(4)).publishEvent(eventCaptor.capture());
+        List<ApplicationEvent> events = eventCaptor.getAllValues();
+        assertThat(events.get(0), instanceOf(AfterRetrieveEvent.class));
+        assertThat(events.get(1), instanceOf(AfterRetrieveEvent.class));
+
+        assertThat(events.get(2), instanceOf(BeforeDeleteEvent.class));
+        assertThat(((BeforeDeleteEvent)events.get(2)).getUri(), is("/test/entity/1.xml"));
+        assertThat(((BeforeDeleteEvent)events.get(2)).getId(), is("1"));
+
+        assertThat(events.get(3), instanceOf(AfterDeleteEvent.class));
+        assertThat(((AfterDeleteEvent)events.get(3)).getUri(), is("/test/entity/1.xml"));
+        assertThat(((AfterDeleteEvent)events.get(3)).getId(), is("1"));
     }
 
     @Test(expected = ConverterNotFoundException.class)
@@ -234,8 +255,6 @@ public class MarklogicTemplateTest {
 
         @Nullable String id;
         String name;
-
-        SimpleEntity() {}
 
         SimpleEntity(@Nullable String id, String name) {
             this.id = id;
