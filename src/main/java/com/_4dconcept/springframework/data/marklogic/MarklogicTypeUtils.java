@@ -18,8 +18,11 @@ package com._4dconcept.springframework.data.marklogic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.bind.annotation.XmlTransient;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -62,6 +65,38 @@ public class MarklogicTypeUtils {
             LOGGER.debug("Unable to generate primitive value for type {}", returnType.getName());
             return null;
         }
+    }
+
+    /**
+     * Retrieve the first non XmlTransient annotated type from deeperType to upperType.
+     *
+     * @param deeperType the deeperType of the hierarchy to test
+     * @param upperType the upperType of the hierarchy to test
+     * @return the xml eligible type
+     */
+    public static Class<?> resolveXmlType(Class<?> deeperType, Class<?> upperType) {
+        if (!deeperType.isAssignableFrom(upperType)) {
+            throw new IllegalArgumentException(String.format("%s --> %s is not a valid hierarchy", upperType, deeperType));
+        }
+
+        Deque<Class<?>> types = new ArrayDeque<>();
+
+        Class<?> currentType = upperType;
+        while (! deeperType.equals(currentType)) {
+            types.push(currentType);
+            currentType = currentType.getSuperclass();
+        }
+
+        types.push(deeperType);
+
+        while (! types.isEmpty()) {
+            Class<?> type = types.pop();
+            if (type.getAnnotation(XmlTransient.class) == null) {
+                return type;
+            }
+        }
+
+        throw new IllegalArgumentException(String.format("Unable to determine a non XmlTransient type in provided hierarchy %s --> %s", upperType, deeperType));
     }
 
     public static boolean isSupportedType(Class<?> aClass) {

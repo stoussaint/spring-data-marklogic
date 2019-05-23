@@ -15,17 +15,14 @@
  */
 package com._4dconcept.springframework.data.marklogic.core.mapping;
 
+import com._4dconcept.springframework.data.marklogic.MarklogicTypeUtils;
 import org.springframework.data.mapping.Association;
 import org.springframework.data.mapping.model.AnnotationBasedPersistentProperty;
 import org.springframework.data.mapping.model.Property;
 import org.springframework.data.mapping.model.SimpleTypeHolder;
 import org.springframework.lang.Nullable;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlNsForm;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlSchema;
-import javax.xml.bind.annotation.XmlTransient;
+import javax.xml.bind.annotation.*;
 import javax.xml.namespace.QName;
 import java.lang.reflect.Method;
 import java.util.HashSet;
@@ -102,15 +99,11 @@ public class BasicMarklogicPersistentProperty extends AnnotationBasedPersistentP
 
     @Nullable
     private String resolvesNamespaceUriFromEnclosingType(Class<?> type) {
-        XmlTransient xmlTransient = type.getAnnotation(XmlTransient.class);
+        Class<?> xmlType = MarklogicTypeUtils.resolveXmlType(type, this.getOwner().getType());
 
-        if (xmlTransient != null) {
-            return resolvesNamespaceUriFromEnclosingType(this.getOwner().getType());
-        }
-
-        XmlSchema xmlSchema = type.getPackage().getAnnotation(XmlSchema.class);
+        XmlSchema xmlSchema = xmlType.getPackage().getAnnotation(XmlSchema.class);
         if (xmlSchema != null && xmlSchema.elementFormDefault().equals(XmlNsForm.QUALIFIED)) {
-            XmlRootElement xmlRootElement = type.getAnnotation(XmlRootElement.class);
+            XmlRootElement xmlRootElement = xmlType.getAnnotation(XmlRootElement.class);
             if (xmlRootElement != null && !xmlRootElement.namespace().equals(XML_DEFAULT)) {
                 return xmlRootElement.namespace();
             } else {
