@@ -31,9 +31,7 @@ import javax.xml.namespace.QName;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -222,6 +220,7 @@ public class QueryBuilderTest {
         assertThat(query.getCriteria().getQname().getNamespaceURI(), is("test"));
         assertThat(query.getCriteria().getQname().getLocalPart(), is("id"));
         assertThat(query.getCriteria().getCriteriaObject(), is("1"));
+        assertThat(query.getCriteria().getOptions(), contains("exact"));
     }
 
     @Test

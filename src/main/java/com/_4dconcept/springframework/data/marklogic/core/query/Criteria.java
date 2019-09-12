@@ -19,6 +19,7 @@ import org.springframework.lang.Nullable;
 
 import javax.xml.namespace.QName;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Representation of a {@link Query} criteria.
@@ -36,6 +37,7 @@ public class Criteria implements CriteriaDefinition {
     private @Nullable QName qname;
     private @Nullable Object criteriaObject;
     private @Nullable Operator operator;
+    private @Nullable List<String> options;
 
     public Criteria() {
     }
@@ -93,6 +95,15 @@ public class Criteria implements CriteriaDefinition {
      */
     void setOperator(Operator operator) {
         this.operator = operator;
+    }
+
+    @Nullable
+    public List<String> getOptions() {
+        return options;
+    }
+
+    public void setOptions(@Nullable List<String> options) {
+        this.options = options;
     }
 
     @SuppressWarnings("unchecked")

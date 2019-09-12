@@ -179,7 +179,7 @@ public class MarklogicTemplateTest {
     public void saveWithSpecificIdFallbackToInsert() throws Exception {
         final String SAMPLE_CONTENT = "<simpleEntity><id>1</id><name>entity</name></simpleEntity>";
 
-        when(session.newAdhocQuery(eq("cts:uris((), (), cts:and-query((cts:collection-query(()), cts:element-value-query(fn:QName('', 'id'), '1'))))"))).thenReturn(new AdhocImpl(session, null, new RequestOptions()));
+        when(session.newAdhocQuery(eq("cts:uris((), (), cts:and-query((cts:collection-query(()), cts:element-value-query(fn:QName('', 'id'), '1', ('exact')))))"))).thenReturn(new AdhocImpl(session, null, new RequestOptions()));
 
         doAnswer(invocationOnMock -> {
             MarklogicContentHolder holder = invocationOnMock.getArgument(1);
@@ -259,7 +259,7 @@ public class MarklogicTemplateTest {
         template.findById("1", SimpleEntity.class);
 
         verify(session).newAdhocQuery(queryArgumentCaptor.capture());
-        assertThat(queryArgumentCaptor.getValue(), is("cts:search(fn:collection(),cts:element-value-query(fn:QName(\"\", \"id\"), \"1\", \"exact\"))"));
+        assertThat(queryArgumentCaptor.getValue(), is("cts:search(fn:collection(), cts:element-value-query(fn:QName('', 'id'), '1', ('exact')), ())"));
     }
 
     static class SimpleEntity {

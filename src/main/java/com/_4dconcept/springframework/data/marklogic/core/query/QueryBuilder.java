@@ -39,6 +39,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
@@ -190,6 +191,8 @@ public class QueryBuilder {
                 throw new InvalidDataAccessApiUsageException("Unable to compile identifier criteria");
             }
         }
+
+        identifierCriteria.setOptions(Collections.singletonList("exact"));
 
         if (options.idInPropertyFragment()) {
             query.setCriteria(new Criteria(Criteria.Operator.PROPERTIES, identifierCriteria));

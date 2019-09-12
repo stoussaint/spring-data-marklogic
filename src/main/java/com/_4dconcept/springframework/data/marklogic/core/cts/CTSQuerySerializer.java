@@ -20,11 +20,13 @@ import com._4dconcept.springframework.data.marklogic.core.query.Query;
 import com._4dconcept.springframework.data.marklogic.core.query.SortCriteria;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import javax.xml.namespace.QName;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -93,10 +95,18 @@ public class CTSQuerySerializer {
 
         if (criteriaObject instanceof String) {
             String escapedValue = ((String) criteriaObject).replaceAll("'", "''").replaceAll("&","&amp;");
-            return String.format("cts:element-value-query(%s, '%s')", serializeQName(qname), escapedValue);
+            return String.format("cts:element-value-query(%s, '%s'%s)", serializeQName(qname), escapedValue, buildCriteriaOptions(criteria));
         } else {
-            return String.format("cts:element-value-query(%s, '%s')", serializeQName(qname), criteriaObject);
+            return String.format("cts:element-value-query(%s, '%s'%s)", serializeQName(qname), criteriaObject, buildCriteriaOptions(criteria));
         }
+    }
+
+    private String buildCriteriaOptions(Criteria criteria) {
+        if (CollectionUtils.isEmpty(criteria.getOptions())) {
+            return "";
+        }
+
+        else return String.format(", (%s)", criteria.getOptions().stream().map(s -> "'" + s + "'").collect(joining(",")));
     }
 
     private String serializeCriteria(@Nullable Criteria criteria) {
