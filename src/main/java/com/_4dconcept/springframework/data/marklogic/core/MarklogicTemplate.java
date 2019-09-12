@@ -295,7 +295,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
             .append(identifier.qname().getLocalPart())
             .append("\"), \"")
             .append(identifier.value())
-            .append("\")");
+            .append("\", \"exact\")");
         if (isIdInPropertyFragment) {
             sb.append(")");
         }
