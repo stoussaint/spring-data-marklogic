@@ -251,6 +251,17 @@ public class MarklogicTemplateTest {
         assertThat(queryArgumentCaptor.getValue(), is("cts:search(fn:collection(), cts:element-value-query(fn:QName('', 'name'), 'test'), ())"));
     }
 
+    @Test
+    public void findById_EnsureExactMatch() {
+        when(session.newAdhocQuery(anyString())).thenReturn(new AdhocImpl(null, null, new RequestOptions()));
+        MarklogicTemplate template = new MarklogicTemplate(contentSource);
+
+        template.findById("1", SimpleEntity.class);
+
+        verify(session).newAdhocQuery(queryArgumentCaptor.capture());
+        assertThat(queryArgumentCaptor.getValue(), is("cts:search(fn:collection(),cts:element-value-query(fn:QName(\"\", \"id\"), \"1\", \"exact\"))"));
+    }
+
     static class SimpleEntity {
 
         @Nullable String id;
