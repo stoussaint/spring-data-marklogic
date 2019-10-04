@@ -17,11 +17,20 @@ package com._4dconcept.springframework.data.marklogic.core;
 
 import com.marklogic.xcc.ContentSource;
 import com.marklogic.xcc.ContentSourceFactory;
+import com.marklogic.xcc.SecurityOptions;
+import com.marklogic.xcc.Session;
+import com.marklogic.xcc.exceptions.XccConfigException;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.support.PersistenceExceptionTranslator;
 
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.net.URI;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 /**
  * Convenient factory for configuring Marklogic ContentSource.
@@ -48,8 +57,68 @@ public class MarklogicFactoryBean extends AbstractFactoryBean<ContentSource> imp
     }
 
     @Override
-    protected ContentSource createInstance() throws Exception {
+    public ContentSource createInstance() throws Exception {
+        if (uri.getScheme().equals("xccs")) {
+            return createSecuredInstance();
+        }
+
         return ContentSourceFactory.newContentSource(uri);
+    }
+
+    /**
+     * Construct an instance that may be used to insert content.
+     *
+     * @throws XccConfigException
+     *             Thrown if a {@link Session} cannot be created. This usually indicates that the
+     *             host/port or user credentials are incorrect.
+     */
+    private ContentSource createSecuredInstance() throws Exception {
+        TrustManager[] trustManagers;
+
+
+        // Trust anyone.
+        trustManagers = new TrustManager[] { new X509TrustManager() {
+            public void checkClientTrusted(X509Certificate[] x509Certificates, String s)
+                    throws CertificateException {
+                // nothing to do
+            }
+
+            public void checkServerTrusted(X509Certificate[] x509Certificates, String s)
+                    throws CertificateException {
+                // nothing to do
+            }
+
+            public X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+        } };
+
+        String clientJKS = null;
+
+        String passphrase = "";
+
+        KeyManager[] keyManagers;
+
+        keyManagers = null;
+
+        // Get an SSLContext that supports the desired protocol; SSLv3 or TLSv1.
+        SSLContext sslContext = SSLContext.getInstance("TLSv1");
+
+        // Initialize the SSL context with key and trust managers.
+        sslContext.init(keyManagers, trustManagers, null);
+
+        // Create a security options object for use by the secure content source.
+        SecurityOptions securityOptions = new SecurityOptions(sslContext);
+
+        // Limit acceptable protocols; SSLv3 and/or TLSv1 (optional)
+        securityOptions.setEnabledProtocols(new String[] { "TLSv1" });
+
+        // Limit acceptable cipher suites. (optional)
+        // See ciphers man page or TLS 1.0 / SSL 3.0 specifications.
+        securityOptions.setEnabledCipherSuites(new String[] { "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+                "TLS_DHE_DSS_WITH_AES_256_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA" });
+
+        return ContentSourceFactory.newContentSource(uri, securityOptions);
     }
 
     @Override
