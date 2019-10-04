@@ -94,6 +94,16 @@ public class DelegatingContentSource implements ContentSource, InitializingBean 
     }
 
     @Override
+    public Session newSession(String userName, char[] password) {
+        return getTargetContentSource().newSession(userName, password);
+    }
+
+    @Override
+    public Session newSession(String userName, char[] password, String contentbaseId) {
+        return getTargetContentSource().newSession(userName, password, contentbaseId);
+    }
+
+    @Override
     public Session newSession(String username, String password, String contentbaseId) {
         return getTargetContentSource().newSession(username, password, contentbaseId);
     }

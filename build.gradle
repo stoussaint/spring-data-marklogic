@@ -48,7 +48,7 @@ dependencies {
     api 'org.springframework.data:spring-data-commons'
 
     implementation 'com.fasterxml.jackson.core:jackson-databind'
-    implementation 'com.marklogic:marklogic-xcc:8.0.3'
+    implementation 'com.marklogic:marklogic-xcc:9.0.9'
     implementation 'javax.transaction:javax.transaction-api'
     implementation 'org.aspectj:aspectjweaver'
     implementation 'org.springframework:spring-context'
