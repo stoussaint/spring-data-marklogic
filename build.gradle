@@ -2,13 +2,11 @@ buildscript {
     repositories {
         jcenter()
     }
-    dependencies {
-        classpath 'io.spring.gradle:dependency-management-plugin:1.0.0.RELEASE'
-    }
-}
 
-plugins {
-    id 'org.asciidoctor.convert' version '1.5.3'
+    dependencies {
+        classpath 'io.spring.gradle:dependency-management-plugin:1.0.7.RELEASE'
+        classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.12'
+    }
 }
 
 apply plugin: 'java-library'
@@ -199,8 +197,7 @@ task integrationTest( type: Test ) {
 }
 
 asciidoctor {
-    attributes \
-        'build-gradle' : file('build.gradle'),
+    attributes 'build-gradle' : file('build.gradle'),
             'source-highlighter': 'coderay',
             'imagesdir': 'images',
             'doctype': 'book',
@@ -212,6 +209,6 @@ asciidoctor {
             'idprefix': '',
             'idseparator': '-',
             'docinfo1': '',
-            'spring-data-commons-docs':file('../spring-data-commons/src/main/asciidoc'),
+            'spring-data-commons-docs': file('../spring-data-commons/src/main/asciidoc'),
             'spring-data-marklogic-source':file('src/main/java')
 }
