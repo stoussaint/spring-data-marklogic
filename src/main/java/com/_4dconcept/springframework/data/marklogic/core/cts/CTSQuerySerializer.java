@@ -24,6 +24,7 @@ import org.springframework.util.CollectionUtils;
 
 import javax.xml.namespace.QName;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
@@ -119,6 +120,12 @@ public class CTSQuerySerializer {
                 return String.format("cts:collection-query('%s')", criteria.getCriteriaObject());
             } else if (criteria.getOperator() == Criteria.Operator.PROPERTIES) {
                 return String.format("cts:properties-fragment-query(%s)", serializeCriteria((Criteria) criteria.getCriteriaObject()));
+            } else if (criteria.getOperator() == Criteria.Operator.EXISTS) {
+                Criteria criteriaObject = Objects.requireNonNull((Criteria) criteria.getCriteriaObject());
+                return String.format("cts:element-query(%s, cts:true-query())", serializeQName(Objects.requireNonNull(criteriaObject.getQname())));
+            } else if (criteria.getOperator() == Criteria.Operator.EMPTY) {
+                Criteria criteriaObject = Objects.requireNonNull((Criteria) criteria.getCriteriaObject());
+                return String.format("cts:not-query(cts:element-query(%s, cts:true-query()))", serializeQName(Objects.requireNonNull(criteriaObject.getQname())));
             } else {
                 List<Criteria> criteriaList = retrieveCriteriaList(criteria);
                 String ctsQueries = criteriaList.stream().map(this::serializeCriteria).collect(Collectors.joining(", "));

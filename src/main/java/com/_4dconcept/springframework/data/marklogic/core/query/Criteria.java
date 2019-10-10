@@ -31,7 +31,7 @@ import java.util.List;
 public class Criteria implements CriteriaDefinition {
 
     public enum Operator {
-        AND, OR, NOT, COLLECTION, PROPERTIES
+        AND, OR, NOT, COLLECTION, PROPERTIES, EXISTS, EMPTY
     }
 
     private @Nullable QName qname;
@@ -42,12 +42,12 @@ public class Criteria implements CriteriaDefinition {
     public Criteria() {
     }
 
-    public Criteria(QName qname, Object criteriaObject) {
+    public Criteria(QName qname, @Nullable Object criteriaObject) {
         this.qname = qname;
         this.criteriaObject = criteriaObject;
     }
 
-    public Criteria(Operator operator, Object criteriaObject) {
+    public Criteria(Operator operator, @Nullable Object criteriaObject) {
         this.operator = operator;
         this.criteriaObject = criteriaObject;
     }

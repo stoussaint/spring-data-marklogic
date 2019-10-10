@@ -17,9 +17,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 public class MarklogicQueryCreatorTest {
@@ -73,6 +71,32 @@ public class MarklogicQueryCreatorTest {
         assertThat(innerCriteria.getCriteriaObject(), is("France"));
     }
 
+    @Test
+    public void createQueryWithExistsParameter() throws Exception {
+        final MarklogicQueryMethod method = buildMethod("findByAddressExists");
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method), mappingContext, Person.class);
+        Query query = creator.createQuery();
+
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.EXISTS));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(Criteria.class));
+        Criteria innerCriteria = (Criteria) query.getCriteria().getCriteriaObject();
+        assertThat(innerCriteria.getQname().getLocalPart(), is("address"));
+        assertThat(innerCriteria.getCriteriaObject(), nullValue());
+    }
+
+    @Test
+    public void createQueryWithNotExistsParameter() throws Exception {
+        final MarklogicQueryMethod method = buildMethod("findByAddressEmpty");
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method), mappingContext, Person.class);
+        Query query = creator.createQuery();
+
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.EMPTY));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(Criteria.class));
+        Criteria innerCriteria = (Criteria) query.getCriteria().getCriteriaObject();
+        assertThat(innerCriteria.getQname().getLocalPart(), is("address"));
+        assertThat(innerCriteria.getCriteriaObject(), nullValue());
+    }
+
     private ParameterAccessor buildAccessor(MarklogicQueryMethod method, Object... parameters) {
         return new ParametersParameterAccessor(method.getParameters(), parameters);
     }
@@ -109,6 +133,10 @@ public class MarklogicQueryCreatorTest {
         Person findByActiveIsTrue();
 
         Person findByActiveIsFalse();
+
+        Person findByAddressExists();
+
+        Person findByAddressEmpty();
 
     }
 }

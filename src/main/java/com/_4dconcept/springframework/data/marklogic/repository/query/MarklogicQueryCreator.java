@@ -121,31 +121,36 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
         Part.Type type = part.getType();
 
         switch (type) {
+//            case BEFORE:
 //            case AFTER:
 //            case GREATER_THAN:
 //            case GREATER_THAN_EQUAL:
-//            case BEFORE:
 //            case LESS_THAN:
 //            case LESS_THAN_EQUAL:
 //            case BETWEEN:
-//            case IS_NOT_NULL:
-//            case IS_NULL:
 //            case NOT_IN:
+//            case NOT_LIKE
 //            case LIKE:
 //            case STARTING_WITH:
 //            case ENDING_WITH:
+//            case NEAR:
+//            case WITHIN:
+//            case REGEX:
+//            case NOT_CONTAINING:
             case IN:
             case CONTAINING:
                 return computeContainingCriteria(property, parameters.next());
-//            case NOT_CONTAINING:
-//            case REGEX:
-//            case EXISTS:
+            case IS_NULL:
+            case IS_EMPTY:
+                return new Criteria(Criteria.Operator.EMPTY, computeSimpleCriteria(property, null));
+            case IS_NOT_NULL:
+            case IS_NOT_EMPTY:
+            case EXISTS:
+                return new Criteria(Criteria.Operator.EXISTS, computeSimpleCriteria(property, null));
             case TRUE:
                 return computeSimpleCriteria(property, true);
             case FALSE:
                 return computeSimpleCriteria(property, false);
-//            case NEAR:
-//            case WITHIN:
             case NEGATING_SIMPLE_PROPERTY:
                 return computeSimpleCriteria(property, parameters.next(), true);
             case SIMPLE_PROPERTY:
@@ -159,11 +164,11 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
         return buildSimpleCriteria(property, parameter, Criteria.Operator.OR);
     }
 
-    private Criteria computeSimpleCriteria(MarklogicPersistentProperty property, Object parameter) {
+    private Criteria computeSimpleCriteria(MarklogicPersistentProperty property, @Nullable Object parameter) {
         return computeSimpleCriteria(property, parameter, false);
     }
 
-    private Criteria computeSimpleCriteria(MarklogicPersistentProperty property, Object parameter, boolean inverse) {
+    private Criteria computeSimpleCriteria(MarklogicPersistentProperty property, @Nullable Object parameter, boolean inverse) {
         Criteria criteria = buildSimpleCriteria(property, parameter, Criteria.Operator.AND);
         if (inverse)
             return new Criteria(Criteria.Operator.NOT, criteria);
@@ -172,7 +177,7 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
         }
     }
 
-    private Criteria buildSimpleCriteria(MarklogicPersistentProperty property, Object parameter, Criteria.Operator groupOperator) {
+    private Criteria buildSimpleCriteria(MarklogicPersistentProperty property, @Nullable Object parameter, Criteria.Operator groupOperator) {
         if (parameter instanceof List) {
             List<?> list = (List<?>) parameter;
             List<Criteria> criteriaList = list.stream().map(o -> buildCriteria(property, o)).collect(Collectors.toList());
@@ -182,7 +187,7 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
         }
     }
 
-    private Criteria buildCriteria(MarklogicPersistentProperty property, Object value) {
+    private Criteria buildCriteria(MarklogicPersistentProperty property, @Nullable Object value) {
         if (marklogicCollectionUtils.getCollectionAnnotation(property).isPresent()) {
             return new Criteria(Criteria.Operator.COLLECTION, value);
         } else {

@@ -166,4 +166,26 @@ public class CTSQuerySerializerTest {
 
         assertThat(ctsQuery, is("cts:uris((), (), cts:and-query((cts:collection-query('test'), cts:not-query(cts:element-value-query(fn:QName('', 'town'), 'Paris')))))"));
     }
+
+    @Test
+    public void parseQueryWithExistsOperator() {
+        Query query = new Query();
+        query.setCollection("test");
+        query.setCriteria(new Criteria(Criteria.Operator.EXISTS, new Criteria(new QName("town"), null)));
+
+        String ctsQuery = new CTSQuerySerializer(query).asCtsUris();
+
+        assertThat(ctsQuery, is("cts:uris((), (), cts:and-query((cts:collection-query('test'), cts:element-query(fn:QName('', 'town'), cts:true-query()))))"));
+    }
+
+    @Test
+    public void parseQueryWithEmptyOperator() {
+        Query query = new Query();
+        query.setCollection("test");
+        query.setCriteria(new Criteria(Criteria.Operator.EMPTY, new Criteria(new QName("town"), null)));
+
+        String ctsQuery = new CTSQuerySerializer(query).asCtsUris();
+
+        assertThat(ctsQuery, is("cts:uris((), (), cts:and-query((cts:collection-query('test'), cts:not-query(cts:element-query(fn:QName('', 'town'), cts:true-query())))))"));
+    }
 }
