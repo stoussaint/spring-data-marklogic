@@ -222,7 +222,10 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         String uri = retrieveUri(entity);
         if (uri != null) {
             LOGGER.debug("Remove '{}' from '{}'", entity, uri);
-            invokeAdhocQuery("xdmp:document-delete('" + uri + "')", new MarklogicInvokeOperationOptions() {
+            // Double the delimiter of string literal to allow its inclusion in said string literal
+            String query = "xdmp:document-delete('" + uri.replace("'", "''") + "')";
+            invokeAdhocQuery(query, new MarklogicInvokeOperationOptions() {
+
                 @Override
                 public boolean useCacheResult() {
                     return false;
