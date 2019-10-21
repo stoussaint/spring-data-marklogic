@@ -493,7 +493,7 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         Object id = resolveMarklogicIdentifier(entity).value();
 
         maybeEmitEvent(new BeforeDeleteEvent<>(entity, id, uri));
-        invokeAdhocQuery("xdmp:document-delete('" + uri + "')", new MarklogicInvokeOperationOptions() {
+        invokeAdhocQuery("xdmp:document-delete('" + uri .replace("'", "''") + "')", new MarklogicInvokeOperationOptions() {
             @Override
             public boolean useCacheResult() {
                 return false;
