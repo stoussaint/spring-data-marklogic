@@ -543,14 +543,15 @@ public class MarklogicTemplate implements MarklogicOperations, ApplicationEventP
         }
 
         MarklogicPersistentEntity<?> entity = MarklogicUtils.retrievePersistentEntity(objectToSave.getClass(), mappingContext);
-        PersistentPropertyAccessor accessor = entity.getPropertyAccessor(objectToSave);
+        PersistentPropertyAccessor<Object> accessor = entity.getPropertyAccessor(objectToSave);
 
         if (accessor.getProperty(property) != null) {
             return;
         }
 
         ConversionService conversionService = marklogicConverter.getConversionService();
-        new ConvertingPropertyAccessor(accessor, conversionService).setProperty(property, UUID.randomUUID());
+        ConvertingPropertyAccessor<Object> propertyAccessor = new ConvertingPropertyAccessor<>(accessor, conversionService);
+        propertyAccessor.setProperty(property, UUID.randomUUID());
     }
 
     private boolean isUnidentifiedObject(Object objectToSave) {

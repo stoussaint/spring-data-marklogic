@@ -4,9 +4,13 @@ buildscript {
     }
 
     dependencies {
-        classpath 'io.spring.gradle:dependency-management-plugin:1.0.7.RELEASE'
         classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.12'
     }
+}
+
+plugins {
+    id("org.springframework.boot") version "2.2.0.RELEASE" apply false
+    id("io.spring.dependency-management") version "1.0.8.RELEASE"
 }
 
 apply plugin: 'java-library'
@@ -36,7 +40,7 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom("io.spring.platform:platform-bom:${springBomVersion}")
+        mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
     }
 }
 
@@ -50,7 +54,7 @@ dependencies {
     implementation 'org.springframework:spring-context'
     implementation 'org.springframework:spring-oxm'
     implementation 'org.springframework:spring-tx'
-    implementation 'com.google.code.findbugs:jsr305'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
 
     testImplementation 'ch.qos.logback:logback-classic'
     testImplementation 'junit:junit'

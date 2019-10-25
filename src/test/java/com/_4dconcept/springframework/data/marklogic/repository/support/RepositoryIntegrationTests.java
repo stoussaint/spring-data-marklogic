@@ -180,9 +180,9 @@ public class RepositoryIntegrationTests {
     @Test
     public void findAllInRepositorySortedOrder() {
         checkOrder(Sort.by("lastname"), new String[] {"Ktifa", "One", "Toussaint"});
-        checkOrder(new Sort(Sort.Direction.DESC, "lastname"), new String[] {"Toussaint", "One", "Ktifa"});
-        checkOrder(new Sort(Sort.Direction.DESC, "age", "lastname"), new String[] {"Toussaint", "One", "Ktifa"});
-        checkOrder(new Sort(Sort.Direction.DESC, "age").and(Sort.by("lastname")), new String[] {"Toussaint", "Ktifa", "One"});
+        checkOrder(Sort.by(Sort.Direction.DESC, "lastname"), new String[] {"Toussaint", "One", "Ktifa"});
+        checkOrder(Sort.by(Sort.Direction.DESC, "age", "lastname"), new String[] {"Toussaint", "One", "Ktifa"});
+        checkOrder(Sort.by(Sort.Direction.DESC, "age").and(Sort.by("lastname")), new String[] {"Toussaint", "Ktifa", "One"});
     }
 
     @Test

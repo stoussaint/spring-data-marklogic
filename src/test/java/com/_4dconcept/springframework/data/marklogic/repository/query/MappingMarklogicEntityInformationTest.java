@@ -41,7 +41,6 @@ public class MappingMarklogicEntityInformationTest {
 
     @Before
     public void setUp() {
-        when(info.getType()).thenReturn(Person.class);
         when(info.getUri()).thenReturn("/content/person/${id}.xml");
     }
 

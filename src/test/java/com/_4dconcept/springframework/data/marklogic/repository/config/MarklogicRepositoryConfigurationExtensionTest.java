@@ -19,11 +19,12 @@ import com._4dconcept.springframework.data.marklogic.core.mapping.Document;
 import com._4dconcept.springframework.data.marklogic.repository.MarklogicRepository;
 import org.junit.Test;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.DefaultBeanNameGenerator;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.core.type.StandardAnnotationMetadata;
+import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.config.AnnotationRepositoryConfigurationSource;
 import org.springframework.data.repository.config.RepositoryConfiguration;
@@ -41,12 +42,12 @@ import static org.mockito.Mockito.mock;
  */
 public class MarklogicRepositoryConfigurationExtensionTest {
 
-    StandardAnnotationMetadata metadata = new StandardAnnotationMetadata(Config.class, true);
+    AnnotationMetadata metadata = AnnotationMetadata.introspect(Config.class);
     ResourceLoader loader = new PathMatchingResourcePatternResolver();
     Environment environment = new StandardEnvironment();
     BeanDefinitionRegistry registry = mock(BeanDefinitionRegistry.class);
     RepositoryConfigurationSource configurationSource = new AnnotationRepositoryConfigurationSource(metadata,
-            EnableMarklogicRepositories.class, loader, environment, registry);
+            EnableMarklogicRepositories.class, loader, environment, registry, new DefaultBeanNameGenerator());
 
     @Test
     public void isStrictMatchIfDomainTypeIsAnnotatedWithDocument() {

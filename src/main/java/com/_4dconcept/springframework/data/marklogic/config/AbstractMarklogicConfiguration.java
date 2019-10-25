@@ -30,10 +30,6 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
-import org.springframework.data.mapping.context.MappingContextIsNewStrategyFactory;
-import org.springframework.data.mapping.context.PersistentEntities;
-import org.springframework.data.support.CachingIsNewStrategyFactory;
-import org.springframework.data.support.IsNewStrategyFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
@@ -108,15 +104,6 @@ public abstract class AbstractMarklogicConfiguration {
         MarklogicMappingContext marklogicMappingContext = new MarklogicMappingContext();
         marklogicMappingContext.setInitialEntitySet(getInitialEntitySet());
         return marklogicMappingContext;
-    }
-
-    /**
-     * @return a {@link MappingContextIsNewStrategyFactory} wrapped into a {@link CachingIsNewStrategyFactory}.
-     */
-    @Bean
-    public IsNewStrategyFactory isNewStrategyFactory() throws ClassNotFoundException {
-        PersistentEntities persistentEntities = new PersistentEntities(Collections.singletonList(marklogicMappingContext()));
-        return new CachingIsNewStrategyFactory(new MappingContextIsNewStrategyFactory(persistentEntities));
     }
 
     /**

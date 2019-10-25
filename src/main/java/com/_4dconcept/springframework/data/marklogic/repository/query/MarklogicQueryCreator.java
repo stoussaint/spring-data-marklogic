@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.TypeMismatchDataAccessException;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mapping.context.PersistentPropertyPath;
+import org.springframework.data.mapping.PersistentPropertyPath;
 import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.parser.AbstractQueryCreator;
 import org.springframework.data.repository.query.parser.Part;

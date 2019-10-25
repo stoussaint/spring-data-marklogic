@@ -222,7 +222,7 @@ public class QueryBuilder {
         Deque<Criteria> stack = new ArrayDeque<>();
 
         MarklogicPersistentEntity<?> entity = MarklogicUtils.retrievePersistentEntity(bean.getClass(), mappingContext);
-        PersistentPropertyAccessor propertyAccessor = entity.getPropertyAccessor(bean);
+        PersistentPropertyAccessor<Object> propertyAccessor = entity.getPropertyAccessor(bean);
 
         entity.doWithProperties((PropertyHandler<MarklogicPersistentProperty>) property -> {
             Object value = propertyAccessor.getProperty(property);

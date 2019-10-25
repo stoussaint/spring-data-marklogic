@@ -67,7 +67,6 @@ public class MarklogicRepositoryFactoryTest {
     @SuppressWarnings("unchecked")
     public void usesMappingMarklogicEntityInformationIfMappingContextSet() throws Exception {
         when(mappingContext.getPersistentEntity(Person.class)).thenReturn(entity);
-        when(entity.getType()).thenReturn(Person.class);
 
         MarklogicRepositoryFactory factory = new MarklogicRepositoryFactory(template);
         MarklogicEntityInformation<Person, Serializable> entityInformation = factory.getEntityInformation(Person.class);
@@ -77,9 +76,7 @@ public class MarklogicRepositoryFactoryTest {
     @Test
     @SuppressWarnings("unchecked")
     public void createsRepositoryWithIdTypeLong() {
-
         when(mappingContext.getPersistentEntity(Person.class)).thenReturn(entity);
-        when(entity.getType()).thenReturn(Person.class);
 
         MarklogicRepositoryFactory factory = new MarklogicRepositoryFactory(template);
         MyPersonRepository repository = factory.getRepository(MyPersonRepository.class);

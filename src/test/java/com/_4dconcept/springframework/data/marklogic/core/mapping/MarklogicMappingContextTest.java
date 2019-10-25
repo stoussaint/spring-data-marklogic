@@ -66,7 +66,7 @@ public class MarklogicMappingContextTest {
 
     private List<Criteria> doWith(BasicMarklogicPersistentEntity<?> entity, Object bean) {
         ArrayList<Criteria> criteriaList = new ArrayList<>();
-        PersistentPropertyAccessor propertyAccessor = entity.getPropertyAccessor(bean);
+        PersistentPropertyAccessor<Object> propertyAccessor = entity.getPropertyAccessor(bean);
 
         entity.doWithProperties((PropertyHandler<MarklogicPersistentProperty>) property -> {
             Object value = propertyAccessor.getProperty(property);

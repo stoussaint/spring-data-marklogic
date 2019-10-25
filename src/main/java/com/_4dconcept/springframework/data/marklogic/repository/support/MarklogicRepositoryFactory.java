@@ -30,9 +30,9 @@ import org.springframework.data.repository.core.NamedQueries;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
-import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.data.repository.query.QueryMethod;
+import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -81,7 +81,7 @@ public class MarklogicRepositoryFactory extends RepositoryFactorySupport {
     }
 
     @Override
-    protected Optional<QueryLookupStrategy> getQueryLookupStrategy(@Nullable QueryLookupStrategy.Key key, EvaluationContextProvider evaluationContextProvider) {
+    protected Optional<QueryLookupStrategy> getQueryLookupStrategy(@Nullable QueryLookupStrategy.Key key, QueryMethodEvaluationContextProvider evaluationContextProvider) {
         return Optional.of(new MarklogicQueryLookupStrategy(marklogicOperations, evaluationContextProvider, mappingContext));
     }
 
@@ -106,10 +106,10 @@ public class MarklogicRepositoryFactory extends RepositoryFactorySupport {
     private static class MarklogicQueryLookupStrategy implements QueryLookupStrategy {
 
         private final MarklogicOperations operations;
-        private final EvaluationContextProvider evaluationContextProvider;
+        private final QueryMethodEvaluationContextProvider evaluationContextProvider;
         MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext;
 
-        MarklogicQueryLookupStrategy(MarklogicOperations operations, EvaluationContextProvider evaluationContextProvider,
+        MarklogicQueryLookupStrategy(MarklogicOperations operations, QueryMethodEvaluationContextProvider evaluationContextProvider,
                                      MappingContext<? extends MarklogicPersistentEntity<?>, MarklogicPersistentProperty> mappingContext) {
 
             this.operations = operations;
