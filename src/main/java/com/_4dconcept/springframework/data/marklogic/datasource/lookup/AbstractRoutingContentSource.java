@@ -162,6 +162,17 @@ public abstract class AbstractRoutingContentSource extends AbstractContentSource
         return determineTargetContentSource().newSession(username, password);
     }
 
+
+    @Override
+    public Session newSession(String userName, char[] password) {
+        return determineTargetContentSource().newSession(userName, password);
+    }
+
+    @Override
+    public Session newSession(String userName, char[] password, String contentbaseId) {
+        return determineTargetContentSource().newSession(userName, password, contentbaseId);
+    }
+
     /**
      * Retrieve the current target ContentSource. Determines the
      * {@link #determineCurrentLookupKey() current lookup key}, performs
