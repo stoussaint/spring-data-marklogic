@@ -39,8 +39,7 @@ import org.springframework.lang.Nullable;
 
 import javax.xml.namespace.QName;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
@@ -158,7 +157,7 @@ public class PartTreeMarklogicQueryTest {
     }
 
     @Test
-    public void collectionFieldsShouldBeConsideredAsAndCriteria() {
+    public void listFieldsShouldBeConsideredAsAndCriteria() {
         List<String> skills = new ArrayList<>();
         skills.add("foo");
         skills.add("bar");
@@ -186,8 +185,64 @@ public class PartTreeMarklogicQueryTest {
     }
 
     @Test
-    public void collectionFieldsWithContainingKeyWordShouldBeConsideredAsOrCriteria() {
+    public void setFieldsShouldBeConsideredAsAndCriteria() {
+        Set<String> skills = new LinkedHashSet<>();
+        skills.add("foo");
+        skills.add("bar");
+
+        Query query = deriveQueryFromMethod("findBySkills", skills);
+
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
+
+        List<Criteria> criteriaList = extractListCriteria(query.getCriteria());
+
+        assertCriteria(
+                criteriaList.get(0),
+                nullValue(),
+                is(new QName("http://spring.data.marklogic/test/contact", "skill")),
+                is("foo")
+        );
+
+        assertCriteria(
+                criteriaList.get(1),
+                nullValue(),
+                is(new QName("http://spring.data.marklogic/test/contact", "skill")),
+                is("bar")
+        );
+    }
+
+    @Test
+    public void listFieldsWithContainingKeyWordShouldBeConsideredAsOrCriteria() {
         List<String> skills = new ArrayList<>();
+        skills.add("foo");
+        skills.add("bar");
+
+        Query query = deriveQueryFromMethod("findBySkillsContaining", skills);
+
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.OR));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
+
+        List<Criteria> criteriaList = extractListCriteria(query.getCriteria());
+
+        assertCriteria(
+                criteriaList.get(0),
+                nullValue(),
+                is(new QName("http://spring.data.marklogic/test/contact", "skill")),
+                is("foo")
+        );
+
+        assertCriteria(
+                criteriaList.get(1),
+                nullValue(),
+                is(new QName("http://spring.data.marklogic/test/contact", "skill")),
+                is("bar")
+        );
+    }
+
+    @Test
+    public void setFieldsWithContainingKeyWordShouldBeConsideredAsOrCriteria() {
+        Set<String> skills = new LinkedHashSet<>();
         skills.add("foo");
         skills.add("bar");
 
@@ -318,7 +373,11 @@ public class PartTreeMarklogicQueryTest {
 
         List<Person> findBySkills(ArrayList<String> skills);
 
+        List<Person> findBySkills(LinkedHashSet<String> skills);
+
         List<Person> findBySkillsContaining(ArrayList<String> skills);
+
+        List<Person> findBySkillsContaining(LinkedHashSet<String> skills);
 
         List<Person> findByExtraCollections(String extraCollections);
 
