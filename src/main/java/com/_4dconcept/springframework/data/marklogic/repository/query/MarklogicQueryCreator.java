@@ -33,10 +33,7 @@ import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
 import org.springframework.lang.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -178,9 +175,9 @@ public class MarklogicQueryCreator extends AbstractQueryCreator<Query, Criteria>
     }
 
     private Criteria buildSimpleCriteria(MarklogicPersistentProperty property, @Nullable Object parameter, Criteria.Operator groupOperator) {
-        if (parameter instanceof List) {
-            List<?> list = (List<?>) parameter;
-            List<Criteria> criteriaList = list.stream().map(o -> buildCriteria(property, o)).collect(Collectors.toList());
+        if (parameter instanceof Collection) {
+            Collection<?> collection = (Collection<?>) parameter;
+            List<Criteria> criteriaList = collection.stream().map(o -> buildCriteria(property, o)).collect(Collectors.toList());
             return new Criteria(groupOperator, criteriaList);
         } else {
             return buildCriteria(property, parameter);

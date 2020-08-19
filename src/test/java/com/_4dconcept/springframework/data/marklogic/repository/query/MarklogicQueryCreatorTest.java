@@ -15,7 +15,10 @@ import org.springframework.data.repository.query.parser.PartTree;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
@@ -97,6 +100,70 @@ public class MarklogicQueryCreatorTest {
         assertThat(innerCriteria.getCriteriaObject(), nullValue());
     }
 
+    @Test
+    public void createQueryWithContainingSetParameter() throws Exception {
+        final MarklogicQueryMethod method = buildMethod("findBySkillsContaining", HashSet.class);
+        String[] skills = {"créativité", "flexibilité"};
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, new HashSet<String>(Arrays.asList(skills))), mappingContext, Person.class);
+        Query query = creator.createQuery();
+
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.OR));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
+
+        @SuppressWarnings("unchecked")
+        List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();
+        criteriaList.stream().map(criteria -> criteria.getQname().getLocalPart()).forEach(lp -> assertThat(lp, is("skill")));
+        assertThat(criteriaList.stream().map(Criteria::getCriteriaObject).map(String.class::cast).collect(Collectors.toList()), containsInAnyOrder(skills));
+    }
+
+    @Test
+    public void createQueryWithContainingListParameter() throws Exception {
+        final MarklogicQueryMethod method = buildMethod("findBySkillsContaining", ArrayList.class);
+        String[] skills = {"créativité", "flexibilité"};
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, Arrays.asList(skills)), mappingContext, Person.class);
+        Query query = creator.createQuery();
+
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.OR));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
+
+        @SuppressWarnings("unchecked")
+        List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();
+        criteriaList.stream().map(criteria -> criteria.getQname().getLocalPart()).forEach(lp -> assertThat(lp, is("skill")));
+        assertThat(criteriaList.stream().map(Criteria::getCriteriaObject).map(String.class::cast).collect(Collectors.toList()), containsInAnyOrder(skills));
+    }
+
+    @Test
+    public void createQueryWithListParameter() throws Exception {
+        final MarklogicQueryMethod method = buildMethod("findBySkills", ArrayList.class);
+        String[] skills = {"créativité", "flexibilité"};
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, Arrays.asList(skills)), mappingContext, Person.class);
+        Query query = creator.createQuery();
+
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
+
+        @SuppressWarnings("unchecked")
+        List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();
+        criteriaList.stream().map(criteria -> criteria.getQname().getLocalPart()).forEach(lp -> assertThat(lp, is("skill")));
+        assertThat(criteriaList.stream().map(Criteria::getCriteriaObject).map(String.class::cast).collect(Collectors.toList()), containsInAnyOrder(skills));
+    }
+
+    @Test
+    public void createQueryWithSetParameter() throws Exception {
+        final MarklogicQueryMethod method = buildMethod("findBySkills", HashSet.class);
+        String[] skills = {"créativité", "flexibilité"};
+        MarklogicQueryCreator creator = new MarklogicQueryCreator(buildTree(method), buildAccessor(method, new HashSet<>(Arrays.asList(skills))), mappingContext, Person.class);
+        Query query = creator.createQuery();
+
+        assertThat(query.getCriteria().getOperator(), is(Criteria.Operator.AND));
+        assertThat(query.getCriteria().getCriteriaObject(), instanceOf(List.class));
+
+        @SuppressWarnings("unchecked")
+        List<Criteria> criteriaList = (List<Criteria>) query.getCriteria().getCriteriaObject();
+        criteriaList.stream().map(criteria -> criteria.getQname().getLocalPart()).forEach(lp -> assertThat(lp, is("skill")));
+        assertThat(criteriaList.stream().map(Criteria::getCriteriaObject).map(String.class::cast).collect(Collectors.toList()), containsInAnyOrder(skills));
+    }
+
     private ParameterAccessor buildAccessor(MarklogicQueryMethod method, Object... parameters) {
         return new ParametersParameterAccessor(method.getParameters(), parameters);
     }
@@ -128,7 +195,11 @@ public class MarklogicQueryCreatorTest {
 
         List<Person> findBySkills(ArrayList<String> skills);
 
+        List<Person> findBySkills(HashSet<String> skills);
+
         List<Person> findBySkillsContaining(ArrayList<String> skills);
+
+        List<Person> findBySkillsContaining(HashSet<String> skills);
 
         Person findByActiveIsTrue();
 
