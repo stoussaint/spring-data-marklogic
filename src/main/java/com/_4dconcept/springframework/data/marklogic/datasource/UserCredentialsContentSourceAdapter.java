@@ -17,7 +17,6 @@ package com._4dconcept.springframework.data.marklogic.datasource;
 
 import com.marklogic.xcc.Session;
 import org.springframework.core.NamedThreadLocal;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -98,21 +97,10 @@ public class UserCredentialsContentSourceAdapter extends DelegatingContentSource
      * that is, values of the "username" and "password" bean properties.
      * @param username the username to apply
      * @param password the password to apply
-     * @see #removeCredentialsFromCurrentThread
      */
     public void setCredentialsForCurrentThread(String username, String password) {
         this.threadBoundCredentials.set(new XdbcUserCredentials(username, password));
     }
-
-    /**
-     * Remove any user credentials for this proxy from the current thread.
-     * Statically specified user credentials apply again afterwards.
-     * @see #setCredentialsForCurrentThread
-     */
-    public void removeCredentialsFromCurrentThread() {
-        this.threadBoundCredentials.remove();
-    }
-
 
     /**
      * Determine whether there are currently thread-bound credentials,
@@ -148,13 +136,12 @@ public class UserCredentialsContentSourceAdapter extends DelegatingContentSource
      * @param username the username to use
      * @param password the password to use
      * @return the Session
-     * @see com.marklogic.xcc.ContentSource#newSession(String, String)
+     * @see com.marklogic.xcc.ContentSource#newSession(String, char[])
      * @see com.marklogic.xcc.ContentSource#newSession()
      */
     protected Session doGetSession(String username, String password) {
-        Assert.state(getTargetContentSource() != null, "'targetContentSource' is required");
         if (StringUtils.hasLength(username)) {
-            return getTargetContentSource().newSession(username, password);
+            return getTargetContentSource().newSession(username, password.toCharArray());
         } else {
             return getTargetContentSource().newSession();
         }

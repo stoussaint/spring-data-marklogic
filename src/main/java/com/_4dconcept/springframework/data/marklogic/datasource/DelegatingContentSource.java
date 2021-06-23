@@ -72,11 +72,10 @@ public class DelegatingContentSource implements ContentSource, InitializingBean 
 
     @Override
     public void afterPropertiesSet() {
-        if (getTargetContentSource() == null) {
+        if (targetContentSource == null) {
             throw new IllegalArgumentException("Property 'targetContentSource' is required");
         }
     }
-
 
     @Override
     public Session newSession() {
@@ -89,21 +88,23 @@ public class DelegatingContentSource implements ContentSource, InitializingBean 
     }
 
     @Override
+    @Deprecated
     public Session newSession(String username, String password) {
         return getTargetContentSource().newSession(username, password);
     }
 
     @Override
-    public Session newSession(String userName, char[] password) {
-        return getTargetContentSource().newSession(userName, password);
+    public Session newSession(String username, char[] password) {
+        return getTargetContentSource().newSession(username, password);
     }
 
     @Override
-    public Session newSession(String userName, char[] password, String contentbaseId) {
-        return getTargetContentSource().newSession(userName, password, contentbaseId);
+    public Session newSession(String username, char[] password, String contentbaseId) {
+        return getTargetContentSource().newSession(username, password, contentbaseId);
     }
 
     @Override
+    @Deprecated
     public Session newSession(String username, String password, String contentbaseId) {
         return getTargetContentSource().newSession(username, password, contentbaseId);
     }

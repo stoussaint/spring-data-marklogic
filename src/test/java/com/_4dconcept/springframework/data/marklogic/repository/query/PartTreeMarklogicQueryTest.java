@@ -16,8 +16,8 @@
 package com._4dconcept.springframework.data.marklogic.repository.query;
 
 import com._4dconcept.springframework.data.marklogic.core.MarklogicOperations;
-import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConverter;
 import com._4dconcept.springframework.data.marklogic.core.convert.MappingMarklogicConverter;
+import com._4dconcept.springframework.data.marklogic.core.convert.MarklogicConverter;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import com._4dconcept.springframework.data.marklogic.core.query.Criteria;
 import com._4dconcept.springframework.data.marklogic.core.query.Query;
@@ -25,9 +25,7 @@ import com._4dconcept.springframework.data.marklogic.repository.MarklogicReposit
 import com._4dconcept.springframework.data.marklogic.repository.Person;
 import org.hamcrest.Matcher;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -39,10 +37,18 @@ import org.springframework.lang.Nullable;
 
 import javax.xml.namespace.QName;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.when;
 
 /**
@@ -52,9 +58,6 @@ import static org.mockito.Mockito.when;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class PartTreeMarklogicQueryTest {
-
-    public @Rule
-    ExpectedException exception = ExpectedException.none();
 
     @Mock
     private MarklogicOperations marklogicOperationsMock;

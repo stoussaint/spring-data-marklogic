@@ -21,9 +21,8 @@ import com._4dconcept.springframework.data.marklogic.core.mapping.Document;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicIdentifier;
 import com._4dconcept.springframework.data.marklogic.repository.Address;
 import com._4dconcept.springframework.data.marklogic.repository.Person;
-import org.junit.Rule;
+import org.junit.Assert;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.springframework.data.domain.Example;
 import org.springframework.expression.spel.SpelEvaluationException;
 
@@ -31,18 +30,21 @@ import javax.xml.namespace.QName;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * @author stoussaint
  * @since 2017-08-01
  */
 public class QueryBuilderTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void buildEmptyQuery() {
@@ -59,7 +61,7 @@ public class QueryBuilderTest {
     public void name() {
         Query query = new QueryBuilder().options(new MarklogicOperationOptions() {
             @Override
-            public Class entityClass() {
+            public Class<?> entityClass() {
                 return Person.class;
             }
         }).build();
@@ -69,15 +71,15 @@ public class QueryBuilderTest {
 
     @Test
     public void buildEmptyQueryWithUnresolvableCollection_throwsException() {
-        expectedException.expect(SpelEvaluationException.class);
-        expectedException.expectMessage("Attempted to call method getSimpleName() on null context object");
+        final SpelEvaluationException assertThrows = Assert.assertThrows(SpelEvaluationException.class, () ->
+                new QueryBuilder().options(new MarklogicOperationOptions() {
+                    @Override
+                    public String defaultCollection() {
+                        return "#{entityClass.getSimpleName()}";
+                    }
+                }).build());
 
-        new QueryBuilder().options(new MarklogicOperationOptions() {
-            @Override
-            public String defaultCollection() {
-                return "#{entityClass.getSimpleName()}";
-            }
-        }).build();
+        assertThat(assertThrows.getMessage(), containsString("Attempted to call method getSimpleName() on null context object"));
     }
 
     @Test

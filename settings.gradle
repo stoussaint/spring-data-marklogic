@@ -1,1 +1,9 @@
+pluginManagement {
+    plugins {
+        id 'org.springframework.boot' version "${springBomVersion}"
+        id 'io.spring.dependency-management' version "1.0.11.RELEASE"
+        id "org.asciidoctor.convert" version "1.5.12"
+    }
+}
+
 rootProject.name = 'spring-data-marklogic'

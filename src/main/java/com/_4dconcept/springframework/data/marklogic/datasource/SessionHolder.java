@@ -16,6 +16,7 @@
 package com._4dconcept.springframework.data.marklogic.datasource;
 
 import com.marklogic.xcc.Session;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.ResourceHolderSupport;
 import org.springframework.util.Assert;
 
@@ -132,7 +133,7 @@ public class SessionHolder extends ResourceHolderSupport {
      *
      * @param session the new session to be handled
      */
-    protected void setSession(Session session) {
+    protected void setSession(@Nullable Session session) {
         if (this.currentSession != null) {
             this.sessionHandle.releaseSession(this.currentSession);
             this.currentSession = null;

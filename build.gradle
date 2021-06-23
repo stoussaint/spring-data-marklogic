@@ -1,16 +1,7 @@
-buildscript {
-    repositories {
-        jcenter()
-    }
-
-    dependencies {
-        classpath 'org.asciidoctor:asciidoctor-gradle-plugin:1.5.12'
-    }
-}
-
 plugins {
-    id("org.springframework.boot") version "2.2.0.RELEASE" apply false
-    id("io.spring.dependency-management") version "1.0.8.RELEASE"
+    id "org.asciidoctor.convert"
+    id "io.spring.dependency-management"
+    id "org.springframework.boot" apply false
 }
 
 apply plugin: 'java-library'
@@ -35,6 +26,7 @@ ext {
 
 repositories {
     jcenter()
+    maven { url "https://repo.springsource.org/release" }
     maven { url "http://developer.marklogic.com/maven2" }
 }
 
@@ -48,7 +40,7 @@ dependencies {
     api 'org.springframework.data:spring-data-commons'
 
     implementation 'com.fasterxml.jackson.core:jackson-databind'
-    implementation 'com.marklogic:marklogic-xcc:9.0.9'
+    implementation 'com.marklogic:marklogic-xcc:9.0.13'
     implementation 'javax.transaction:javax.transaction-api'
     implementation 'org.aspectj:aspectjweaver'
     implementation 'org.springframework:spring-context'

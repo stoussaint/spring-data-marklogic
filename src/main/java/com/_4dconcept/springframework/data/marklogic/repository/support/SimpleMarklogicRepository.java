@@ -23,8 +23,6 @@ import com._4dconcept.springframework.data.marklogic.core.query.Query;
 import com._4dconcept.springframework.data.marklogic.core.query.QueryBuilder;
 import com._4dconcept.springframework.data.marklogic.repository.MarklogicRepository;
 import com._4dconcept.springframework.data.marklogic.repository.query.MarklogicEntityInformation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -51,8 +49,6 @@ import java.util.stream.StreamSupport;
 @Transactional(readOnly = true)
 public class SimpleMarklogicRepository<T, ID> implements MarklogicRepository<T, ID> {
 
-    protected static final Logger LOGGER = LoggerFactory.getLogger(MarklogicRepository.class);
-
     protected final MarklogicOperations marklogicOperations;
     protected final MarklogicEntityInformation<T, ID> entityInformation;
 
@@ -77,7 +73,7 @@ public class SimpleMarklogicRepository<T, ID> implements MarklogicRepository<T, 
     public long count() {
         Query query = newQueryBuilderInstance().options(new MarklogicOperationOptions() {
             @Override
-            public Class entityClass() {
+            public Class<?> entityClass() {
                 return entityInformation.getJavaType();
             }
         }).build();
@@ -139,7 +135,7 @@ public class SimpleMarklogicRepository<T, ID> implements MarklogicRepository<T, 
     public List<T> findAll(Sort sort) {
         Query query = newQueryBuilderInstance().options(new MarklogicOperationOptions() {
             @Override
-            public Class entityClass() {
+            public Class<?> entityClass() {
                 return entityInformation.getJavaType();
             }
         }).with(sort).build();
@@ -150,7 +146,7 @@ public class SimpleMarklogicRepository<T, ID> implements MarklogicRepository<T, 
     public Page<T> findAll(Pageable pageable) {
         Query query = newQueryBuilderInstance().options(new MarklogicOperationOptions() {
             @Override
-            public Class entityClass() {
+            public Class<?> entityClass() {
                 return entityInformation.getJavaType();
             }
         }).with(pageable).build();
@@ -183,7 +179,7 @@ public class SimpleMarklogicRepository<T, ID> implements MarklogicRepository<T, 
         long count = marklogicOperations.count(query);
 
         if (count == 0) {
-            return new PageImpl<>(Collections.<S>emptyList());
+            return new PageImpl<>(Collections.emptyList());
         }
 
         return new PageImpl<>(marklogicOperations.find(query, example.getProbeType()), pageable, count);
@@ -233,6 +229,12 @@ public class SimpleMarklogicRepository<T, ID> implements MarklogicRepository<T, 
     @Transactional
     public void deleteAll() {
         marklogicOperations.removeAll(entityInformation.getJavaType(), new EntityInformationOperationOptions(entityInformation));
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllById(Iterable<? extends ID> ids) {
+        ids.forEach(this::deleteById);
     }
 
     private QueryBuilder newQueryBuilderInstance() {

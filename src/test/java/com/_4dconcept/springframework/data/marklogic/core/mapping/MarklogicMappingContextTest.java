@@ -29,7 +29,7 @@ import java.util.List;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * --Description--
@@ -42,7 +42,7 @@ public class MarklogicMappingContextTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void name() throws Exception {
+    public void name() {
         Person person = new Person();
         person.setId("1");
         person.setLastname("Toussaint");

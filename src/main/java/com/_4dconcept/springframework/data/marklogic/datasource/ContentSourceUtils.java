@@ -20,8 +20,9 @@ import com.marklogic.xcc.Session;
 import com.marklogic.xcc.exceptions.XccException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.Assert;
 
@@ -129,10 +130,10 @@ public abstract class ContentSourceUtils {
      * @param ses the Session to prepare
      * @param definition the transaction definition to apply
      * @return the previous isolation level, if any
-     * @throws XccException if thrown by XDBC methods
      * @see #resetSessionAfterTransaction
      */
-    public static Integer prepareSessionForTransaction(Session ses, TransactionDefinition definition) throws XccException {
+    @Nullable
+    public static Integer prepareSessionForTransaction(Session ses, @Nullable TransactionDefinition definition) {
 
         Assert.notNull(ses, "No Session specified");
 
@@ -169,7 +170,7 @@ public abstract class ContentSourceUtils {
      * @param previousIsolationLevel the isolation level to restore, if any
      * @see #prepareSessionForTransaction
      */
-    public static void resetSessionAfterTransaction(Session ses, Integer previousIsolationLevel) {
+    public static void resetSessionAfterTransaction(Session ses, @Nullable Integer previousIsolationLevel) {
         Assert.notNull(ses, "No Session specified");
         try {
             // Reset transaction isolation to previous value, if changed for the transaction.
@@ -193,7 +194,7 @@ public abstract class ContentSourceUtils {
      * (may be {@code null})
      * @return whether the Session is transactional
      */
-    public static boolean isSessionTransactional(Session ses, ContentSource contentSource) {
+    public static boolean isSessionTransactional(@Nullable Session ses, @Nullable ContentSource contentSource) {
         if (contentSource == null) {
             return false;
         }
@@ -265,7 +266,7 @@ public abstract class ContentSourceUtils {
      * @throws XccException if thrown by XDBC methods
      * @see #doGetSession
      */
-    public static void doReleaseSession(Session ses, ContentSource contentSource) throws XccException {
+    public static void doReleaseSession(@Nullable Session ses, @Nullable ContentSource contentSource) throws XccException {
         if (ses == null) {
             return;
         }
@@ -285,11 +286,10 @@ public abstract class ContentSourceUtils {
      * Close the Session, unless a {@link SmartContentSource} doesn't want us to.
      * @param ses the Session to close if necessary
      * @param contentSource the ContentSource that the Session was obtained from
-     * @throws XccException if thrown by XDBC methods
      * @see Session#close()
      * @see SmartContentSource#shouldClose(Session)
      */
-    public static void doCloseSession(Session ses, ContentSource contentSource) throws XccException {
+    public static void doCloseSession(Session ses, @Nullable ContentSource contentSource) {
         if (!(contentSource instanceof SmartContentSource) || ((SmartContentSource) contentSource).shouldClose(ses)) {
             ses.close();
         }
@@ -305,7 +305,7 @@ public abstract class ContentSourceUtils {
      * @return whether the given Sessions are equal
      * @see #getTargetSession
      */
-    private static boolean sessionEquals(SessionHolder sesHolder, Session passedInCon) {
+    private static boolean sessionEquals(SessionHolder sesHolder, @Nullable Session passedInCon) {
         if (!sesHolder.hasSession()) {
             return false;
         }
@@ -356,13 +356,13 @@ public abstract class ContentSourceUtils {
      * (e.g. when participating in a JtaTransactionManager transaction).
      * @see org.springframework.transaction.jta.JtaTransactionManager
      */
-    private static class SessionSynchronization extends TransactionSynchronizationAdapter {
+    private static class SessionSynchronization implements TransactionSynchronization {
 
         private final SessionHolder sessionHolder;
 
         private final ContentSource contentSource;
 
-        private int order;
+        private final int order;
 
         private boolean holderActive = true;
 

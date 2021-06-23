@@ -17,6 +17,7 @@ package com._4dconcept.springframework.data.marklogic.datasource;
 
 import com.marklogic.xcc.Session;
 import org.springframework.core.Constants;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -71,7 +72,7 @@ public class IsolationLevelContentSourceAdapter extends UserCredentialsContentSo
      * @see TransactionDefinition#ISOLATION_SERIALIZABLE
      * @see #setIsolationLevel
      */
-    public final void setIsolationLevelName(String constantName) throws IllegalArgumentException {
+    public final void setIsolationLevelName(@Nullable String constantName) throws IllegalArgumentException {
         if (constantName == null || !constantName.startsWith(DefaultTransactionDefinition.PREFIX_ISOLATION)) {
             throw new IllegalArgumentException("Only isolation constants allowed");
         }
@@ -82,6 +83,7 @@ public class IsolationLevelContentSourceAdapter extends UserCredentialsContentSo
      * @return the statically specified isolation level,
      * or {@code null} if none.
      */
+    @Nullable
     protected Integer getIsolationLevel() {
         return this.isolationLevel;
     }
@@ -142,6 +144,7 @@ public class IsolationLevelContentSourceAdapter extends UserCredentialsContentSo
      * @see TransactionSynchronizationManager#getCurrentTransactionIsolationLevel()
      * @see #setIsolationLevel
      */
+    @Nullable
     protected Integer getCurrentIsolationLevel() {
         Integer isolationLevelToUse = TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();
         if (isolationLevelToUse == null) {
@@ -156,6 +159,7 @@ public class IsolationLevelContentSourceAdapter extends UserCredentialsContentSo
      * @return whether there is a read-only hint for the current scope
      * @see TransactionSynchronizationManager#isCurrentTransactionReadOnly()
      */
+    @Nullable
     protected Boolean getCurrentReadOnlyFlag() {
         boolean txReadOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly();
         return (txReadOnly ? Boolean.TRUE : null);
@@ -164,7 +168,7 @@ public class IsolationLevelContentSourceAdapter extends UserCredentialsContentSo
     private Session.TransactionMode determineTransactionMode(Integer isolationLevel) {
         switch (isolationLevel) {
             case 1 :
-            case 2 : return Session.TransactionMode.UPDATE;
+            case 2 :
             case 4 : return Session.TransactionMode.UPDATE;
             case 8 : return Session.TransactionMode.QUERY;
             default : return Session.TransactionMode.AUTO;

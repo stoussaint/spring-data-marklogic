@@ -19,10 +19,9 @@ import com._4dconcept.springframework.data.marklogic.config.AbstractMarklogicCon
 import com._4dconcept.springframework.data.marklogic.repository.Address;
 import com._4dconcept.springframework.data.marklogic.repository.Person;
 import com._4dconcept.springframework.data.marklogic.repository.config.EnableMarklogicRepositories;
+import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,11 +49,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
 
 /**
  * Integration tests for the repository layer.
@@ -75,9 +74,6 @@ public class RepositoryIntegrationTests {
     private String sahbiId;
 
     private List<Person> all;
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void setUp() {
@@ -137,15 +133,13 @@ public class RepositoryIntegrationTests {
 
     @Test
     public void throwExceptionWhenFindOneReturnMultiplePersons() {
-        thrown.expect(IncorrectResultSizeDataAccessException.class);
-        thrown.expectMessage("Incorrect result size: expected 1, actual 2");
-
         Person person = new Person();
         Address address = new Address();
         address.setCountry("France");
         person.setAddress(address);
 
-        repository.findOne(Example.of(person));
+        final IncorrectResultSizeDataAccessException assertThrows = Assert.assertThrows(IncorrectResultSizeDataAccessException.class, () -> repository.findOne(Example.of(person)));
+        assertThat(assertThrows.getMessage(), is("Incorrect result size: expected 1, actual 2"));
     }
 
     @Test
@@ -259,7 +253,7 @@ public class RepositoryIntegrationTests {
                 Marshaller marshaller = JAXBContext.newInstance(Person.class).createMarshaller();
                 StringWriter writer = new StringWriter();
                 marshaller.marshal(source, writer);
-                return writer.toString() + "<!-- Converted by PersonConverter -->"; // Add this comment to show the content converted by this converter and not the generic one.
+                return writer + "<!-- Converted by PersonConverter -->"; // Add this comment to show the content converted by this converter and not the generic one.
             } catch (JAXBException jaxbe) {
                 throw new RuntimeException(jaxbe);
             }

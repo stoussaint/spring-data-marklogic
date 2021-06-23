@@ -20,7 +20,7 @@ import com.marklogic.xcc.Session;
 import com.marklogic.xcc.exceptions.XccException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.core.Constants;
+import org.springframework.lang.Nullable;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -72,8 +72,6 @@ import java.lang.reflect.Proxy;
 public class LazySessionContentSourceProxy extends DelegatingContentSource {
 
     /** Constants instance for TransactionDefinition */
-    private static final Constants constants = new Constants(Session.class);
-
     private static final Log logger = LogFactory.getLog(LazySessionContentSourceProxy.class);
 
     private String defaultTransactionMode;
@@ -105,11 +103,8 @@ public class LazySessionContentSourceProxy extends DelegatingContentSource {
         // Determine default auto-commit and transaction isolation
         // via a Session from the target ContentSource, if possible.
         if (this.defaultTransactionMode == null) {
-            Session ses = getTargetContentSource().newSession();
-            try {
+            try (Session ses = getTargetContentSource().newSession()) {
                 checkDefaultSessionProperties(ses);
-            } finally {
-                ses.close();
             }
         }
     }
@@ -199,21 +194,23 @@ public class LazySessionContentSourceProxy extends DelegatingContentSource {
         }
 
         @Override
+        @Nullable
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             // Invocation on SessionProxy interface coming in...
 
-            if (method.getName().equals("equals")) {
-                // We must avoid fetching a target Session for "equals".
-                // Only consider equal when proxies are identical.
-                return (proxy == args[0]);
-            } else if (method.getName().equals("hashCode")) {
-                // We must avoid fetching a target Session for "hashCode",
-                // and we must return the same hash code even when the target
-                // Session has been fetched: use hashCode of Session proxy.
-                return System.identityHashCode(proxy);
-            } else if (method.getName().equals("getTargetSession")) {
-                // Handle getTargetSession method: return underlying session.
-                return getTargetSession(method);
+            switch (method.getName()) {
+                case "equals":
+                    // We must avoid fetching a target Session for "equals".
+                    // Only consider equal when proxies are identical.
+                    return (proxy == args[0]);
+                case "hashCode":
+                    // We must avoid fetching a target Session for "hashCode",
+                    // and we must return the same hash code even when the target
+                    // Session has been fetched: use hashCode of Session proxy.
+                    return System.identityHashCode(proxy);
+                case "getTargetSession":
+                    // Handle getTargetSession method: return underlying session.
+                    return getTargetSession(method);
             }
 
             if (!hasTargetSession()) {
@@ -280,7 +277,7 @@ public class LazySessionContentSourceProxy extends DelegatingContentSource {
 
                 // Fetch physical Session from ContentSource.
                 this.target = (this.username != null) ?
-                        getTargetContentSource().newSession(this.username, this.password) :
+                        getTargetContentSource().newSession(this.username, this.password.toCharArray()) :
                         getTargetContentSource().newSession();
 
                 // If we still lack default session properties, check them now.

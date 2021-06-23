@@ -153,15 +153,16 @@ public abstract class AbstractRoutingContentSource extends AbstractContentSource
     }
 
     @Override
+    @Deprecated
     public Session newSession(String s, String s1, String s2) {
         return determineTargetContentSource().newSession(s, s1, s2);
     }
 
     @Override
+    @Deprecated
     public Session newSession(String username, String password) {
         return determineTargetContentSource().newSession(username, password);
     }
-
 
     @Override
     public Session newSession(String userName, char[] password) {

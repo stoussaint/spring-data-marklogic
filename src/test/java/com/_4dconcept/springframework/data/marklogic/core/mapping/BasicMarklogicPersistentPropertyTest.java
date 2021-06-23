@@ -30,7 +30,7 @@ import javax.xml.namespace.QName;
 import java.lang.reflect.Field;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Unit test for {@link BasicMarklogicPersistentProperty}.
