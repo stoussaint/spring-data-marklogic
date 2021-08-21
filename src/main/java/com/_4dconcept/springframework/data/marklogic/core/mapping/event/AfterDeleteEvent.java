@@ -15,16 +15,13 @@
  */
 package com._4dconcept.springframework.data.marklogic.core.mapping.event;
 
-import org.springframework.context.ApplicationEvent;
-
 /**
  * Event being thrown after the content is deleted
  *
  * @author Stéphane Toussaint
  */
-public class AfterDeleteEvent<T> extends ApplicationEvent {
+public class AfterDeleteEvent<T> extends MarklogicMappingEvent<T> {
 
-    private final String uri;
     private final transient Object id;
 
     /**
@@ -35,13 +32,8 @@ public class AfterDeleteEvent<T> extends ApplicationEvent {
      * @param uri the location of the deleted entity
      */
     public AfterDeleteEvent(T source, Object id, String uri) {
-        super(source);
+        super(source, uri);
         this.id = id;
-        this.uri = uri;
-    }
-
-    public String getUri() {
-        return uri;
     }
 
     public Object getId() {

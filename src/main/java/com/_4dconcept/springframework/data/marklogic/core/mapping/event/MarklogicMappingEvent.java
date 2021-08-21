@@ -17,6 +17,8 @@ package com._4dconcept.springframework.data.marklogic.core.mapping.event;
 
 import com.marklogic.xcc.Content;
 import org.springframework.context.ApplicationEvent;
+import org.springframework.core.ResolvableType;
+import org.springframework.core.ResolvableTypeProvider;
 import org.springframework.lang.Nullable;
 
 /**
@@ -24,10 +26,16 @@ import org.springframework.lang.Nullable;
  *
  * @author Stéphane Toussaint
  */
-public abstract class MarklogicMappingEvent<T> extends ApplicationEvent {
+public abstract class MarklogicMappingEvent<T> extends ApplicationEvent implements ResolvableTypeProvider {
 
     private final String uri;
     private final @Nullable Content content;
+
+    public MarklogicMappingEvent(T source, String uri) {
+        super(source);
+        this.uri = uri;
+        content = null;
+    }
 
     MarklogicMappingEvent(T source, @Nullable Content content, String uri) {
         super(source);
@@ -59,4 +67,11 @@ public abstract class MarklogicMappingEvent<T> extends ApplicationEvent {
     public T getSource() {
         return (T) super.getSource();
     }
+
+    @Nullable
+    @Override
+    public ResolvableType getResolvableType() {
+        return ResolvableType.forClassWithGenerics(getClass(), ResolvableType.forInstance(getSource()));
+    }
+
 }
