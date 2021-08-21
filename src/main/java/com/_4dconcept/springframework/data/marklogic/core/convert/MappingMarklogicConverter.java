@@ -64,10 +64,11 @@ public class MappingMarklogicConverter extends AbstractMarklogicConverter  {
         ConversionService conversionService = getConversionService();
 
         if (conversionService.canConvert(resultItem.getClass(), returnType)) {
-            R convert = conversionService.convert(resultItem, returnType);
+            final ResultItemDecorator resultItemDecorator = new ResultItemDecorator(resultItem);
+            R convert = conversionService.convert(resultItemDecorator, returnType);
 
             if (convert == null) {
-                throw new ConversionFailedException(TypeDescriptor.forObject(resultItem), TypeDescriptor.valueOf(returnType), resultItem, new NullPointerException());
+                throw new ConversionFailedException(TypeDescriptor.forObject(resultItemDecorator), TypeDescriptor.valueOf(returnType), resultItemDecorator, new NullPointerException());
             }
 
             return convert;

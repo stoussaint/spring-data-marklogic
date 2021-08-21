@@ -15,6 +15,7 @@
  */
 package com._4dconcept.springframework.data.marklogic.core.convert;
 
+import com._4dconcept.springframework.data.marklogic.core.mapping.Collection;
 import com._4dconcept.springframework.data.marklogic.core.mapping.Document;
 import com._4dconcept.springframework.data.marklogic.core.mapping.MarklogicMappingContext;
 import org.hamcrest.CoreMatchers;
@@ -23,6 +24,7 @@ import org.springframework.core.convert.ConverterNotFoundException;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.ConditionalGenericConverter;
 import org.springframework.core.convert.converter.GenericConverter;
+import org.springframework.lang.Nullable;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,22 +32,16 @@ import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- * --Description--
- *
- * @author Stéphane Toussaint
- */
-
 public class MappingMarklogicConverterTest {
 
     @Test(expected = ConverterNotFoundException.class)
-    public void throwsExceptionIfUnConvertibleObject() throws Exception {
+    public void throwsExceptionIfUnConvertibleObject() {
         MappingMarklogicConverter mappingMarklogicConverter = createConverterWithDelegates();
         mappingMarklogicConverter.write(new UnConvertibleObject(), new MarklogicContentHolder());
     }
 
     @Test
-    public void marklogicContentHolderSetWithConvertedContentWithExplicitConverter() throws Exception {
+    public void marklogicContentHolderSetWithConvertedContentWithExplicitConverter() {
         MappingMarklogicConverter mappingMarklogicConverter = createConverterWithDelegates(new ConvertibleObjectConverter());
 
         MarklogicContentHolder contentHolder = new MarklogicContentHolder();
@@ -55,7 +51,7 @@ public class MappingMarklogicConverterTest {
     }
 
     @Test
-    public void marklogicContentHolderSetWithConvertedContentWithConditionalConverter() throws Exception {
+    public void marklogicContentHolderSetWithConvertedContentWithConditionalConverter() {
         MappingMarklogicConverter mappingMarklogicConverter = createConverterWithDelegates(new DocumentConverter());
 
         MarklogicContentHolder contentHolder = new MarklogicContentHolder();
@@ -64,16 +60,13 @@ public class MappingMarklogicConverterTest {
         assertThat(contentHolder.getContent(), CoreMatchers.is("<person><id>1</id></person>"));
     }
 
-    class UnConvertibleObject {}
+    static class UnConvertibleObject {}
 
-    class ConvertibleObject {}
+    static class ConvertibleObject {}
 
-    @Document(
-            uri = "/person/#{id}.xml",
-            defaultCollectionPrefix = "collection",
-            defaultCollection = "#{getClass().getSimpleName()}"
-    )
-    class Person {
+    @Document(uri = "/person/#{id}.xml")
+    @Collection(prefix = "collection", value = "#{getClass().getSimpleName()}")
+    static class Person {
         public String id;
 
         public Person(String id) {
@@ -81,7 +74,7 @@ public class MappingMarklogicConverterTest {
         }
     }
 
-    class ConvertibleObjectConverter implements GenericConverter {
+    static class ConvertibleObjectConverter implements GenericConverter {
 
         @Override
         public Set<ConvertiblePair> getConvertibleTypes() {
@@ -89,13 +82,13 @@ public class MappingMarklogicConverterTest {
         }
 
         @Override
-        public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+        public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
             return "<empty />";
         }
 
     }
 
-    class DocumentConverter implements ConditionalGenericConverter {
+    static class DocumentConverter implements ConditionalGenericConverter {
         @Override
         public boolean matches(TypeDescriptor sourceType, TypeDescriptor targetType) {
             return sourceType.getObjectType().isAnnotationPresent(Document.class);
@@ -107,13 +100,13 @@ public class MappingMarklogicConverterTest {
         }
 
         @Override
-        public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+        public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
             return "<person><id>1</id></person>";
         }
 
     }
 
-    private MappingMarklogicConverter createConverterWithDelegates(GenericConverter... converters) throws Exception {
+    private MappingMarklogicConverter createConverterWithDelegates(GenericConverter... converters) {
         MappingMarklogicConverter mappingMarklogicConverter = new MappingMarklogicConverter(new MarklogicMappingContext());
         mappingMarklogicConverter.setConverters(Arrays.asList(converters));
         mappingMarklogicConverter.afterPropertiesSet();
